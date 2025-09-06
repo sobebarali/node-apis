@@ -12,6 +12,11 @@ A simple, fast CLI tool to generate boilerplate folder structures for Node.js AP
 - ⚡ **Fast & Lightweight** - Minimal dependencies
 - 🔧 **TypeScript** - Built with TypeScript for type safety
 - 🎯 **Functional Programming** - Clean, functional code style
+- 📄 **File Generation** - Generates TypeScript type definitions
+- 🔄 **CRUD Support** - Built-in CRUD operation templates
+- 🎨 **Custom APIs** - Support for custom API operation names
+- 🔧 **Smart Append** - Add operations to existing modules without overwriting
+- 🧠 **Intelligent Detection** - Automatically detects existing modules
 
 ## Installation
 
@@ -43,6 +48,12 @@ The CLI will prompt you for the module name and create the structure.
 # Create a module named "todo"
 node-apis -n todo
 
+# Create with CRUD operations
+node-apis -n todo --crud
+
+# Create with custom API operations
+node-apis -n user --custom "login,logout,resetPassword"
+
 # Create with force overwrite
 node-apis -n user --force
 
@@ -72,11 +83,87 @@ src/apis/{module-name}/
 └── validators/      # Input validation logic
 ```
 
+## Generated TypeScript Files
+
+When you specify `--crud` or `--custom`, the tool generates TypeScript type definition files in the `types/` directory:
+
+### CRUD Operations
+```bash
+node-apis -n todo --crud
+```
+Generates:
+- `create.todo.ts` - Create operation types
+- `get.todo.ts` - Get operation types
+- `list.todo.ts` - List operation types
+- `delete.todo.ts` - Delete operation types
+- `update.todo.ts` - Update operation types
+
+### Custom Operations
+```bash
+node-apis -n user --custom "login,logout,resetPassword"
+```
+Generates:
+- `login.user.ts` - Login operation types
+- `logout.user.ts` - Logout operation types
+- `resetPassword.user.ts` - Reset password operation types
+
+Each generated file contains:
+- Request interface
+- Response interface
+- Parameters interface
+- Usage examples
+
+## Enhanced Interactive Workflow
+
+### Adding Operations to Existing Modules
+
+When you run `node-apis` and have existing modules, you'll see:
+
+```
+🔍 Found existing modules:
+   • todo
+   • user
+   • product
+
+? What would you like to do?
+❯ ➕ Create a new module
+  🔧 Add operations to existing module
+```
+
+Select "Add operations to existing module" and it will:
+1. Show you all existing modules
+2. Let you pick which one to extend
+3. Display current files in that module
+4. Add new operations **without overwriting** existing ones
+
+### Example: Adding Custom Operations to Todo Module
+
+```bash
+# Just run the simple command
+node-apis
+
+# Interactive flow:
+# 1. Choose "Add operations to existing module"
+# 2. Select "todo"
+# 3. See existing files: create.todo.ts, get.todo.ts, etc.
+# 4. Choose "Custom API operations"
+# 5. Enter: markComplete,archive,duplicate,share
+# 6. Confirm and done!
+```
+
+**Result:** Your existing CRUD files remain untouched, and you get new files:
+- `markComplete.todo.ts`
+- `archive.todo.ts`
+- `duplicate.todo.ts`
+- `share.todo.ts`
+
 ## Command Line Options
 
 | Option | Alias | Description |
 |--------|-------|-------------|
 | `--name <name>` | `-n` | Module name (skips interactive prompt) |
+| `--crud` | | Generate CRUD operations (create, get, list, delete, update) |
+| `--custom <names>` | | Generate custom API operations (comma-separated names) |
 | `--force` | `-f` | Overwrite existing directories |
 | `--no-interactive` | | Disable interactive mode |
 | `--version` | `-V` | Output version number |
@@ -84,20 +171,34 @@ src/apis/{module-name}/
 
 ## Examples
 
-### Create a "todo" API module
+### Create a "todo" API module with CRUD operations
 ```bash
-node-apis -n todo
+node-apis -n todo --crud
 ```
 
-### Create a "user" module with force overwrite
+### Create a "user" module with custom operations
 ```bash
-node-apis -n user --force
+node-apis -n user --custom "login,logout,resetPassword"
 ```
 
-### Interactive mode (default)
+### Create a "product" module with force overwrite
+```bash
+node-apis -n product --force
+```
+
+### Interactive mode (default) - Developer Friendly!
 ```bash
 node-apis
 ```
+
+The interactive mode is now super developer-friendly! It will:
+1. **Detect existing modules** and show them to you
+2. **Ask if you want to create new or add to existing**
+3. **Show existing files** when adding to existing modules
+4. **Append new operations** without overwriting existing files
+5. **Guide you through the process** step by step
+
+No more long command lines needed! 🎉
 
 ## Validation Rules
 

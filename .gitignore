@@ -118,3 +118,5 @@ src/apis/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+.augment

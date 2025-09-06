@@ -6,18 +6,26 @@ import {
   getModulePath,
   directoryExists,
   getModuleSubdirectories,
-  formatSuccessMessage
+  formatSuccessMessage,
+  getCrudFileNames,
+  getCustomFileNames,
+  generateCrudFileContent,
+  generateCustomFileContent,
+  ApiType,
+  GeneratedFile
 } from './utils';
 
 // Type definitions
 export interface GenerationOptions {
   baseDir?: string;
   force?: boolean;
+  appendMode?: boolean;
 }
 
 export interface GenerationInput {
   moduleName: string;
   options?: GenerationOptions;
+  apiType?: ApiType;
 }
 
 export interface GenerationResult {
@@ -26,6 +34,7 @@ export interface GenerationResult {
   moduleName?: string;
   modulePath?: string;
   createdDirectories?: string[];
+  generatedFiles?: GeneratedFile[];
   message?: string;
 }
 
@@ -44,9 +53,10 @@ export interface ValidationLocationResult {
  */
 export const generateModuleStructure = async ({
   moduleName,
-  options = {}
+  options = {},
+  apiType
 }: GenerationInput): Promise<GenerationResult> => {
-  const { baseDir = process.cwd(), force = false } = options;
+  const { baseDir = process.cwd(), force = false, appendMode = false } = options;
 
   try {
     // Validate the module name
@@ -63,10 +73,10 @@ export const generateModuleStructure = async ({
 
     // Check if directory already exists
     const exists = await directoryExists({ dirPath: modulePath });
-    if (exists && !force) {
+    if (exists && !force && !appendMode) {
       return {
         success: false,
-        error: `Module directory already exists: ${modulePath}\nUse --force flag to overwrite.`
+        error: `Module directory already exists: ${modulePath}\nUse --force flag to overwrite or run in interactive mode to append.`
       };
     }
 
@@ -83,12 +93,59 @@ export const generateModuleStructure = async ({
       createdDirs.push(subdirPath);
     }
 
+    // Generate TypeScript files in types directory if apiType is provided
+    const generatedFiles: GeneratedFile[] = [];
+    if (apiType) {
+      const typesDir = path.join(modulePath, 'types');
+
+      if (apiType.type === 'crud') {
+        const crudFileNames = getCrudFileNames({ moduleName: normalizedName });
+        const crudOperations = ['create', 'get', 'list', 'delete', 'update'];
+
+        for (let i = 0; i < crudFileNames.length; i++) {
+          const fileName = crudFileNames[i];
+          const operation = crudOperations[i];
+          const filePath = path.join(typesDir, fileName);
+
+          // In append mode, skip files that already exist
+          if (appendMode && await fs.pathExists(filePath)) {
+            continue;
+          }
+
+          const content = generateCrudFileContent({ operation, moduleName: normalizedName });
+          await fs.writeFile(filePath, content, 'utf8');
+          generatedFiles.push({ fileName, filePath, content });
+        }
+      } else if (apiType.type === 'custom' && apiType.customNames) {
+        const customFileNames = getCustomFileNames({
+          customNames: apiType.customNames,
+          moduleName: normalizedName
+        });
+
+        for (let i = 0; i < customFileNames.length; i++) {
+          const fileName = customFileNames[i];
+          const customName = apiType.customNames[i];
+          const filePath = path.join(typesDir, fileName);
+
+          // In append mode, skip files that already exist
+          if (appendMode && await fs.pathExists(filePath)) {
+            continue;
+          }
+
+          const content = generateCustomFileContent({ customName, moduleName: normalizedName });
+          await fs.writeFile(filePath, content, 'utf8');
+          generatedFiles.push({ fileName, filePath, content });
+        }
+      }
+    }
+
     // Return success result
     return {
       success: true,
       moduleName: normalizedName,
       modulePath,
       createdDirectories: createdDirs,
+      generatedFiles,
       message: formatSuccessMessage({ moduleName: normalizedName, modulePath })
     };
 
