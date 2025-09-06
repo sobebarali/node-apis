@@ -50,16 +50,17 @@ export const generateCrudValidatorContent = ({
  */
 const generateCreateValidatorContent = (_capitalizedModule: string, _capitalizedOperation: string, moduleName: string): string => {
   return `import { z } from 'zod';
-import { typePayload } from '../types/create.${moduleName}';
 
 export const payloadSchema = z.object({
   // Define your ${moduleName} creation validation rules here
 });
 
-export const validatePayload = (data: unknown): { success: true; data: typePayload } | { success: false; error: z.ZodError } => {
+export type ValidatedPayload = z.infer<typeof payloadSchema>;
+
+export const validatePayload = (data: unknown): { success: true; data: ValidatedPayload } | { success: false; error: z.ZodError } => {
   const result = payloadSchema.safeParse(data);
   if (result.success) {
-    return { success: true, data: result.data as typePayload };
+    return { success: true, data: result.data };
   }
   return { success: false, error: result.error };
 };

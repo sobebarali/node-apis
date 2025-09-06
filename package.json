@@ -1,7 +1,7 @@
 {
   "name": "node-apis",
-  "version": "1.0.1",
-  "description": "A simple CLI tool to generate boilerplate folder structures for Node.js API modules",
+  "version": "2.0.0",
+  "description": "🚀 Advanced TypeScript API generator with clean architecture, performance monitoring, and automatic formatting. Generate production-ready Node.js APIs with type-driven development.",
   "main": "dist/index.js",
   "bin": {
     "node-apis": "./bin/cli.js",
@@ -17,40 +17,51 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
-    "cli",
-    "generator",
+    "api-generator",
+    "typescript",
     "nodejs",
-    "api",
-    "boilerplate",
+    "express",
+    "crud",
+    "clean-architecture",
+    "code-generator",
+    "cli",
     "scaffold",
-    "module",
-    "code-generator"
+    "boilerplate",
+    "performance-monitoring",
+    "request-tracing",
+    "type-driven",
+    "zod",
+    "validation",
+    "prettier",
+    "auto-formatting",
+    "production-ready"
   ],
-  "author": "API Module Generator Team",
+  "author": "Sobe Barali <sobebarali@gmail.com>",
   "license": "MIT",
   "dependencies": {
     "chalk": "^4.1.2",
     "commander": "^11.1.0",
     "fs-extra": "^11.1.1",
     "inquirer": "^9.2.12",
-    "zod": "^4.1.5"
+    "zod": "^3.22.4"
   },
   "engines": {
     "node": ">=16.0.0"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/node-apis.git"
+    "url": "https://github.com/sobebarali/node-apis.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/node-apis/issues"
+    "url": "https://github.com/sobebarali/node-apis/issues"
   },
-  "homepage": "https://github.com/yourusername/node-apis#readme",
+  "homepage": "https://github.com/sobebarali/node-apis#readme",
   "devDependencies": {
     "@types/express": "^5.0.3",
     "@types/fs-extra": "^11.0.4",
     "@types/inquirer": "^9.0.9",
     "@types/node": "^24.3.1",
+    "prettier": "^3.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2"
   }
