@@ -56,6 +56,9 @@ import create${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Handler 
 export default async function create${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Controller(req: Request, res: Response): Promise<void> {
   const requestId = (req.headers['x-request-id'] as string) || \`req-\${Date.now()}-\${Math.random().toString(36).substr(2, 9)}\`;
 
+  // Log complete payload for debugging
+  console.info(\`\${requestId} [CONTROLLER] - CREATE ${moduleName.toUpperCase()} payload:\`, JSON.stringify(req.body, null, 2));
+
   // Validate request payload
   const validation = validatePayload(req.body);
   if (!validation.success) {
@@ -90,6 +93,10 @@ import get${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Handler fro
 
 export default async function get${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Controller(req: Request, res: Response): Promise<void> {
   const requestId = (req.headers['x-request-id'] as string) || \`req-\${Date.now()}-\${Math.random().toString(36).substr(2, 9)}\`;
+
+  // Log complete payload for debugging
+  console.info(\`\${requestId} [CONTROLLER] - GET ${moduleName.toUpperCase()} payload:\`, JSON.stringify({ id: req.params.id }, null, 2));
+
   // Validate request payload (ID from params)
   const validation = validatePayload({ id: req.params.id });
   if (!validation.success) {
@@ -124,6 +131,10 @@ import list${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}sHandler f
 
 export default async function list${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}sController(req: Request, res: Response): Promise<void> {
   const requestId = (req.headers['x-request-id'] as string) || \`req-\${Date.now()}-\${Math.random().toString(36).substr(2, 9)}\`;
+
+  // Log complete payload for debugging
+  console.info(\`\${requestId} [CONTROLLER] - LIST ${moduleName.toUpperCase()} payload:\`, JSON.stringify(req.query, null, 2));
+
   // Validate query parameters
   const validation = validatePayload(req.query);
   if (!validation.success) {
@@ -158,6 +169,10 @@ import update${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Handler 
 
 export default async function update${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Controller(req: Request, res: Response): Promise<void> {
   const requestId = (req.headers['x-request-id'] as string) || \`req-\${Date.now()}-\${Math.random().toString(36).substr(2, 9)}\`;
+
+  // Log complete payload for debugging
+  console.info(\`\${requestId} [CONTROLLER] - UPDATE ${moduleName.toUpperCase()} payload:\`, JSON.stringify({ id: req.params.id, ...req.body }, null, 2));
+
   // Validate request payload (ID from params + body data)
   const validation = validatePayload({ id: req.params.id, ...req.body });
   if (!validation.success) {
@@ -192,6 +207,10 @@ import delete${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Handler 
 
 export default async function delete${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Controller(req: Request, res: Response): Promise<void> {
   const requestId = (req.headers['x-request-id'] as string) || \`req-\${Date.now()}-\${Math.random().toString(36).substr(2, 9)}\`;
+
+  // Log complete payload for debugging
+  console.info(\`\${requestId} [CONTROLLER] - DELETE ${moduleName.toUpperCase()} payload:\`, JSON.stringify({ id: req.params.id, ...req.body }, null, 2));
+
   // Validate request payload (ID from params + optional body data)
   const validation = validatePayload({ id: req.params.id, ...req.body });
   if (!validation.success) {

@@ -21,7 +21,6 @@ export const getModuleSubdirectories = (): string[] => {
     'handlers',
     'repository',
     'types',
-    'validators',
-    'schema'
+    'validators'
   ];
 };

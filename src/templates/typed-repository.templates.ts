@@ -227,8 +227,7 @@ export function remove(id: string, permanent: boolean = false) {
   }
 };
 
-// Alias for consistency with service layer
-export { remove as delete };
+
 `;
 };
 

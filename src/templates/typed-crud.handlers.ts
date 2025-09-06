@@ -69,6 +69,7 @@ export default async function create${moduleName.charAt(0).toUpperCase() + modul
   let error: typeResultError | null = null;
 
   try {
+    const startTime = Date.now();
     console.info(\`\${requestId} [${moduleName.toUpperCase()}] - CREATE handler started\`);
 
     // Business logic here - direct repository call
@@ -76,7 +77,8 @@ export default async function create${moduleName.charAt(0).toUpperCase() + modul
 
     data = ${moduleName};
 
-    console.info(\`\${requestId} [${moduleName.toUpperCase()}] - CREATE handler completed successfully\`);
+    const duration = Date.now() - startTime;
+    console.info(\`\${requestId} [${moduleName.toUpperCase()}] - CREATE handler completed successfully in \${duration}ms\`);
   } catch (err) {
     const customError = err as any;
     console.error(
@@ -114,6 +116,7 @@ export default async function get${moduleName.charAt(0).toUpperCase() + moduleNa
   let error: typeResultError | null = null;
 
   try {
+    const startTime = Date.now();
     console.info(\`\${requestId} [${moduleName.toUpperCase()}] - GET handler started\`);
 
     // Business logic here - direct repository call
@@ -121,7 +124,8 @@ export default async function get${moduleName.charAt(0).toUpperCase() + moduleNa
 
     data = ${moduleName};
 
-    console.info(\`\${requestId} [${moduleName.toUpperCase()}] - GET handler completed successfully\`);
+    const duration = Date.now() - startTime;
+    console.info(\`\${requestId} [${moduleName.toUpperCase()}] - GET handler completed successfully in \${duration}ms\`);
   } catch (err) {
     const customError = err as any;
     console.error(
@@ -169,6 +173,7 @@ export default async function ${operation}${moduleName.charAt(0).toUpperCase() +
   let error: typeResultError | null = null;
 
   try {
+    const startTime = Date.now();
     console.info(\`\${requestId} [${moduleName.toUpperCase()}] - ${operation.toUpperCase()} handler started\`);
 
     // Business logic here - direct repository call
@@ -190,7 +195,8 @@ export default async function ${operation}${moduleName.charAt(0).toUpperCase() +
     data = null;`
     }
 
-    console.info(\`\${requestId} [${moduleName.toUpperCase()}] - ${operation.toUpperCase()} handler completed successfully\`);
+    const duration = Date.now() - startTime;
+    console.info(\`\${requestId} [${moduleName.toUpperCase()}] - ${operation.toUpperCase()} handler completed successfully in \${duration}ms\`);
   } catch (err) {
     const customError = err as any;
     console.error(

@@ -11,7 +11,7 @@ import { getCrudValidatorFileNames, generateCrudValidatorContent } from '../temp
 import { getCustomValidatorFileNames, generateCustomValidatorContent } from '../templates/custom.validators';
 import { getCrudControllerFileNames, generateCrudControllerContent } from '../templates/crud.controllers';
 import { getCustomControllerFileNames, generateCustomControllerContent } from '../templates/custom.controllers';
-import { getCrudServiceFileNames, generateCrudServiceContent } from '../templates/crud.services';
+
 import { getCustomServiceFileNames, generateCustomServiceContent } from '../templates/custom.services';
 import { generateRouteContent } from '../templates/routes.templates';
 import { generateRepositoryContent } from '../templates/repository.templates';
@@ -42,14 +42,14 @@ export const generateApiFiles = async ({
     const crudFileNames = getCrudFileNames({ moduleName });
     const crudValidatorFileNames = getCrudValidatorFileNames({ moduleName });
     const crudControllerFileNames = getCrudControllerFileNames({ moduleName });
-    const crudServiceFileNames = getCrudServiceFileNames({ moduleName });
+
     const crudOperations = ['create', 'get', 'list', 'delete', 'update'];
 
     for (let i = 0; i < crudFileNames.length; i++) {
       const fileName = crudFileNames[i];
       const validatorFileName = crudValidatorFileNames[i];
       const controllerFileName = crudControllerFileNames[i];
-      const serviceFileName = crudServiceFileNames[i];
+
       const operation = crudOperations[i];
 
       // Generate type file
@@ -76,13 +76,7 @@ export const generateApiFiles = async ({
         generatedFiles.push({ fileName: controllerFileName, filePath: controllerFilePath, content: controllerContent });
       }
 
-      // Generate service file
-      const serviceFilePath = path.join(servicesDir, serviceFileName);
-      if (!appendMode || !await fileExists({ filePath: serviceFilePath })) {
-        const serviceContent = generateCrudServiceContent({ operation, moduleName });
-        await writeFile({ filePath: serviceFilePath, content: serviceContent });
-        generatedFiles.push({ fileName: serviceFileName, filePath: serviceFilePath, content: serviceContent });
-      }
+      // Skip service generation - business logic is now in handlers
     }
   } else if (apiType.type === 'custom' && apiType.customNames) {
     // Generate type files

@@ -10,16 +10,14 @@ import { fileExists, writeFile } from '../filesystem/file.operations';
 import { getCrudFileNames, generateCrudFileContent } from '../templates/crud.templates';
 import { getCustomFileNames, generateCustomFileContent } from '../templates/custom.templates';
 import { parseModuleTypes } from './type-parser.service';
-// import { generateTypedCrudServiceContent } from '../templates/typed-crud.services'; // Removed - no longer using service layer
-import { generateTypedCustomServiceContent } from '../templates/typed-custom.services';
+
 import { generateTypedRepositoryContent } from '../templates/typed-repository.templates';
 import { getCrudValidatorFileNames, generateCrudValidatorContent } from '../templates/crud.validators';
 import { getCustomValidatorFileNames, generateCustomValidatorContent } from '../templates/custom.validators';
 import { getCrudControllerFileNames, generateCrudControllerContent } from '../templates/crud.controllers';
 import { getCustomControllerFileNames, generateCustomControllerContent } from '../templates/custom.controllers';
 import { getCrudHandlerFileNames, generateCrudHandlerContent } from '../templates/typed-crud.handlers';
-// import { getCrudServiceFileNames } from '../templates/crud.services'; // Removed - no longer using service layer
-import { getCustomServiceFileNames } from '../templates/custom.services';
+
 import { generateRouteContent } from '../templates/routes.templates';
 import { formatGeneratedFiles } from './formatter.service';
 
@@ -97,7 +95,7 @@ export const generateCodeWithParsedTypes = async ({
   const validatorsDir = path.join(modulePath, 'validators');
   const controllersDir = path.join(modulePath, 'controllers');
   const handlersDir = path.join(modulePath, 'handlers');
-  const servicesDir = path.join(modulePath, 'services');
+
   const repositoryDir = path.join(modulePath, 'repository');
 
   // Parse the type files to get actual field names
@@ -163,17 +161,12 @@ export const generateCodeWithParsedTypes = async ({
       customNames: apiType.customNames,
       moduleName
     });
-    const customServiceFileNames = getCustomServiceFileNames({
-      customNames: apiType.customNames,
-      moduleName
-    });
+
 
     for (let i = 0; i < apiType.customNames.length; i++) {
       const validatorFileName = customValidatorFileNames[i];
       const controllerFileName = customControllerFileNames[i];
-      const serviceFileName = customServiceFileNames[i];
       const customName = apiType.customNames[i];
-      const parsedType = parsedTypes[customName] || { fields: [], hasId: false, hasPagination: false };
 
       // Generate validator file
       const validatorFilePath = path.join(validatorsDir, validatorFileName);
@@ -191,13 +184,7 @@ export const generateCodeWithParsedTypes = async ({
         generatedFiles.push({ fileName: controllerFileName, filePath: controllerFilePath, content: controllerContent });
       }
 
-      // Generate service file with parsed types
-      const serviceFilePath = path.join(servicesDir, serviceFileName);
-      if (!appendMode || !await fileExists({ filePath: serviceFilePath })) {
-        const serviceContent = generateTypedCustomServiceContent({ customName, moduleName, parsedType });
-        await writeFile({ filePath: serviceFilePath, content: serviceContent });
-        generatedFiles.push({ fileName: serviceFileName, filePath: serviceFilePath, content: serviceContent });
-      }
+      // Skip service generation - business logic is now in handlers
     }
 
     // Generate repository file with parsed types
