@@ -1,0 +1,53 @@
+{
+  "name": "node-apis",
+  "version": "1.0.1",
+  "description": "A simple CLI tool to generate boilerplate folder structures for Node.js API modules",
+  "main": "dist/index.js",
+  "bin": {
+    "node-apis": "./bin/cli.js",
+    "napis": "./bin/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/index.ts",
+    "start": "node bin/cli.js",
+    "prepublishOnly": "npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "cli",
+    "generator",
+    "nodejs",
+    "api",
+    "boilerplate",
+    "scaffold",
+    "module",
+    "code-generator"
+  ],
+  "author": "API Module Generator Team",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0",
+    "fs-extra": "^11.1.1",
+    "inquirer": "^9.2.12"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/node-apis.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/node-apis/issues"
+  },
+  "homepage": "https://github.com/yourusername/node-apis#readme",
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/inquirer": "^9.0.9",
+    "@types/node": "^24.3.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  }
+}
