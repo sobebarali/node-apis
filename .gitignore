@@ -126,3 +126,15 @@ test-results/
 junit.xml
 # Test artifacts
 *.tar.gz
+
+# START Ruler Generated Files
+*.bak
+.augment/rules/ruler_augment_instructions.md
+.augment/rules/ruler_augment_instructions.md.bak
+.mcp.json
+.mcp.json.bak
+.vscode/settings.json
+.vscode/settings.json.bak
+CLAUDE.md
+CLAUDE.md.bak
+# END Ruler Generated Files
