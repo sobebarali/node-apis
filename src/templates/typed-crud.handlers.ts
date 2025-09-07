@@ -79,7 +79,7 @@ const generateTypedCreateHandlerContent = (
   _capitalizedOperation: string,
   _parsedType: ParsedTypePayload
 ): string => {
-  return `import { typePayload, typeResult, typeResultData, typeResultError } from '../types/create.${naming.file}';
+  return `import type { typePayload, typeResult, typeResultData, typeResultError } from '../types/create.${naming.file}';
 import create from '../repository/${naming.directory}.repository';
 
 export default async function create${naming.class}Handler(
@@ -125,7 +125,7 @@ const generateTypedGetHandlerContent = (
   _capitalizedOperation: string,
   _parsedType: ParsedTypePayload
 ): string => {
-  return `import { typePayload, typeResult, typeResultData, typeResultError } from '../types/get.${naming.file}';
+  return `import type { typePayload, typeResult, typeResultData, typeResultError } from '../types/get.${naming.file}';
 import { findById } from '../repository/${naming.directory}.repository';
 
 export default async function get${naming.class}Handler(
@@ -181,7 +181,7 @@ const generateGenericHandlerContent = (
   operation: string,
   _parsedType: ParsedTypePayload
 ): string => {
-  return `import { typePayload, typeResult, typeResultData, typeResultError } from '../types/${operation}.${naming.file}';
+  return `import type { typePayload, typeResult, typeResultData, typeResultError } from '../types/${operation}.${naming.file}';
 import { ${operation === 'delete' ? 'remove' : operation === 'list' ? 'findMany' : operation} } from '../repository/${naming.directory}.repository';
 
 export default async function ${operation}${naming.class}Handler(

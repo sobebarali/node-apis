@@ -6,6 +6,7 @@ import {
   generateFieldDestructuring,
   generateFieldObject,
 } from '../services/type-parser.service';
+import { getModuleNaming } from '../shared/utils/naming.utils';
 
 
 export const generateTypedRepositoryContent = ({
@@ -17,7 +18,8 @@ export const generateTypedRepositoryContent = ({
   apiType: ApiType;
   parsedTypes: Record<string, ParsedTypePayload>;
 }): string => {
-  const capitalizedModule = moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
+  const naming = getModuleNaming(moduleName);
+  const capitalizedModule = naming.class;
 
   if (apiType.type === 'crud') {
     return generateTypedCrudRepositoryContent(moduleName, capitalizedModule, parsedTypes);
@@ -41,6 +43,7 @@ const generateTypedCrudRepositoryContent = (
   capitalizedModule: string,
   parsedTypes: Record<string, ParsedTypePayload>
 ): string => {
+  const naming = getModuleNaming(moduleName);
   const createType = parsedTypes.create || { fields: [], hasId: false, hasPagination: false };
   const updateType = parsedTypes.update || { fields: [], hasId: false, hasPagination: false };
   const listType = parsedTypes.list || { fields: [], hasId: false, hasPagination: false };
@@ -53,24 +56,23 @@ const generateTypedCrudRepositoryContent = (
   const updateFieldObject = generateFieldObject(updateType.fields.filter(f => f.name !== 'id'));
   const listFieldDestructuring = generateFieldDestructuring(listType.fields);
 
-  return `import { typePayload as CreatePayload } from '../types/create.${moduleName}';
-import { typePayload as UpdatePayload } from '../types/update.${moduleName}';
-import { typePayload as ListPayload } from '../types/list.${moduleName}';
-import { NotFoundError, DatabaseError } from '../../../shared/errors';
+  return `import type { typePayload as CreatePayload } from '../types/create.${naming.file}';
+import type { typePayload as UpdatePayload } from '../types/update.${naming.file}';
+import type { typePayload as ListPayload } from '../types/list.${naming.file}';
 export default async function create({
 ${createFieldDestructuring}
 }: CreatePayload) {
   try {
-    const ${moduleName} = {
+    const ${naming.variable} = {
       id: \`mock-id-\${Date.now()}\`,
 ${createFieldObject}
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
 
-    return ${moduleName};
+    return ${naming.variable};
   } catch (error) {
-    throw new DatabaseError(\`Failed to create ${moduleName}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
+    throw new Error(\`Database error: Failed to create ${naming.variable}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
 };
 
@@ -82,12 +84,12 @@ export function findById(id: string) {
     // TODO: Replace with your database implementation
     // Example with Prisma:
     // const ${moduleName} = await db.${moduleName}.findUnique({ where: { id } });
-    // if (!${moduleName}) throw new NotFoundError('${capitalizedModule}', id);
+    // if (!${moduleName}) throw new Error(\`${capitalizedModule} not found: \${id}\`);
     // return ${moduleName};
 
     // Mock implementation - replace with actual database call
     if (id === 'not-found') {
-      throw new NotFoundError('${capitalizedModule}', id);
+      throw new Error(\`${capitalizedModule} not found: \${id}\`);
     }
 
     const ${moduleName} = {
@@ -100,8 +102,8 @@ export function findById(id: string) {
 
     return ${moduleName};
   } catch (error) {
-    if (error instanceof NotFoundError) throw error;
-    throw new DatabaseError(\`Failed to find ${moduleName}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
+    if (error.message && error.message.includes('not found')) throw error;
+    throw new Error(\`Database error: Failed to find ${moduleName}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
 };
 
@@ -153,7 +155,7 @@ ${listFieldDestructuring}
       }
     };
   } catch (error) {
-    throw new DatabaseError(\`Failed to list ${moduleName}s: \${error instanceof Error ? error.message : 'Unknown error'}\`);
+    throw new Error(\`Database error: Failed to list ${moduleName}s: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
 };
 
@@ -177,7 +179,7 @@ ${updateFieldDestructuring}
 
     // Mock implementation - replace with actual database call
     if (id === 'not-found') {
-      throw new NotFoundError('${capitalizedModule}', id);
+      throw new Error(\`${capitalizedModule} not found: \${id}\`);
     }
 
     const ${moduleName} = {
@@ -189,8 +191,8 @@ ${updateFieldObject}
 
     return ${moduleName};
   } catch (error) {
-    if (error instanceof NotFoundError) throw error;
-    throw new DatabaseError(\`Failed to update ${moduleName}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
+    if (error.message && error.message.includes('not found')) throw error;
+    throw new Error(\`Database error: Failed to update ${moduleName}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
 };
 
@@ -209,7 +211,7 @@ export function remove(id: string, permanent: boolean = false) {
 
     // Mock implementation - replace with actual database call
     if (id === 'not-found') {
-      throw new NotFoundError('${capitalizedModule}', id);
+      throw new Error(\`${capitalizedModule} not found: \${id}\`);
     }
 
     return {
@@ -218,8 +220,8 @@ export function remove(id: string, permanent: boolean = false) {
       permanent
     };
   } catch (error) {
-    if (error instanceof NotFoundError) throw error;
-    throw new DatabaseError(\`Failed to delete ${moduleName}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
+    if (error.message && error.message.includes('not found')) throw error;
+    throw new Error(\`Database error: Failed to delete ${moduleName}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
 };
 
@@ -261,7 +263,7 @@ ${fieldDestructuring}
     // Mock implementation - replace with actual database call
     return { success: true, operation: '${customName}' };
   } catch (error) {
-    throw new DatabaseError(\`Failed to ${customName} ${moduleName}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
+    throw new Error(\`Database error: Failed to ${customName} ${moduleName}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
 };`;
     })
@@ -269,8 +271,6 @@ ${fieldDestructuring}
 
   return `// Repository layer - Pure domain logic for custom operations
 // This layer is reusable and independent of API concerns
-
-import { NotFoundError, ValidationError, DatabaseError } from '../../../shared/errors';
 
 ${customMethods}
 `;
@@ -285,8 +285,6 @@ const generateTypedGenericRepositoryContent = (
 ): string => {
   return `// Repository layer - Pure domain logic
 // This layer is reusable and independent of API concerns
-
-import { NotFoundError, ValidationError, DatabaseError } from '../../../shared/errors';
 
 // TODO: Add your ${moduleName} repository methods here
 // Example:

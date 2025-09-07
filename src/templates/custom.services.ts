@@ -45,7 +45,7 @@ const generateGenericCustomServiceContent = (
   _capitalizedCustom: string,
   moduleName: string
 ): string => {
-  return `import { typePayload, typeResult } from '../types/${customName}.${moduleName}';
+  return `import type { typePayload, typeResult } from '../types/${customName}.${moduleName}';
 import * as ${moduleName}Repository from '../repository/${moduleName}.repository';
 
 export const ${customName}${capitalizedModule} = async ({

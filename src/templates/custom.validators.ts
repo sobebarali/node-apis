@@ -49,7 +49,7 @@ const generateGenericCustomValidatorContent = (
   moduleName: string
 ): string => {
   return `import { z } from 'zod';
-import { typePayload } from '../types/${customName}.${moduleName}';
+import type { typePayload } from '../types/${customName}.${moduleName}';
 
 export const payloadSchema = z.object({
   // Define validation rules for ${customName} ${moduleName}

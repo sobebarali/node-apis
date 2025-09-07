@@ -40,7 +40,7 @@ const generateTypedGenericCustomServiceContent = (
 ): string => {
   const fieldDestructuring = generateFieldDestructuring(parsedType.fields);
 
-  return `import { typePayload, typeResult } from '../types/${customName}.${moduleName}';
+  return `import type { typePayload, typeResult } from '../types/${customName}.${moduleName}';
 import * as ${moduleName}Repository from '../repository/${moduleName}.repository';
 
 export const ${customName}${capitalizedModule} = async ({

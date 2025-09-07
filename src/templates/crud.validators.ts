@@ -62,7 +62,7 @@ const generateCreateValidatorContent = (
   moduleName: string
 ): string => {
   return `import { z } from 'zod';
-import { typePayload } from '../types/create.${moduleName}';
+import type { typePayload } from '../types/create.${moduleName}';
 
 export const payloadSchema = z.object({
   // Define your ${moduleName} creation validation rules here
@@ -87,7 +87,7 @@ const generateGetValidatorContent = (
   moduleName: string
 ): string => {
   return `import { z } from 'zod';
-import { typePayload } from '../types/get.${moduleName}';
+import type { typePayload } from '../types/get.${moduleName}';
 
 export const payloadSchema = z.object({
   id: z.string().uuid(),
@@ -112,7 +112,7 @@ const generateListValidatorContent = (
   moduleName: string
 ): string => {
   return `import { z } from 'zod';
-import { typePayload } from '../types/list.${moduleName}';
+import type { typePayload } from '../types/list.${moduleName}';
 
 export const payloadSchema = z.object({
   page: z.number().int().positive().optional(),
@@ -142,7 +142,7 @@ const generateUpdateValidatorContent = (
   moduleName: string
 ): string => {
   return `import { z } from 'zod';
-import { typePayload } from '../types/update.${moduleName}';
+import type { typePayload } from '../types/update.${moduleName}';
 
 export const payloadSchema = z.object({
   id: z.string().uuid(),
@@ -168,7 +168,7 @@ const generateDeleteValidatorContent = (
   moduleName: string
 ): string => {
   return `import { z } from 'zod';
-import { typePayload } from '../types/delete.${moduleName}';
+import type { typePayload } from '../types/delete.${moduleName}';
 
 export const payloadSchema = z.object({
   id: z.string().uuid(),
@@ -195,7 +195,7 @@ const generateGenericValidatorContent = (
   moduleName: string
 ): string => {
   return `import { z } from 'zod';
-import { typePayload } from '../types/${operation}.${moduleName}';
+import type { typePayload } from '../types/${operation}.${moduleName}';
 
 export const payloadSchema = z.object({
   // Define validation rules for ${operation} ${moduleName}

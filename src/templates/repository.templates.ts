@@ -33,10 +33,9 @@ const generateCrudRepositoryContent = (naming: ModuleNaming): string => {
   return `// Repository layer - Pure domain logic, returns raw data, throws exceptions
 // This layer is reusable and independent of API concerns
 
-import { typePayload as CreatePayload } from '../types/create.${naming.file}';
-import { typePayload as UpdatePayload } from '../types/update.${naming.file}';
-import { typePayload as ListPayload } from '../types/list.${naming.file}';
-import { NotFoundError, DatabaseError } from '../../../shared/errors';
+import type { typePayload as CreatePayload } from '../types/create.${naming.file}';
+import type { typePayload as UpdatePayload } from '../types/update.${naming.file}';
+import type { typePayload as ListPayload } from '../types/list.${naming.file}';
 
 /**
  * Creates a new ${naming.variable}
@@ -57,7 +56,7 @@ export const create = async (payload: CreatePayload) => {
 
     return ${naming.variable};
   } catch (error) {
-    throw new DatabaseError(\`Failed to create ${naming.variable}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
+    throw new Error(\`Database error: Failed to create ${naming.variable}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
 };
 
@@ -69,12 +68,12 @@ export const findById = async (id: string) => {
     // TODO: Replace with your database implementation
     // Example with Prisma:
     // const ${naming.variable} = await db.${naming.variable}.findUnique({ where: { id } });
-    // if (!${naming.variable}) throw new NotFoundError('${naming.class}', id);
+    // if (!${naming.variable}) throw new Error(\`${naming.class} not found: \${id}\`);
     // return ${naming.variable};
 
     // Mock implementation - replace with actual database call
     if (id === 'not-found') {
-      throw new NotFoundError('${naming.class}', id);
+      throw new Error(\`${naming.class} not found: \${id}\`);
     }
 
     const ${naming.variable} = {
@@ -86,8 +85,8 @@ export const findById = async (id: string) => {
 
     return ${naming.variable};
   } catch (error) {
-    if (error instanceof NotFoundError) throw error;
-    throw new DatabaseError(\`Failed to find ${naming.variable}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
+    if (error.message && error.message.includes('not found')) throw error;
+    throw new Error(\`Database error: Failed to find ${naming.variable}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
 };
 
@@ -121,7 +120,7 @@ export const findMany = async (params: ListPayload) => {
       limit: params.limit || 10,
     };
   } catch (error) {
-    throw new DatabaseError(\`Failed to list ${naming.variable}s: \${error instanceof Error ? error.message : 'Unknown error'}\`);
+    throw new Error(\`Database error: Failed to list ${naming.variable}s: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
 };
 
@@ -140,7 +139,7 @@ export const update = async (id: string, payload: UpdatePayload) => {
 
     // Mock implementation - replace with actual database call
     if (id === 'not-found') {
-      throw new NotFoundError('${naming.class}', id);
+      throw new Error(\`${naming.class} not found: \${id}\`);
     }
 
     const ${naming.variable} = {
@@ -151,8 +150,8 @@ export const update = async (id: string, payload: UpdatePayload) => {
 
     return ${naming.variable};
   } catch (error) {
-    if (error instanceof NotFoundError) throw error;
-    throw new DatabaseError(\`Failed to update ${naming.variable}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
+    if (error.message && error.message.includes('not found')) throw error;
+    throw new Error(\`Database error: Failed to update ${naming.variable}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
 };
 
@@ -169,14 +168,14 @@ export const remove = async (id: string) => {
 
     // Mock implementation - replace with actual database call
     if (id === 'not-found') {
-      throw new NotFoundError('${naming.class}', id);
+      throw new Error(\`${naming.class} not found: \${id}\`);
     }
 
     // Return success (void function)
     return;
   } catch (error) {
-    if (error instanceof NotFoundError) throw error;
-    throw new DatabaseError(\`Failed to delete ${naming.variable}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
+    if (error.message && error.message.includes('not found')) throw error;
+    throw new Error(\`Database error: Failed to delete ${naming.variable}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
 };
 
@@ -215,7 +214,7 @@ export const ${customName} = async (payload: any) => {
       data: payload,
     };
   } catch (error) {
-    throw new DatabaseError(\`Failed to ${customName} ${naming.variable}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
+    throw new Error(\`Database error: Failed to ${customName} ${naming.variable}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
 };`
     )
@@ -224,7 +223,6 @@ export const ${customName} = async (payload: any) => {
   return `// Repository layer - Custom operations for ${naming.variable}
 // This layer is reusable and independent of API concerns
 
-import { DatabaseError } from '../../../shared/errors';
 ${customMethods}
 
 export default {
@@ -242,8 +240,6 @@ const generateGenericRepositoryContent = (
   return `// Repository layer - Pure domain logic
 // This layer is reusable and independent of API concerns
 
-import { DatabaseError } from '../../../shared/errors';
-
 /**
  * Generic repository operations for ${naming.variable}
  */
@@ -260,7 +256,7 @@ export const create = async (payload: any) => {
       updatedAt: new Date().toISOString(),
     };
   } catch (error) {
-    throw new DatabaseError(\`Failed to create ${naming.variable}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
+    throw new Error(\`Database error: Failed to create ${naming.variable}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
 };
 

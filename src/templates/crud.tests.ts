@@ -84,7 +84,7 @@ const generateValidationTestContent = (
 ): string => {
   return `import { describe, it, expect } from 'vitest';
 import { validatePayload } from '../../../src/apis/${moduleName}/validators/${operation}.${moduleName}';
-import { typePayload, typeResult, typeResultData, typeResultError } from '../../../src/apis/${moduleName}/types/${operation}.${moduleName}';
+import type { typePayload, typeResult, typeResultData, typeResultError } from '../../../src/apis/${moduleName}/types/${operation}.${moduleName}';
 
 describe('${capitalizedOperation} ${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)} - Validation Tests', () => {
   describe('Success Cases', () => {
@@ -130,7 +130,7 @@ const generateSuccessTestContent = (
   return `import { describe, it, expect } from 'vitest';
 import request from 'supertest';
 import app from '../../../src/app';
-import { typePayload, typeResult, typeResultData, typeResultError } from '../../../src/apis/${moduleName}/types/${operation}.${moduleName}';
+import type { typePayload, typeResult, typeResultData, typeResultError } from '../../../src/apis/${moduleName}/types/${operation}.${moduleName}';
 
 describe('${capitalizedOperation} ${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)} - Success Tests', () => {
   it('should ${operation} ${moduleName} successfully', async () => {
@@ -163,7 +163,7 @@ const generateErrorsTestContent = (
   return `import { describe, it, expect } from 'vitest';
 import request from 'supertest';
 import app from '../../../src/app';
-import { typePayload, typeResult, typeResultData, typeResultError } from '../../../src/apis/${moduleName}/types/${operation}.${moduleName}';
+import type { typePayload, typeResult, typeResultData, typeResultError } from '../../../src/apis/${moduleName}/types/${operation}.${moduleName}';
 
 describe('${capitalizedOperation} ${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)} - Error Tests', () => {
   ${getIntegrationErrorTests(operation, moduleName)}
