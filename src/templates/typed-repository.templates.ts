@@ -44,6 +44,7 @@ const generateTypedCrudRepositoryContent = (
   parsedTypes: Record<string, ParsedTypePayload>
 ): string => {
   const naming = getModuleNaming(moduleName);
+  const variableName = naming.variable;
   const createType = parsedTypes.create || { fields: [], hasId: false, hasPagination: false };
   const updateType = parsedTypes.update || { fields: [], hasId: false, hasPagination: false };
   const listType = parsedTypes.list || { fields: [], hasId: false, hasPagination: false };
@@ -63,16 +64,16 @@ export default async function create({
 ${createFieldDestructuring}
 }: CreatePayload) {
   try {
-    const ${naming.variable} = {
+    const ${variableName} = {
       id: \`mock-id-\${Date.now()}\`,
 ${createFieldObject}
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
 
-    return ${naming.variable};
+    return ${variableName};
   } catch (error) {
-    throw new Error(\`Database error: Failed to create ${naming.variable}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
+    throw new Error(\`Database error: Failed to create ${variableName}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
 };
 
@@ -83,26 +84,26 @@ export function findById(id: string) {
   try {
     // TODO: Replace with your database implementation
     // Example with Prisma:
-    // const ${moduleName} = await db.${moduleName}.findUnique({ where: { id } });
-    // if (!${moduleName}) throw new Error(\`${capitalizedModule} not found: \${id}\`);
-    // return ${moduleName};
+    // const ${variableName} = await db.${variableName}.findUnique({ where: { id } });
+    // if (!${variableName}) throw new Error(\`${capitalizedModule} not found: \${id}\`);
+    // return ${variableName};
 
     // Mock implementation - replace with actual database call
     if (id === 'not-found') {
       throw new Error(\`${capitalizedModule} not found: \${id}\`);
     }
 
-    const ${moduleName} = {
+    const ${variableName} = {
       id,
-      // TODO: Add your ${moduleName} fields here based on your database schema
+      // TODO: Add your ${variableName} fields here based on your database schema
       // Mock data - replace with actual database result
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
 
-    return ${moduleName};
+    return ${variableName};
   } catch (error) {
-    if (error.message && error.message.includes('not found')) throw error;
+    if (error instanceof Error && error.message.includes('not found')) throw error;
     throw new Error(\`Database error: Failed to find ${moduleName}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
 };
@@ -168,30 +169,30 @@ ${updateFieldDestructuring}
   try {
     // TODO: Replace with your database implementation
     // Example with Prisma:
-    // const ${moduleName} = await db.${moduleName}.update({
+    // const ${variableName} = await db.${variableName}.update({
     //   where: { id },
     //   data: { ${updateType.fields
       .filter(f => f.name !== 'id')
       .map(f => f.name)
       .join(', ')}, updated_at: new Date().toISOString() }
     // });
-    // return ${moduleName};
+    // return ${variableName};
 
     // Mock implementation - replace with actual database call
     if (id === 'not-found') {
       throw new Error(\`${capitalizedModule} not found: \${id}\`);
     }
 
-    const ${moduleName} = {
+    const ${variableName} = {
       id,
 ${updateFieldObject}
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
 
-    return ${moduleName};
+    return ${variableName};
   } catch (error) {
-    if (error.message && error.message.includes('not found')) throw error;
+    if (error instanceof Error && error.message.includes('not found')) throw error;
     throw new Error(\`Database error: Failed to update ${moduleName}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
 };
@@ -220,7 +221,7 @@ export function remove(id: string, permanent: boolean = false) {
       permanent
     };
   } catch (error) {
-    if (error.message && error.message.includes('not found')) throw error;
+    if (error instanceof Error && error.message.includes('not found')) throw error;
     throw new Error(\`Database error: Failed to delete ${moduleName}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
 };
@@ -238,6 +239,8 @@ const generateTypedCustomRepositoryContent = (
   customNames: string[],
   parsedTypes: Record<string, ParsedTypePayload>
 ): string => {
+  const naming = getModuleNaming(moduleName);
+  const variableName = naming.variable;
   const customMethods = customNames
     .map(customName => {
       const parsedType = parsedTypes[customName] || {
@@ -256,7 +259,7 @@ ${fieldDestructuring}
 }: any): Promise<any> => {
   try {
     // TODO: Implement your ${customName} logic here
-    // Example: return await db.${moduleName}.${customName}({
+    // Example: return await db.${variableName}.${customName}({
     //   ${parsedType.fields.map(f => f.name).join(', ')}
     // });
 
@@ -283,10 +286,12 @@ const generateTypedGenericRepositoryContent = (
   moduleName: string,
   capitalizedModule: string
 ): string => {
+  const naming = getModuleNaming(moduleName);
+  const variableName = naming.variable;
   return `// Repository layer - Pure domain logic
 // This layer is reusable and independent of API concerns
 
-// TODO: Add your ${moduleName} repository methods here
+// TODO: Add your ${variableName} repository methods here
 // Example:
 // export const create = async ({
 //   // Add your specific fields here

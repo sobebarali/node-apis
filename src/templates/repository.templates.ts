@@ -85,7 +85,7 @@ export const findById = async (id: string) => {
 
     return ${naming.variable};
   } catch (error) {
-    if (error.message && error.message.includes('not found')) throw error;
+    if (error instanceof Error && error.message.includes('not found')) throw error;
     throw new Error(\`Database error: Failed to find ${naming.variable}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
 };
@@ -150,7 +150,7 @@ export const update = async (id: string, payload: UpdatePayload) => {
 
     return ${naming.variable};
   } catch (error) {
-    if (error.message && error.message.includes('not found')) throw error;
+    if (error instanceof Error && error.message.includes('not found')) throw error;
     throw new Error(\`Database error: Failed to update ${naming.variable}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
 };
@@ -174,7 +174,7 @@ export const remove = async (id: string) => {
     // Return success (void function)
     return;
   } catch (error) {
-    if (error.message && error.message.includes('not found')) throw error;
+    if (error instanceof Error && error.message.includes('not found')) throw error;
     throw new Error(\`Database error: Failed to delete ${naming.variable}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
 };
