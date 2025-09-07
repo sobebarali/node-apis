@@ -5,61 +5,85 @@
 /**
  * Gets custom test file names for a module
  */
-export const getCustomTestFileNames = ({ 
-  customNames, 
-  moduleName 
-}: { 
-  customNames: string[]; 
-  moduleName: string; 
+export const getCustomTestFileNames = ({
+  customNames,
+}: {
+  customNames: string[];
 }): string[] => {
   const testTypes = ['validation.test.ts', 'success.test.ts', 'errors.test.ts'];
   const testFiles: string[] = [];
-  
+
   customNames.forEach(customName => {
     testTypes.forEach(testType => {
-      testFiles.push(`${customName}-${moduleName}/${testType}`);
+      testFiles.push(`${customName}/${testType}`);
     });
   });
-  
+
   // Add shared helpers
   testFiles.push('shared/helpers.ts');
-  
+
   return testFiles;
 };
 
 /**
  * Generates test file content for custom operations
  */
-export const generateCustomTestContent = ({ 
-  customName, 
+export const generateCustomTestContent = ({
+  customName,
   moduleName,
-  testType 
-}: { 
-  customName: string; 
+  testType,
+}: {
+  customName: string;
   moduleName: string;
   testType: 'validation' | 'success' | 'errors' | 'helpers';
 }): string => {
   const capitalizedModule = moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
   const capitalizedCustom = customName.charAt(0).toUpperCase() + customName.slice(1);
-  
+
   switch (testType) {
     case 'validation':
-      return generateCustomValidationTestContent(customName, capitalizedModule, capitalizedCustom, moduleName);
+      return generateCustomValidationTestContent(
+        customName,
+        capitalizedModule,
+        capitalizedCustom,
+        moduleName
+      );
     case 'success':
-      return generateCustomSuccessTestContent(customName, capitalizedModule, capitalizedCustom, moduleName);
+      return generateCustomSuccessTestContent(
+        customName,
+        capitalizedModule,
+        capitalizedCustom,
+        moduleName
+      );
     case 'errors':
-      return generateCustomErrorsTestContent(customName, capitalizedModule, capitalizedCustom, moduleName);
+      return generateCustomErrorsTestContent(
+        customName,
+        capitalizedModule,
+        capitalizedCustom,
+        moduleName
+      );
     case 'helpers':
       return generateCustomHelpersContent(capitalizedModule, moduleName);
     default:
-      return generateGenericCustomTestContent(customName, capitalizedModule, capitalizedCustom, moduleName, testType);
+      return generateGenericCustomTestContent(
+        customName,
+        capitalizedModule,
+        capitalizedCustom,
+        moduleName,
+        testType
+      );
   }
 };
 
 /**
  * Generates validation test content for custom operations
  */
-const generateCustomValidationTestContent = (customName: string, _capitalizedModule: string, capitalizedCustom: string, moduleName: string): string => {
+const generateCustomValidationTestContent = (
+  customName: string,
+  _capitalizedModule: string,
+  capitalizedCustom: string,
+  moduleName: string
+): string => {
   return `import { describe, it, expect } from 'vitest';
 import { validatePayload } from '../../../src/apis/${moduleName}/validators/${customName}.${moduleName}';
 import { typePayload, typeResult, typeResultData, typeResultError } from '../../../src/apis/${moduleName}/types/${customName}.${moduleName}';
@@ -123,7 +147,12 @@ describe('${capitalizedCustom} ${moduleName.charAt(0).toUpperCase() + moduleName
 /**
  * Generates success test content for custom operations
  */
-const generateCustomSuccessTestContent = (customName: string, _capitalizedModule: string, capitalizedCustom: string, moduleName: string): string => {
+const generateCustomSuccessTestContent = (
+  customName: string,
+  _capitalizedModule: string,
+  capitalizedCustom: string,
+  moduleName: string
+): string => {
   return `import { describe, it, expect } from 'vitest';
 import request from 'supertest';
 import app from '../../../src/app';
@@ -180,7 +209,12 @@ describe('${capitalizedCustom} ${moduleName.charAt(0).toUpperCase() + moduleName
 /**
  * Generates errors test content for custom operations
  */
-const generateCustomErrorsTestContent = (customName: string, _capitalizedModule: string, capitalizedCustom: string, moduleName: string): string => {
+const generateCustomErrorsTestContent = (
+  customName: string,
+  _capitalizedModule: string,
+  capitalizedCustom: string,
+  moduleName: string
+): string => {
   return `import { describe, it, expect } from 'vitest';
 import request from 'supertest';
 import app from '../../../src/app';
@@ -308,6 +342,12 @@ export const mockExternalService = () => {
 `;
 };
 
-const generateGenericCustomTestContent = (customName: string, _capitalizedModule: string, _capitalizedCustom: string, moduleName: string, testType: string): string => {
+const generateGenericCustomTestContent = (
+  customName: string,
+  _capitalizedModule: string,
+  _capitalizedCustom: string,
+  moduleName: string,
+  testType: string
+): string => {
   return `// Generic test content for ${customName} ${moduleName} - ${testType}`;
 };

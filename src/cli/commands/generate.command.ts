@@ -6,10 +6,17 @@ import { CommandOptions } from '../../types/cli.types';
 import { ApiType } from '../../types/common.types';
 import { validateTargetLocation } from '../../validators/location.validator';
 import { generateModuleStructure } from '../../services/module-generator.service';
-import { generateTypeFilesOnly, generateCodeWithParsedTypes } from '../../services/two-phase-generator.service';
+import {
+  generateTypeFilesOnly,
+  generateCodeWithParsedTypes,
+} from '../../services/two-phase-generator.service';
 import { generateTestFiles } from '../../services/file-generator.service';
 import { generateCompleteTestSetup } from '../../services/test-config-generator.service';
-import { promptTypeReview, displayTypeInstructions, displayTypeReviewComplete } from '../prompts/type-review.prompts';
+import {
+  promptTypeReview,
+  displayTypeInstructions,
+  displayTypeReviewComplete,
+} from '../prompts/type-review.prompts';
 import { getModulePath } from '../../filesystem/path.utils';
 import { getExistingModules, detectExistingModule } from '../../services/module-detection.service';
 import {
@@ -20,7 +27,7 @@ import {
   displayGenerationResult,
   displayError,
   displayCancellation,
-  displayProgress
+  displayProgress,
 } from '../output/formatter';
 import {
   promptModuleChoice,
@@ -28,7 +35,7 @@ import {
   promptModuleName,
   promptApiType,
   promptCustomOperations,
-  promptConfirmation
+  promptConfirmation,
 } from '../prompts/interactive.prompts';
 
 /**
@@ -59,10 +66,10 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
         displayCancellation();
         process.exit(0);
       }
-      
+
       moduleName = interactiveResult.moduleName;
       appendMode = interactiveResult.appendMode;
-      
+
       if (!apiType) {
         apiType = interactiveResult.apiType;
       }
@@ -80,7 +87,7 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
       targetPath: `src/apis/${moduleName.toLowerCase()}`,
       forceOverwrite: options.force || false,
       apiType: apiType?.type || undefined,
-      operationNames: getOperationNames(apiType)
+      operationNames: getOperationNames(apiType),
     });
 
     // Confirm generation in interactive mode
@@ -99,9 +106,9 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
         apiType,
         options: {
           force: options.force || false,
-          appendMode
+          appendMode,
         },
-        interactive: options.interactive !== false
+        interactive: options.interactive !== false,
       });
     } else {
       // Fallback to old approach for directory-only generation
@@ -111,8 +118,8 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
         moduleName,
         options: {
           force: options.force || false,
-          appendMode
-        }
+          appendMode,
+        },
       });
 
       displayGenerationResult(result);
@@ -121,7 +128,6 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
         process.exit(1);
       }
     }
-
   } catch (error: any) {
     displayError(`Unexpected error: ${error.message}`);
     if (process.env.DEBUG) {
@@ -138,7 +144,7 @@ const handleTwoPhaseGeneration = async ({
   moduleName,
   apiType,
   options,
-  interactive
+  interactive,
 }: {
   moduleName: string;
   apiType: ApiType;
@@ -155,7 +161,7 @@ const handleTwoPhaseGeneration = async ({
 
     const structureResult = await generateModuleStructure({
       moduleName,
-      options: { force, appendMode }
+      options: { force, appendMode },
     });
 
     if (!structureResult.success) {
@@ -167,7 +173,7 @@ const handleTwoPhaseGeneration = async ({
       moduleName,
       modulePath,
       apiType,
-      appendMode
+      appendMode,
     });
 
     console.log('✅ Type files generated successfully!\n');
@@ -180,7 +186,9 @@ const handleTwoPhaseGeneration = async ({
       const reviewResult = await promptTypeReview(moduleName, `${modulePath}/types`);
 
       if (!reviewResult.success || !reviewResult.data) {
-        console.log('\n❌ Generation cancelled. You can run the command again after reviewing the type files.');
+        console.log(
+          '\n❌ Generation cancelled. You can run the command again after reviewing the type files.'
+        );
         process.exit(0);
       }
 
@@ -194,7 +202,7 @@ const handleTwoPhaseGeneration = async ({
       moduleName,
       modulePath,
       apiType,
-      appendMode
+      appendMode,
     });
 
     // Phase 3: Generate test files
@@ -205,7 +213,7 @@ const handleTwoPhaseGeneration = async ({
       moduleName,
       testPath,
       apiType,
-      appendMode
+      appendMode,
     });
 
     // Generate test configuration (only once per project)
@@ -213,7 +221,7 @@ const handleTwoPhaseGeneration = async ({
     try {
       const testSetup = await generateCompleteTestSetup({
         projectRoot: '.',
-        appendMode: true // Don't overwrite existing config
+        appendMode: true, // Don't overwrite existing config
       });
       testConfigFiles = [...testSetup.configFiles, ...testSetup.additionalFiles];
 
@@ -231,9 +239,8 @@ const handleTwoPhaseGeneration = async ({
       moduleName,
       modulePath,
       createdDirectories: structureResult.createdDirectories || [],
-      generatedFiles: allFiles
+      generatedFiles: allFiles,
     });
-
   } catch (error: any) {
     displayError(`Generation failed: ${error.message}`);
     process.exit(1);
@@ -259,7 +266,9 @@ const parseCommandLineApiType = (options: CommandOptions): ApiType | undefined =
 /**
  * Handles interactive flow for module and API type selection
  */
-const handleInteractiveFlow = async (initialModuleName?: string): Promise<{
+const handleInteractiveFlow = async (
+  initialModuleName?: string
+): Promise<{
   success: boolean;
   moduleName?: string;
   apiType?: ApiType;
@@ -271,7 +280,7 @@ const handleInteractiveFlow = async (initialModuleName?: string): Promise<{
 
   // Check for existing modules and offer smart choices
   const existingModules = await getExistingModules();
-  
+
   if (!moduleName && existingModules.length > 0) {
     displayExistingModules(existingModules);
 
@@ -285,10 +294,10 @@ const handleInteractiveFlow = async (initialModuleName?: string): Promise<{
       if (!existingModuleResult.success) {
         return { success: false, appendMode: false };
       }
-      
+
       moduleName = existingModuleResult.data;
       appendMode = true;
-      
+
       // Show existing files
       const existingModule = await detectExistingModule({ moduleName: moduleName! });
       if (existingModule && existingModule.existingFiles.length > 0) {
@@ -328,7 +337,7 @@ const handleInteractiveFlow = async (initialModuleName?: string): Promise<{
     success: true,
     moduleName: moduleName!,
     apiType,
-    appendMode
+    appendMode,
   };
 };
 
@@ -337,12 +346,12 @@ const handleInteractiveFlow = async (initialModuleName?: string): Promise<{
  */
 const getOperationNames = (apiType?: ApiType): string[] | undefined => {
   if (!apiType) return undefined;
-  
+
   if (apiType.type === 'crud') {
     return ['create', 'get', 'list', 'delete', 'update'];
   } else if (apiType.type === 'custom' && apiType.customNames) {
     return apiType.customNames;
   }
-  
+
   return undefined;
 };

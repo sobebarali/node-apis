@@ -11,23 +11,23 @@ export const getCrudControllerFileNames = ({ moduleName }: { moduleName: string 
     `get.${moduleName}.ts`,
     `list.${moduleName}.ts`,
     `delete.${moduleName}.ts`,
-    `update.${moduleName}.ts`
+    `update.${moduleName}.ts`,
   ];
 };
 
 /**
  * Generates TypeScript controller file content for CRUD operations
  */
-export const generateCrudControllerContent = ({ 
-  operation, 
-  moduleName 
-}: { 
-  operation: string; 
-  moduleName: string; 
+export const generateCrudControllerContent = ({
+  operation,
+  moduleName,
+}: {
+  operation: string;
+  moduleName: string;
 }): string => {
   const capitalizedModule = moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
   const capitalizedOperation = operation.charAt(0).toUpperCase() + operation.slice(1);
-  
+
   // Generate operation-specific controller content
   switch (operation) {
     case 'create':
@@ -41,14 +41,23 @@ export const generateCrudControllerContent = ({
     case 'delete':
       return generateDeleteControllerContent(capitalizedModule, capitalizedOperation, moduleName);
     default:
-      return generateGenericControllerContent(capitalizedModule, capitalizedOperation, operation, moduleName);
+      return generateGenericControllerContent(
+        capitalizedModule,
+        capitalizedOperation,
+        operation,
+        moduleName
+      );
   }
 };
 
 /**
  * Generates CREATE controller content
  */
-const generateCreateControllerContent = (_capitalizedModule: string, _capitalizedOperation: string, moduleName: string): string => {
+const generateCreateControllerContent = (
+  _capitalizedModule: string,
+  _capitalizedOperation: string,
+  moduleName: string
+): string => {
   return `import { Request, Response } from 'express';
 import { validatePayload } from '../validators/create.${moduleName}';
 import create${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Handler from '../handlers/create.${moduleName}';
@@ -86,7 +95,11 @@ export default async function create${moduleName.charAt(0).toUpperCase() + modul
 /**
  * Generates GET controller content
  */
-const generateGetControllerContent = (_capitalizedModule: string, _capitalizedOperation: string, moduleName: string): string => {
+const generateGetControllerContent = (
+  _capitalizedModule: string,
+  _capitalizedOperation: string,
+  moduleName: string
+): string => {
   return `import { Request, Response } from 'express';
 import { validatePayload } from '../validators/get.${moduleName}';
 import get${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Handler from '../handlers/get.${moduleName}';
@@ -124,7 +137,11 @@ export default async function get${moduleName.charAt(0).toUpperCase() + moduleNa
 /**
  * Generates LIST controller content
  */
-const generateListControllerContent = (_capitalizedModule: string, _capitalizedOperation: string, moduleName: string): string => {
+const generateListControllerContent = (
+  _capitalizedModule: string,
+  _capitalizedOperation: string,
+  moduleName: string
+): string => {
   return `import { Request, Response } from 'express';
 import { validatePayload } from '../validators/list.${moduleName}';
 import list${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}sHandler from '../handlers/list.${moduleName}';
@@ -162,7 +179,11 @@ export default async function list${moduleName.charAt(0).toUpperCase() + moduleN
 /**
  * Generates UPDATE controller content
  */
-const generateUpdateControllerContent = (_capitalizedModule: string, _capitalizedOperation: string, moduleName: string): string => {
+const generateUpdateControllerContent = (
+  _capitalizedModule: string,
+  _capitalizedOperation: string,
+  moduleName: string
+): string => {
   return `import { Request, Response } from 'express';
 import { validatePayload } from '../validators/update.${moduleName}';
 import update${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Handler from '../handlers/update.${moduleName}';
@@ -200,7 +221,11 @@ export default async function update${moduleName.charAt(0).toUpperCase() + modul
 /**
  * Generates DELETE controller content
  */
-const generateDeleteControllerContent = (_capitalizedModule: string, _capitalizedOperation: string, moduleName: string): string => {
+const generateDeleteControllerContent = (
+  _capitalizedModule: string,
+  _capitalizedOperation: string,
+  moduleName: string
+): string => {
   return `import { Request, Response } from 'express';
 import { validatePayload } from '../validators/delete.${moduleName}';
 import delete${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Handler from '../handlers/delete.${moduleName}';
@@ -238,7 +263,12 @@ export default async function delete${moduleName.charAt(0).toUpperCase() + modul
 /**
  * Generates generic controller content (fallback)
  */
-const generateGenericControllerContent = (_capitalizedModule: string, _capitalizedOperation: string, operation: string, moduleName: string): string => {
+const generateGenericControllerContent = (
+  _capitalizedModule: string,
+  _capitalizedOperation: string,
+  operation: string,
+  moduleName: string
+): string => {
   return `import { Request, Response } from 'express';
 import { typeResult } from '../types/${operation}.${moduleName}';
 import { validatePayload } from '../validators/${operation}.${moduleName}';

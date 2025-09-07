@@ -27,7 +27,7 @@ export interface ParsedTypePayload {
 export const parseTypePayload = async (filePath: string): Promise<ParsedTypePayload> => {
   try {
     const content = await fs.promises.readFile(filePath, 'utf-8');
-    
+
     // Find the typePayload interface with proper brace matching
     const interfaceStart = content.indexOf('export type typePayload = {');
     if (interfaceStart === -1) {
@@ -53,7 +53,7 @@ export const parseTypePayload = async (filePath: string): Promise<ParsedTypePayl
     const fields: ParsedField[] = [];
     let hasId = false;
     let hasPagination = false;
-    
+
     // Parse fields with support for nested objects
     const parsedFields = parseInterfaceFields(interfaceBody);
 
@@ -66,9 +66,8 @@ export const parseTypePayload = async (filePath: string): Promise<ParsedTypePayl
         hasPagination = true;
       }
     }
-    
+
     return { fields, hasId, hasPagination };
-    
   } catch (error) {
     console.error(`Error parsing type file ${filePath}:`, error);
     return { fields: [], hasId: false, hasPagination: false };
@@ -78,13 +77,15 @@ export const parseTypePayload = async (filePath: string): Promise<ParsedTypePayl
 /**
  * Parses all typePayload files in a module's types directory
  */
-export const parseModuleTypes = async (modulePath: string): Promise<Record<string, ParsedTypePayload>> => {
+export const parseModuleTypes = async (
+  modulePath: string
+): Promise<Record<string, ParsedTypePayload>> => {
   const typesDir = path.join(modulePath, 'types');
   const result: Record<string, ParsedTypePayload> = {};
-  
+
   try {
     const files = await fs.promises.readdir(typesDir);
-    
+
     for (const file of files) {
       if (file.endsWith('.ts')) {
         const filePath = path.join(typesDir, file);
@@ -92,11 +93,10 @@ export const parseModuleTypes = async (modulePath: string): Promise<Record<strin
         result[operationName] = await parseTypePayload(filePath);
       }
     }
-    
   } catch (error) {
     console.error(`Error reading types directory ${typesDir}:`, error);
   }
-  
+
   return result;
 };
 
@@ -144,7 +144,8 @@ const parseInterfaceFields = (interfaceBody: string): ParsedField[] => {
 
       // Check if field is optional using different syntaxes
       const isOptionalMarker = !!optionalMarker;
-      const isUnionWithUndefined = cleanType.includes('| undefined') || cleanType.includes('|undefined');
+      const isUnionWithUndefined =
+        cleanType.includes('| undefined') || cleanType.includes('|undefined');
       const hasDefaultValue = !!defaultValue;
       const isOptional = isOptionalMarker || isUnionWithUndefined || hasDefaultValue;
 
@@ -157,7 +158,7 @@ const parseInterfaceFields = (interfaceBody: string): ParsedField[] => {
         name,
         type: cleanType,
         optional: isOptional,
-        ...(defaultValue && { defaultValue })
+        ...(defaultValue && { defaultValue }),
       });
     }
 
@@ -170,7 +171,10 @@ const parseInterfaceFields = (interfaceBody: string): ParsedField[] => {
 /**
  * Parses a nested object field starting from a specific line
  */
-const parseNestedObjectField = (lines: string[], startIndex: number): { field: ParsedField; nextIndex: number } | null => {
+const parseNestedObjectField = (
+  lines: string[],
+  startIndex: number
+): { field: ParsedField; nextIndex: number } | null => {
   const startLine = lines[startIndex].trim();
   const fieldMatch = startLine.match(/^(\w+)(\?)?:\s*\{/);
 
@@ -206,13 +210,11 @@ const parseNestedObjectField = (lines: string[], startIndex: number): { field: P
       type: 'object',
       optional: isOptional,
       isNested: true,
-      nestedFields
+      nestedFields,
     },
-    nextIndex: endIndex
+    nextIndex: endIndex,
   };
 };
-
-
 
 /**
  * Generates field destructuring pattern for function parameters
@@ -242,7 +244,10 @@ export const generateFieldDestructuring = (fields: ParsedField[]): string => {
 /**
  * Generates field object for passing to repository functions
  */
-export const generateFieldObject = (fields: ParsedField[], excludeFields: string[] = []): string => {
+export const generateFieldObject = (
+  fields: ParsedField[],
+  excludeFields: string[] = []
+): string => {
   const filteredFields = fields.filter(field => !excludeFields.includes(field.name));
 
   if (filteredFields.length === 0) {

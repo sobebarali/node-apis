@@ -11,7 +11,7 @@ export const getCrudFileNames = ({ moduleName }: { moduleName: string }): string
     `get.${moduleName}.ts`,
     `list.${moduleName}.ts`,
     `delete.${moduleName}.ts`,
-    `update.${moduleName}.ts`
+    `update.${moduleName}.ts`,
   ];
 };
 
@@ -20,7 +20,7 @@ export const getCrudFileNames = ({ moduleName }: { moduleName: string }): string
  */
 export const generateCrudFileContent = ({
   operation,
-  moduleName
+  moduleName,
 }: {
   operation: string;
   moduleName: string;
@@ -48,7 +48,11 @@ export const generateCrudFileContent = ({
 /**
  * Generates CREATE operation content
  */
-const generateCreateContent = (_capitalizedModule: string, _capitalizedOperation: string, moduleName: string): string => {
+const generateCreateContent = (
+  _capitalizedModule: string,
+  _capitalizedOperation: string,
+  moduleName: string
+): string => {
   return `export type typePayload = {
   // Add your ${moduleName} creation fields here
 };
@@ -77,7 +81,11 @@ export type typeResult = {
 /**
  * Generates GET operation content
  */
-const generateGetContent = (capitalizedModule: string, _capitalizedOperation: string, moduleName: string): string => {
+const generateGetContent = (
+  capitalizedModule: string,
+  _capitalizedOperation: string,
+  moduleName: string
+): string => {
   return `export type typePayload = {
   id: string; // ${capitalizedModule} ID to retrieve
 };
@@ -105,7 +113,11 @@ export type typeResult = {
 /**
  * Generates LIST operation content
  */
-const generateListContent = (_capitalizedModule: string, _capitalizedOperation: string, moduleName: string): string => {
+const generateListContent = (
+  _capitalizedModule: string,
+  _capitalizedOperation: string,
+  moduleName: string
+): string => {
   return `export type typePayload = {
   page?: number;
   limit?: number;
@@ -149,7 +161,11 @@ export type typeResult = {
 /**
  * Generates UPDATE operation content
  */
-const generateUpdateContent = (_capitalizedModule: string, _capitalizedOperation: string, moduleName: string): string => {
+const generateUpdateContent = (
+  _capitalizedModule: string,
+  _capitalizedOperation: string,
+  moduleName: string
+): string => {
   return `export type typePayload = {
   id: string;
   // Fields that can be updated
@@ -179,7 +195,11 @@ export type typeResult = {
 /**
  * Generates DELETE operation content
  */
-const generateDeleteContent = (_capitalizedModule: string, _capitalizedOperation: string, _moduleName: string): string => {
+const generateDeleteContent = (
+  _capitalizedModule: string,
+  _capitalizedOperation: string,
+  _moduleName: string
+): string => {
   return `export type typePayload = {
   id: string;
   permanent?: boolean;
@@ -207,7 +227,12 @@ export type typeResult = {
 /**
  * Generates generic operation content (fallback)
  */
-const generateGenericContent = (_capitalizedModule: string, _capitalizedOperation: string, operation: string, moduleName: string): string => {
+const generateGenericContent = (
+  _capitalizedModule: string,
+  _capitalizedOperation: string,
+  operation: string,
+  moduleName: string
+): string => {
   return `export type typePayload = {
   // Define payload for ${operation} ${moduleName}
 };

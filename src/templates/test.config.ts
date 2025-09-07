@@ -141,16 +141,17 @@ export const testUtils = {
  */
 export const generateTestScripts = (): Record<string, string> => {
   return {
-    "test": "vitest",
-    "test:run": "vitest run",
-    "test:watch": "vitest --watch",
-    "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage",
-    "test:unit": "vitest tests/**/success.test.ts tests/**/validation.test.ts tests/**/errors.test.ts",
-    "test:integration": "vitest tests/**/integration.test.ts",
-    "test:module": "vitest tests/{module-name}/**/*.test.ts",
-    "test:operation": "vitest tests/{module-name}/{operation-name}/**/*.test.ts",
-    "test:ci": "vitest run --coverage --reporter=junit --outputFile=coverage/junit.xml"
+    test: 'vitest',
+    'test:run': 'vitest run',
+    'test:watch': 'vitest --watch',
+    'test:ui': 'vitest --ui',
+    'test:coverage': 'vitest --coverage',
+    'test:unit':
+      'vitest tests/**/success.test.ts tests/**/validation.test.ts tests/**/errors.test.ts',
+    'test:integration': 'vitest tests/**/integration.test.ts',
+    'test:module': 'vitest tests/{module-name}/**/*.test.ts',
+    'test:operation': 'vitest tests/{module-name}/{operation-name}/**/*.test.ts',
+    'test:ci': 'vitest run --coverage --reporter=junit --outputFile=coverage/junit.xml',
   };
 };
 
@@ -159,11 +160,11 @@ export const generateTestScripts = (): Record<string, string> => {
  */
 export const generateTestDependencies = (): Record<string, string> => {
   return {
-    "vitest": "^1.0.0",
-    "@vitest/ui": "^1.0.0",
-    "supertest": "^6.3.3",
-    "@types/supertest": "^6.0.2",
-    "c8": "^8.0.1"
+    vitest: '^1.0.0',
+    '@vitest/ui': '^1.0.0',
+    supertest: '^6.3.3',
+    '@types/supertest': '^6.0.2',
+    c8: '^8.0.1',
   };
 };
 
@@ -172,18 +173,18 @@ export const generateTestDependencies = (): Record<string, string> => {
  */
 export const generateTestGitignore = (): string[] => {
   return [
-    "# Test coverage",
-    "coverage/",
-    "*.lcov",
-    "",
-    "# Test results",
-    "test-results/",
-    "junit.xml",
-    "",
-    "# Test artifacts",
-    ".nyc_output",
-    "*.tgz",
-    "*.tar.gz"
+    '# Test coverage',
+    'coverage/',
+    '*.lcov',
+    '',
+    '# Test results',
+    'test-results/',
+    'junit.xml',
+    '',
+    '# Test artifacts',
+    '.nyc_output',
+    '*.tgz',
+    '*.tar.gz',
   ];
 };
 
@@ -240,17 +241,17 @@ jobs:
  */
 export const generateVSCodeSettings = (): Record<string, any> => {
   return {
-    "vitest.enable": true,
-    "vitest.commandLine": "npm run test",
-    "testing.automaticallyOpenPeekView": "never",
-    "testing.followRunningTest": false,
-    "testing.openTesting": "neverOpen",
-    "files.associations": {
-      "*.test.ts": "typescript"
+    'vitest.enable': true,
+    'vitest.commandLine': 'npm run test',
+    'testing.automaticallyOpenPeekView': 'never',
+    'testing.followRunningTest': false,
+    'testing.openTesting': 'neverOpen',
+    'files.associations': {
+      '*.test.ts': 'typescript',
     },
-    "typescript.preferences.includePackageJsonAutoImports": "auto",
-    "editor.codeActionsOnSave": {
-      "source.organizeImports": true
-    }
+    'typescript.preferences.includePackageJsonAutoImports': 'auto',
+    'editor.codeActionsOnSave': {
+      'source.organizeImports': true,
+    },
   };
 };

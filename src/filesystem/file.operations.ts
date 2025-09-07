@@ -8,12 +8,12 @@ import { GeneratedFile } from '../types/common.types';
 /**
  * Writes content to a file
  */
-export const writeFile = async ({ 
-  filePath, 
-  content 
-}: { 
-  filePath: string; 
-  content: string; 
+export const writeFile = async ({
+  filePath,
+  content,
+}: {
+  filePath: string;
+  content: string;
 }): Promise<void> => {
   await fs.writeFile(filePath, content, 'utf8');
 };
@@ -28,12 +28,12 @@ export const fileExists = async ({ filePath }: { filePath: string }): Promise<bo
 /**
  * Reads files from a directory with a specific extension
  */
-export const getFilesWithExtension = async ({ 
-  dirPath, 
-  extension 
-}: { 
-  dirPath: string; 
-  extension: string; 
+export const getFilesWithExtension = async ({
+  dirPath,
+  extension,
+}: {
+  dirPath: string;
+  extension: string;
 }): Promise<string[]> => {
   try {
     const files = await fs.readdir(dirPath);
@@ -46,11 +46,7 @@ export const getFilesWithExtension = async ({
 /**
  * Writes multiple files
  */
-export const writeMultipleFiles = async ({ 
-  files 
-}: { 
-  files: GeneratedFile[]; 
-}): Promise<void> => {
+export const writeMultipleFiles = async ({ files }: { files: GeneratedFile[] }): Promise<void> => {
   for (const file of files) {
     await writeFile({ filePath: file.filePath, content: file.content });
   }

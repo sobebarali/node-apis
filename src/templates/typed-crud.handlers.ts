@@ -13,39 +13,70 @@ export const getCrudHandlerFileNames = ({ moduleName }: { moduleName: string }):
     `get.${moduleName}.ts`,
     `list.${moduleName}.ts`,
     `delete.${moduleName}.ts`,
-    `update.${moduleName}.ts`
+    `update.${moduleName}.ts`,
   ];
 };
 
 /**
  * Generates TypeScript handler file content for CRUD operations
  */
-export const generateCrudHandlerContent = ({ 
-  operation, 
+export const generateCrudHandlerContent = ({
+  operation,
   moduleName,
-  parsedType
-}: { 
-  operation: string; 
+  parsedType,
+}: {
+  operation: string;
   moduleName: string;
   parsedType: ParsedTypePayload;
 }): string => {
   const capitalizedModule = moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
   const capitalizedOperation = operation.charAt(0).toUpperCase() + operation.slice(1);
-  
+
   // Generate operation-specific handler content
   switch (operation) {
     case 'create':
-      return generateTypedCreateHandlerContent(capitalizedModule, capitalizedOperation, moduleName, parsedType);
+      return generateTypedCreateHandlerContent(
+        capitalizedModule,
+        capitalizedOperation,
+        moduleName,
+        parsedType
+      );
     case 'get':
-      return generateTypedGetHandlerContent(capitalizedModule, capitalizedOperation, moduleName, parsedType);
+      return generateTypedGetHandlerContent(
+        capitalizedModule,
+        capitalizedOperation,
+        moduleName,
+        parsedType
+      );
     case 'list':
-      return generateTypedListHandlerContent(capitalizedModule, capitalizedOperation, moduleName, parsedType);
+      return generateTypedListHandlerContent(
+        capitalizedModule,
+        capitalizedOperation,
+        moduleName,
+        parsedType
+      );
     case 'update':
-      return generateTypedUpdateHandlerContent(capitalizedModule, capitalizedOperation, moduleName, parsedType);
+      return generateTypedUpdateHandlerContent(
+        capitalizedModule,
+        capitalizedOperation,
+        moduleName,
+        parsedType
+      );
     case 'delete':
-      return generateTypedDeleteHandlerContent(capitalizedModule, capitalizedOperation, moduleName, parsedType);
+      return generateTypedDeleteHandlerContent(
+        capitalizedModule,
+        capitalizedOperation,
+        moduleName,
+        parsedType
+      );
     default:
-      return generateGenericHandlerContent(capitalizedModule, capitalizedOperation, operation, moduleName, parsedType);
+      return generateGenericHandlerContent(
+        capitalizedModule,
+        capitalizedOperation,
+        operation,
+        moduleName,
+        parsedType
+      );
   }
 };
 
@@ -177,21 +208,22 @@ export default async function ${operation}${moduleName.charAt(0).toUpperCase() +
     console.info(\`\${requestId} [${moduleName.toUpperCase()}] - ${operation.toUpperCase()} handler started\`);
 
     // Business logic here - direct repository call
-    ${operation === 'delete'
-      ? `await remove(payload.id, payload.permanent || false);
+    ${
+      operation === 'delete'
+        ? `await remove(payload.id, payload.permanent || false);
     data = {
       deleted_id: payload.id,
       deleted_at: new Date().toISOString(),
       permanent: payload.permanent || false
     };`
-      : operation === 'list'
-      ? `const result = await findMany(payload);
+        : operation === 'list'
+          ? `const result = await findMany(payload);
     data = result;`
-      : operation === 'update'
-      ? `const { id, ...updateData } = payload;
+          : operation === 'update'
+            ? `const { id, ...updateData } = payload;
     const result = await update(id, updateData);
     data = result;`
-      : `// TODO: Implement ${operation} logic
+            : `// TODO: Implement ${operation} logic
     data = null;`
     }
 
@@ -203,13 +235,16 @@ export default async function ${operation}${moduleName.charAt(0).toUpperCase() +
       \`\${requestId} [${moduleName.toUpperCase()}] - ${operation.toUpperCase()} handler error: \${customError.message}\`
     );
 
-    ${operation === 'delete' && `if (customError.name === 'NotFoundError') {
+    ${
+      operation === 'delete' &&
+      `if (customError.name === 'NotFoundError') {
       error = {
         code: 'NOT_FOUND',
         message: \`${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)} not found\`,
         statusCode: 404,
       };
-    } else {`}
+    } else {`
+    }
     error = {
       code: customError.errorCode ?? 'INTERNAL_ERROR',
       message: customError.message ?? 'An unexpected error occurred',
@@ -229,18 +264,39 @@ const generateTypedListHandlerContent = (
   capitalizedOperation: string,
   moduleName: string,
   parsedType: ParsedTypePayload
-): string => generateGenericHandlerContent(capitalizedModule, capitalizedOperation, 'list', moduleName, parsedType);
+): string =>
+  generateGenericHandlerContent(
+    capitalizedModule,
+    capitalizedOperation,
+    'list',
+    moduleName,
+    parsedType
+  );
 
 const generateTypedUpdateHandlerContent = (
   capitalizedModule: string,
   capitalizedOperation: string,
   moduleName: string,
   parsedType: ParsedTypePayload
-): string => generateGenericHandlerContent(capitalizedModule, capitalizedOperation, 'update', moduleName, parsedType);
+): string =>
+  generateGenericHandlerContent(
+    capitalizedModule,
+    capitalizedOperation,
+    'update',
+    moduleName,
+    parsedType
+  );
 
 const generateTypedDeleteHandlerContent = (
   capitalizedModule: string,
   capitalizedOperation: string,
   moduleName: string,
   parsedType: ParsedTypePayload
-): string => generateGenericHandlerContent(capitalizedModule, capitalizedOperation, 'delete', moduleName, parsedType);
+): string =>
+  generateGenericHandlerContent(
+    capitalizedModule,
+    capitalizedOperation,
+    'delete',
+    moduleName,
+    parsedType
+  );

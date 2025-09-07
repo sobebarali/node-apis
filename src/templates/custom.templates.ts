@@ -5,12 +5,12 @@
 /**
  * Gets custom API file names for a module
  */
-export const getCustomFileNames = ({ 
-  customNames, 
-  moduleName 
-}: { 
-  customNames: string[]; 
-  moduleName: string; 
+export const getCustomFileNames = ({
+  customNames,
+  moduleName,
+}: {
+  customNames: string[];
+  moduleName: string;
 }): string[] => {
   return customNames.map(customName => `${customName}.${moduleName}.ts`);
 };
@@ -20,7 +20,7 @@ export const getCustomFileNames = ({
  */
 export const generateCustomFileContent = ({
   customName,
-  moduleName
+  moduleName,
 }: {
   customName: string;
   moduleName: string;
@@ -29,7 +29,12 @@ export const generateCustomFileContent = ({
   const capitalizedCustom = customName.charAt(0).toUpperCase() + customName.slice(1);
 
   // Generate operation-specific content based on common patterns
-  return generateCustomOperationContent(customName, capitalizedModule, capitalizedCustom, moduleName);
+  return generateCustomOperationContent(
+    customName,
+    capitalizedModule,
+    capitalizedCustom,
+    moduleName
+  );
 };
 
 /**
@@ -47,7 +52,12 @@ const generateCustomOperationContent = (
 /**
  * Generates generic custom operation content
  */
-const generateGenericCustomContent = (customName: string, _capitalizedModule: string, _capitalizedCustom: string, moduleName: string): string => {
+const generateGenericCustomContent = (
+  customName: string,
+  _capitalizedModule: string,
+  _capitalizedCustom: string,
+  moduleName: string
+): string => {
   return `export type typePayload = {
   // Define payload for ${customName} ${moduleName}
   id?: string;

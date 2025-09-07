@@ -16,11 +16,5 @@ export const getModulePath = ({ moduleName, baseDir = process.cwd() }: ModulePat
  * Gets the list of subdirectories to create for an API module
  */
 export const getModuleSubdirectories = (): string[] => {
-  return [
-    'controllers',
-    'handlers',
-    'repository',
-    'types',
-    'validators'
-  ];
+  return ['controllers', 'handlers', 'repository', 'types', 'validators'];
 };

@@ -40,7 +40,7 @@ export const displayGenerationSummary = ({
   targetPath,
   forceOverwrite,
   apiType,
-  operationNames
+  operationNames,
 }: {
   moduleName: string;
   targetPath: string;
@@ -52,7 +52,7 @@ export const displayGenerationSummary = ({
   console.log(chalk.gray(`   Module name: ${moduleName}`));
   console.log(chalk.gray(`   Target path: ${targetPath}`));
   console.log(chalk.gray(`   Force overwrite: ${forceOverwrite ? 'Yes' : 'No'}`));
-  
+
   if (apiType && operationNames) {
     console.log(chalk.gray(`   API type: ${apiType}`));
     console.log(chalk.gray(`   Files to generate: ${operationNames.join(', ')}`));
@@ -65,7 +65,7 @@ export const displayGenerationSummary = ({
 export const displayGenerationResult = (result: GenerationResult): void => {
   if (result.success) {
     console.log(chalk.green(result.message));
-    
+
     // Show generated files if any
     if (result.generatedFiles && result.generatedFiles.length > 0) {
       console.log(chalk.cyan('\n📄 Generated TypeScript Files:'));
@@ -73,7 +73,7 @@ export const displayGenerationResult = (result: GenerationResult): void => {
         console.log(chalk.gray(`   ✓ ${file.fileName}`));
       });
     }
-    
+
     // Show next steps
     console.log(chalk.cyan('\n📝 Next Steps:'));
     console.log(chalk.gray('   1. Navigate to your new module directory'));

@@ -5,12 +5,12 @@
 /**
  * Gets custom service file names for a module
  */
-export const getCustomServiceFileNames = ({ 
-  customNames, 
-  moduleName 
-}: { 
-  customNames: string[]; 
-  moduleName: string; 
+export const getCustomServiceFileNames = ({
+  customNames,
+  moduleName,
+}: {
+  customNames: string[];
+  moduleName: string;
 }): string[] => {
   return customNames.map(customName => `${customName}.${moduleName}.ts`);
 };
@@ -18,23 +18,33 @@ export const getCustomServiceFileNames = ({
 /**
  * Generates TypeScript service file content for custom operations
  */
-export const generateCustomServiceContent = ({ 
-  customName, 
-  moduleName 
-}: { 
-  customName: string; 
-  moduleName: string; 
+export const generateCustomServiceContent = ({
+  customName,
+  moduleName,
+}: {
+  customName: string;
+  moduleName: string;
 }): string => {
   const capitalizedModule = moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
   const capitalizedCustom = customName.charAt(0).toUpperCase() + customName.slice(1);
-  
-  return generateGenericCustomServiceContent(customName, capitalizedModule, capitalizedCustom, moduleName);
+
+  return generateGenericCustomServiceContent(
+    customName,
+    capitalizedModule,
+    capitalizedCustom,
+    moduleName
+  );
 };
 
 /**
  * Generates generic custom service content
  */
-const generateGenericCustomServiceContent = (customName: string, capitalizedModule: string, _capitalizedCustom: string, moduleName: string): string => {
+const generateGenericCustomServiceContent = (
+  customName: string,
+  capitalizedModule: string,
+  _capitalizedCustom: string,
+  moduleName: string
+): string => {
   return `import { typePayload, typeResult } from '../types/${customName}.${moduleName}';
 import * as ${moduleName}Repository from '../repository/${moduleName}.repository';
 

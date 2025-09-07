@@ -10,8 +10,8 @@ import { ValidationLocationResult, ValidationLocationInput } from '../types/gene
 /**
  * Validates that the target location is appropriate for module generation
  */
-export const validateTargetLocation = async ({ 
-  baseDir = process.cwd() 
+export const validateTargetLocation = async ({
+  baseDir = process.cwd(),
 }: ValidationLocationInput = {}): Promise<ValidationLocationResult> => {
   try {
     // Check if we can write to the target directory
@@ -23,18 +23,17 @@ export const validateTargetLocation = async ({
 
     if (!hasPackageJson) {
       console.warn(chalk.yellow('⚠️  Warning: No package.json found in current directory.'));
-      console.warn(chalk.yellow('   This doesn\'t appear to be a Node.js project.'));
+      console.warn(chalk.yellow("   This doesn't appear to be a Node.js project."));
     }
 
     return {
       isValid: true,
-      hasPackageJson
+      hasPackageJson,
     };
-
   } catch (error: any) {
     return {
       isValid: false,
-      error: `Cannot write to target directory: ${error.message}`
+      error: `Cannot write to target directory: ${error.message}`,
     };
   }
 };

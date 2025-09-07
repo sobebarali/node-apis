@@ -6,7 +6,11 @@ import { GenerationInput, GenerationResult } from '../types/generation.types';
 import { GeneratedFile } from '../types/common.types';
 import { validateModuleName } from '../validators/module-name.validator';
 import { getModulePath, getModuleSubdirectories } from '../filesystem/path.utils';
-import { directoryExists, ensureDirectory, createDirectories } from '../filesystem/directory.operations';
+import {
+  directoryExists,
+  ensureDirectory,
+  createDirectories,
+} from '../filesystem/directory.operations';
 import { generateApiFiles } from './file-generator.service';
 
 /**
@@ -15,7 +19,7 @@ import { generateApiFiles } from './file-generator.service';
 export const generateModuleStructure = async ({
   moduleName,
   options = {},
-  apiType
+  apiType,
 }: GenerationInput): Promise<GenerationResult> => {
   const { baseDir = process.cwd(), force = false, appendMode = false } = options;
 
@@ -25,7 +29,7 @@ export const generateModuleStructure = async ({
     if (!validation.isValid) {
       return {
         success: false,
-        error: validation.error!
+        error: validation.error!,
       };
     }
 
@@ -37,7 +41,7 @@ export const generateModuleStructure = async ({
     if (exists && !force && !appendMode) {
       return {
         success: false,
-        error: `Module directory already exists: ${modulePath}\nUse --force flag to overwrite or run in interactive mode to append.`
+        error: `Module directory already exists: ${modulePath}\nUse --force flag to overwrite or run in interactive mode to append.`,
       };
     }
 
@@ -46,9 +50,9 @@ export const generateModuleStructure = async ({
 
     // Create all subdirectories
     const subdirectories = getModuleSubdirectories();
-    const createdDirs = await createDirectories({ 
-      basePath: modulePath, 
-      subdirectories 
+    const createdDirs = await createDirectories({
+      basePath: modulePath,
+      subdirectories,
     });
 
     // Generate TypeScript files if apiType is provided
@@ -58,7 +62,7 @@ export const generateModuleStructure = async ({
         moduleName: normalizedName,
         modulePath,
         apiType,
-        appendMode
+        appendMode,
       });
     }
 
@@ -71,9 +75,8 @@ export const generateModuleStructure = async ({
       modulePath,
       createdDirectories: createdDirs,
       generatedFiles,
-      message
+      message,
     };
-
   } catch (error: any) {
     return handleGenerationError(error, moduleName, baseDir);
   }
@@ -82,16 +85,16 @@ export const generateModuleStructure = async ({
 /**
  * Formats a success message with the created structure
  */
-const formatSuccessMessage = ({ 
-  moduleName, 
-  modulePath 
-}: { 
-  moduleName: string; 
-  modulePath: string; 
+const formatSuccessMessage = ({
+  moduleName,
+  modulePath,
+}: {
+  moduleName: string;
+  modulePath: string;
 }): string => {
   const subdirs = getModuleSubdirectories();
   const structure = subdirs.map(dir => `  ├── ${dir}/`).join('\n');
-  
+
   return `
 ✅ Successfully created API module structure for "${moduleName}"
 
@@ -106,32 +109,36 @@ ${structure}
 /**
  * Handles generation errors with specific error types
  */
-const handleGenerationError = (error: any, moduleName: string, baseDir: string): GenerationResult => {
+const handleGenerationError = (
+  error: any,
+  moduleName: string,
+  baseDir: string
+): GenerationResult => {
   // Handle specific file system errors
   if (error.code === 'EACCES') {
     return {
       success: false,
-      error: `Permission denied. Cannot create directories at: ${getModulePath({ moduleName, baseDir })}`
+      error: `Permission denied. Cannot create directories at: ${getModulePath({ moduleName, baseDir })}`,
     };
   }
 
   if (error.code === 'ENOSPC') {
     return {
       success: false,
-      error: 'Not enough disk space to create the module structure'
+      error: 'Not enough disk space to create the module structure',
     };
   }
 
   if (error.code === 'ENOTDIR') {
     return {
       success: false,
-      error: 'Invalid path: A file exists where a directory is expected'
+      error: 'Invalid path: A file exists where a directory is expected',
     };
   }
 
   // Generic error handling
   return {
     success: false,
-    error: `Failed to create module structure: ${error.message}`
+    error: `Failed to create module structure: ${error.message}`,
   };
 };

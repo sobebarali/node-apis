@@ -31,12 +31,12 @@ export const ensureDirectory = async ({ dirPath }: DirectoryExistsInput): Promis
 /**
  * Creates multiple directories
  */
-export const createDirectories = async ({ 
-  basePath, 
-  subdirectories 
-}: { 
-  basePath: string; 
-  subdirectories: string[]; 
+export const createDirectories = async ({
+  basePath,
+  subdirectories,
+}: {
+  basePath: string;
+  subdirectories: string[];
 }): Promise<string[]> => {
   const createdDirs: string[] = [];
 
@@ -55,9 +55,7 @@ export const createDirectories = async ({
 export const getDirectories = async ({ dirPath }: DirectoryExistsInput): Promise<string[]> => {
   try {
     const entries = await fs.readdir(dirPath, { withFileTypes: true });
-    return entries
-      .filter(entry => entry.isDirectory())
-      .map(entry => entry.name);
+    return entries.filter(entry => entry.isDirectory()).map(entry => entry.name);
   } catch (error) {
     return [];
   }

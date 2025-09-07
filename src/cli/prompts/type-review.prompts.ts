@@ -8,20 +8,29 @@ import { PromptResult } from '../../types/cli.types';
 /**
  * Prompts user to review and edit type files
  */
-export const promptTypeReview = async (_moduleName: string, typesPath: string): Promise<PromptResult<boolean>> => {
+export const promptTypeReview = async (
+  _moduleName: string,
+  typesPath: string
+): Promise<PromptResult<boolean>> => {
   try {
     console.log('\n📝 Type files have been generated!');
     console.log(`\n📁 Location: ${typesPath}`);
-    console.log('\n🔍 Please review and edit the typePayload interfaces in the generated type files.');
-    console.log('   Add your specific fields (name, description, etc.) to each typePayload interface.');
+    console.log(
+      '\n🔍 Please review and edit the typePayload interfaces in the generated type files.'
+    );
+    console.log(
+      '   Add your specific fields (name, description, etc.) to each typePayload interface.'
+    );
     console.log('\n💡 Example:');
     console.log('   export type typePayload = {');
     console.log('     name: string;');
     console.log('     description: string;');
     console.log('     category?: string;');
     console.log('   };');
-    console.log('\n⚠️  The service and repository code will be generated based on these field definitions.');
-    
+    console.log(
+      '\n⚠️  The service and repository code will be generated based on these field definitions.'
+    );
+
     const answer = await inquirer.prompt([
       {
         type: 'input',
@@ -33,20 +42,22 @@ export const promptTypeReview = async (_moduleName: string, typesPath: string): 
             return true;
           }
           return 'Please enter "yes" or "y" to confirm you have reviewed the type files.';
-        }
-      }
+        },
+      },
     ]);
 
-    const confirmed = answer.confirmed.trim().toLowerCase() === 'yes' || answer.confirmed.trim().toLowerCase() === 'y';
-    
+    const confirmed =
+      answer.confirmed.trim().toLowerCase() === 'yes' ||
+      answer.confirmed.trim().toLowerCase() === 'y';
+
     return {
       success: true,
-      data: confirmed
+      data: confirmed,
     };
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to get type review confirmation'
+      error: error instanceof Error ? error.message : 'Failed to get type review confirmation',
     };
   }
 };
@@ -59,10 +70,10 @@ export const displayTypeInstructions = (moduleName: string, operations: string[]
   console.log(`\n   Module: ${moduleName}`);
   console.log(`   Operations: ${operations.join(', ')}`);
   console.log('\n   For each operation, edit the corresponding type file:');
-  
+
   operations.forEach(operation => {
     console.log(`\n   📄 ${operation}.${moduleName}.ts:`);
-    
+
     switch (operation) {
       case 'create':
         console.log('      Add fields needed to create a new record:');
@@ -70,12 +81,12 @@ export const displayTypeInstructions = (moduleName: string, operations: string[]
         console.log('      • description: string');
         console.log('      • category?: string (optional fields use ?)');
         break;
-        
+
       case 'get':
         console.log('      Usually just needs an ID:');
         console.log('      • id: string');
         break;
-        
+
       case 'list':
         console.log('      Add pagination and filter fields:');
         console.log('      • page?: number');
@@ -85,7 +96,7 @@ export const displayTypeInstructions = (moduleName: string, operations: string[]
         console.log('      • search?: string');
         console.log('      • category?: string (custom filters)');
         break;
-        
+
       case 'update':
         console.log('      Add ID and updatable fields:');
         console.log('      • id: string');
@@ -93,13 +104,13 @@ export const displayTypeInstructions = (moduleName: string, operations: string[]
         console.log('      • description?: string');
         console.log('      • category?: string');
         break;
-        
+
       case 'delete':
         console.log('      Usually needs ID and optional permanent flag:');
         console.log('      • id: string');
         console.log('      • permanent?: boolean');
         break;
-        
+
       default:
         console.log('      Add fields specific to this operation:');
         console.log('      • id?: string');
@@ -108,7 +119,7 @@ export const displayTypeInstructions = (moduleName: string, operations: string[]
         break;
     }
   });
-  
+
   console.log('\n💡 Tips:');
   console.log('   • Use "?" for optional fields: name?: string');
   console.log('   • Use union types: status: "active" | "inactive"');

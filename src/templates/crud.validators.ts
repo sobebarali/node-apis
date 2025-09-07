@@ -11,23 +11,23 @@ export const getCrudValidatorFileNames = ({ moduleName }: { moduleName: string }
     `get.${moduleName}.ts`,
     `list.${moduleName}.ts`,
     `delete.${moduleName}.ts`,
-    `update.${moduleName}.ts`
+    `update.${moduleName}.ts`,
   ];
 };
 
 /**
  * Generates TypeScript validator file content for CRUD operations
  */
-export const generateCrudValidatorContent = ({ 
-  operation, 
-  moduleName 
-}: { 
-  operation: string; 
-  moduleName: string; 
+export const generateCrudValidatorContent = ({
+  operation,
+  moduleName,
+}: {
+  operation: string;
+  moduleName: string;
 }): string => {
   const capitalizedModule = moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
   const capitalizedOperation = operation.charAt(0).toUpperCase() + operation.slice(1);
-  
+
   // Generate operation-specific validator content
   switch (operation) {
     case 'create':
@@ -41,14 +41,23 @@ export const generateCrudValidatorContent = ({
     case 'delete':
       return generateDeleteValidatorContent(capitalizedModule, capitalizedOperation, moduleName);
     default:
-      return generateGenericValidatorContent(capitalizedModule, capitalizedOperation, operation, moduleName);
+      return generateGenericValidatorContent(
+        capitalizedModule,
+        capitalizedOperation,
+        operation,
+        moduleName
+      );
   }
 };
 
 /**
  * Generates CREATE validator content
  */
-const generateCreateValidatorContent = (_capitalizedModule: string, _capitalizedOperation: string, moduleName: string): string => {
+const generateCreateValidatorContent = (
+  _capitalizedModule: string,
+  _capitalizedOperation: string,
+  moduleName: string
+): string => {
   return `import { z } from 'zod';
 import { typePayload } from '../types/create.${moduleName}';
 
@@ -69,7 +78,11 @@ export const validatePayload = (data: unknown): { success: true; data: typePaylo
 /**
  * Generates GET validator content
  */
-const generateGetValidatorContent = (_capitalizedModule: string, _capitalizedOperation: string, moduleName: string): string => {
+const generateGetValidatorContent = (
+  _capitalizedModule: string,
+  _capitalizedOperation: string,
+  moduleName: string
+): string => {
   return `import { z } from 'zod';
 import { typePayload } from '../types/get.${moduleName}';
 
@@ -90,7 +103,11 @@ export const validatePayload = (data: unknown): { success: true; data: typePaylo
 /**
  * Generates LIST validator content
  */
-const generateListValidatorContent = (_capitalizedModule: string, _capitalizedOperation: string, moduleName: string): string => {
+const generateListValidatorContent = (
+  _capitalizedModule: string,
+  _capitalizedOperation: string,
+  moduleName: string
+): string => {
   return `import { z } from 'zod';
 import { typePayload } from '../types/list.${moduleName}';
 
@@ -116,7 +133,11 @@ export const validatePayload = (data: unknown): { success: true; data: typePaylo
 /**
  * Generates UPDATE validator content
  */
-const generateUpdateValidatorContent = (_capitalizedModule: string, _capitalizedOperation: string, moduleName: string): string => {
+const generateUpdateValidatorContent = (
+  _capitalizedModule: string,
+  _capitalizedOperation: string,
+  moduleName: string
+): string => {
   return `import { z } from 'zod';
 import { typePayload } from '../types/update.${moduleName}';
 
@@ -138,7 +159,11 @@ export const validatePayload = (data: unknown): { success: true; data: typePaylo
 /**
  * Generates DELETE validator content
  */
-const generateDeleteValidatorContent = (_capitalizedModule: string, _capitalizedOperation: string, moduleName: string): string => {
+const generateDeleteValidatorContent = (
+  _capitalizedModule: string,
+  _capitalizedOperation: string,
+  moduleName: string
+): string => {
   return `import { z } from 'zod';
 import { typePayload } from '../types/delete.${moduleName}';
 
@@ -160,7 +185,12 @@ export const validatePayload = (data: unknown): { success: true; data: typePaylo
 /**
  * Generates generic validator content (fallback)
  */
-const generateGenericValidatorContent = (_capitalizedModule: string, _capitalizedOperation: string, operation: string, moduleName: string): string => {
+const generateGenericValidatorContent = (
+  _capitalizedModule: string,
+  _capitalizedOperation: string,
+  operation: string,
+  moduleName: string
+): string => {
   return `import { z } from 'zod';
 import { typePayload } from '../types/${operation}.${moduleName}';
 

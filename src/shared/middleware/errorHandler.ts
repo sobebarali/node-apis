@@ -3,13 +3,13 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { 
-  NotFoundError, 
-  ValidationError, 
-  DatabaseError, 
-  AuthenticationError, 
+import {
+  NotFoundError,
+  ValidationError,
+  DatabaseError,
+  AuthenticationError,
   AuthorizationError,
-  BusinessLogicError 
+  BusinessLogicError,
 } from '../errors';
 
 export const errorHandler = (
@@ -28,8 +28,8 @@ export const errorHandler = (
         code: 'VALIDATION_ERROR',
         message: error.message,
         statusCode: 400,
-        ...(error.field && { field: error.field })
-      }
+        ...(error.field && { field: error.field }),
+      },
     });
     return;
   }
@@ -40,8 +40,8 @@ export const errorHandler = (
       error: {
         code: 'NOT_FOUND',
         message: error.message,
-        statusCode: 404
-      }
+        statusCode: 404,
+      },
     });
     return;
   }
@@ -52,8 +52,8 @@ export const errorHandler = (
       error: {
         code: 'UNAUTHORIZED',
         message: error.message,
-        statusCode: 401
-      }
+        statusCode: 401,
+      },
     });
     return;
   }
@@ -64,8 +64,8 @@ export const errorHandler = (
       error: {
         code: 'FORBIDDEN',
         message: error.message,
-        statusCode: 403
-      }
+        statusCode: 403,
+      },
     });
     return;
   }
@@ -76,8 +76,8 @@ export const errorHandler = (
       error: {
         code: 'BUSINESS_LOGIC_ERROR',
         message: error.message,
-        statusCode: 422
-      }
+        statusCode: 422,
+      },
     });
     return;
   }
@@ -88,8 +88,8 @@ export const errorHandler = (
       error: {
         code: 'DATABASE_ERROR',
         message: 'Database operation failed',
-        statusCode: 500
-      }
+        statusCode: 500,
+      },
     });
     return;
   }
@@ -100,7 +100,7 @@ export const errorHandler = (
     error: {
       code: 'INTERNAL_ERROR',
       message: 'Something went wrong',
-      statusCode: 500
-    }
+      statusCode: 500,
+    },
   });
 };

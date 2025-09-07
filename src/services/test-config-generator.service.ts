@@ -4,14 +4,14 @@
 
 import * as path from 'path';
 import { fileExists, writeFile } from '../filesystem/file.operations';
-import { 
-  generateVitestConfig, 
-  generateTestSetup, 
-  generateTestScripts, 
+import {
+  generateVitestConfig,
+  generateTestSetup,
+  generateTestScripts,
   generateTestDependencies,
   generateTestGitignore,
   generateGitHubWorkflow,
-  generateVSCodeSettings
+  generateVSCodeSettings,
 } from '../templates/test.config';
 import { GeneratedFile } from '../types/common.types';
 
@@ -20,7 +20,7 @@ import { GeneratedFile } from '../types/common.types';
  */
 export const generateTestConfiguration = async ({
   projectRoot,
-  appendMode = false
+  appendMode = false,
 }: {
   projectRoot: string;
   appendMode?: boolean;
@@ -29,26 +29,26 @@ export const generateTestConfiguration = async ({
 
   // Generate vitest.config.ts
   const vitestConfigPath = path.join(projectRoot, 'vitest.config.ts');
-  if (!appendMode || !await fileExists({ filePath: vitestConfigPath })) {
+  if (!appendMode || !(await fileExists({ filePath: vitestConfigPath }))) {
     const vitestConfigContent = generateVitestConfig();
     await writeFile({ filePath: vitestConfigPath, content: vitestConfigContent });
     generatedFiles.push({
       fileName: 'vitest.config.ts',
       filePath: vitestConfigPath,
-      content: vitestConfigContent
+      content: vitestConfigContent,
     });
   }
 
   // Generate test setup file
   const testsDir = path.join(projectRoot, 'tests');
   const setupPath = path.join(testsDir, 'setup.ts');
-  if (!appendMode || !await fileExists({ filePath: setupPath })) {
+  if (!appendMode || !(await fileExists({ filePath: setupPath }))) {
     const setupContent = generateTestSetup();
     await writeFile({ filePath: setupPath, content: setupContent });
     generatedFiles.push({
       fileName: 'setup.ts',
       filePath: setupPath,
-      content: setupContent
+      content: setupContent,
     });
   }
 
@@ -60,12 +60,16 @@ export const generateTestConfiguration = async ({
  */
 export const updatePackageJsonForTests = async ({
   packageJsonPath,
-  appendMode = false
+  appendMode = false,
 }: {
   packageJsonPath: string;
   appendMode?: boolean;
-}): Promise<{ updated: boolean; scripts: Record<string, string>; devDependencies: Record<string, string> }> => {
-  if (!await fileExists({ filePath: packageJsonPath })) {
+}): Promise<{
+  updated: boolean;
+  scripts: Record<string, string>;
+  devDependencies: Record<string, string>;
+}> => {
+  if (!(await fileExists({ filePath: packageJsonPath }))) {
     throw new Error('package.json not found');
   }
 
@@ -108,7 +112,7 @@ export const updatePackageJsonForTests = async ({
   return {
     updated,
     scripts: testScripts,
-    devDependencies: testDependencies
+    devDependencies: testDependencies,
   };
 };
 
@@ -117,7 +121,7 @@ export const updatePackageJsonForTests = async ({
  */
 export const generateAdditionalTestConfig = async ({
   projectRoot,
-  appendMode = false
+  appendMode = false,
 }: {
   projectRoot: string;
   appendMode?: boolean;
@@ -130,7 +134,7 @@ export const generateAdditionalTestConfig = async ({
     const fs = await import('fs-extra');
     const existingGitignore = await fs.readFile(gitignorePath, 'utf-8');
     const testGitignoreEntries = generateTestGitignore();
-    
+
     let updatedGitignore = existingGitignore;
     let hasUpdates = false;
 
@@ -146,7 +150,7 @@ export const generateAdditionalTestConfig = async ({
       generatedFiles.push({
         fileName: '.gitignore',
         filePath: gitignorePath,
-        content: updatedGitignore
+        content: updatedGitignore,
       });
     }
   }
@@ -154,27 +158,27 @@ export const generateAdditionalTestConfig = async ({
   // Generate GitHub Actions workflow
   const workflowsDir = path.join(projectRoot, '.github', 'workflows');
   const workflowPath = path.join(workflowsDir, 'tests.yml');
-  if (!appendMode || !await fileExists({ filePath: workflowPath })) {
+  if (!appendMode || !(await fileExists({ filePath: workflowPath }))) {
     const workflowContent = generateGitHubWorkflow();
     await writeFile({ filePath: workflowPath, content: workflowContent });
     generatedFiles.push({
       fileName: 'tests.yml',
       filePath: workflowPath,
-      content: workflowContent
+      content: workflowContent,
     });
   }
 
   // Generate VSCode settings
   const vscodeDir = path.join(projectRoot, '.vscode');
   const settingsPath = path.join(vscodeDir, 'settings.json');
-  if (!appendMode || !await fileExists({ filePath: settingsPath })) {
+  if (!appendMode || !(await fileExists({ filePath: settingsPath }))) {
     const vscodeSettings = generateVSCodeSettings();
     const settingsContent = JSON.stringify(vscodeSettings, null, 2);
     await writeFile({ filePath: settingsPath, content: settingsContent });
     generatedFiles.push({
       fileName: 'settings.json',
       filePath: settingsPath,
-      content: settingsContent
+      content: settingsContent,
     });
   }
 
@@ -186,7 +190,7 @@ export const generateAdditionalTestConfig = async ({
  */
 export const generateCompleteTestSetup = async ({
   projectRoot,
-  appendMode = false
+  appendMode = false,
 }: {
   projectRoot: string;
   appendMode?: boolean;
@@ -208,6 +212,6 @@ export const generateCompleteTestSetup = async ({
   return {
     configFiles,
     packageJsonUpdated: packageJsonResult.updated,
-    additionalFiles
+    additionalFiles,
   };
 };

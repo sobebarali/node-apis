@@ -7,21 +7,21 @@ import { ApiType } from '../types/common.types';
 /**
  * Generates repository file content for a module
  */
-export const generateRepositoryContent = ({ 
-  moduleName, 
-  apiType 
-}: { 
-  moduleName: string; 
-  apiType: ApiType; 
+export const generateRepositoryContent = ({
+  moduleName,
+  apiType,
+}: {
+  moduleName: string;
+  apiType: ApiType;
 }): string => {
   const capitalizedModule = moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
-  
+
   if (apiType.type === 'crud') {
     return generateCrudRepositoryContent(moduleName, capitalizedModule);
   } else if (apiType.type === 'custom' && apiType.customNames) {
     return generateCustomRepositoryContent(moduleName, capitalizedModule, apiType.customNames);
   }
-  
+
   return generateGenericRepositoryContent(moduleName, capitalizedModule);
 };
 
@@ -231,9 +231,14 @@ export { remove as delete };
 /**
  * Generates custom repository content
  */
-const generateCustomRepositoryContent = (moduleName: string, _capitalizedModule: string, customNames: string[]): string => {
+const generateCustomRepositoryContent = (
+  moduleName: string,
+  _capitalizedModule: string,
+  customNames: string[]
+): string => {
   const customMethods = customNames
-    .map(customName => `
+    .map(
+      customName => `
 /**
  * ${customName} operation for ${moduleName}
  */
@@ -251,7 +256,8 @@ export const ${customName} = async ({
   } catch (error) {
     throw new DatabaseError(\`Failed to ${customName} ${moduleName}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
-};`)
+};`
+    )
     .join('\n');
 
   return `// Repository layer - Pure domain logic for custom operations
@@ -266,7 +272,10 @@ ${customMethods}
 /**
  * Generates generic repository content
  */
-const generateGenericRepositoryContent = (moduleName: string, capitalizedModule: string): string => {
+const generateGenericRepositoryContent = (
+  moduleName: string,
+  capitalizedModule: string
+): string => {
   return `// Repository layer - Pure domain logic
 // This layer is reusable and independent of API concerns
 

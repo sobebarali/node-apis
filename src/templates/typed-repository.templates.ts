@@ -3,28 +3,37 @@
  */
 
 import { ApiType } from '../types/common.types';
-import { ParsedTypePayload, generateFieldDestructuring, generateFieldObject } from '../services/type-parser.service';
+import {
+  ParsedTypePayload,
+  generateFieldDestructuring,
+  generateFieldObject,
+} from '../services/type-parser.service';
 
 /**
  * Generates repository file content for a module with parsed types
  */
-export const generateTypedRepositoryContent = ({ 
-  moduleName, 
+export const generateTypedRepositoryContent = ({
+  moduleName,
   apiType,
-  parsedTypes
-}: { 
-  moduleName: string; 
+  parsedTypes,
+}: {
+  moduleName: string;
   apiType: ApiType;
   parsedTypes: Record<string, ParsedTypePayload>;
 }): string => {
   const capitalizedModule = moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
-  
+
   if (apiType.type === 'crud') {
     return generateTypedCrudRepositoryContent(moduleName, capitalizedModule, parsedTypes);
   } else if (apiType.type === 'custom' && apiType.customNames) {
-    return generateTypedCustomRepositoryContent(moduleName, capitalizedModule, apiType.customNames, parsedTypes);
+    return generateTypedCustomRepositoryContent(
+      moduleName,
+      capitalizedModule,
+      apiType.customNames,
+      parsedTypes
+    );
   }
-  
+
   return generateTypedGenericRepositoryContent(moduleName, capitalizedModule);
 };
 
@@ -32,20 +41,22 @@ export const generateTypedRepositoryContent = ({
  * Generates CRUD repository content with parsed types
  */
 const generateTypedCrudRepositoryContent = (
-  moduleName: string, 
+  moduleName: string,
   capitalizedModule: string,
   parsedTypes: Record<string, ParsedTypePayload>
 ): string => {
   const createType = parsedTypes.create || { fields: [], hasId: false, hasPagination: false };
   const updateType = parsedTypes.update || { fields: [], hasId: false, hasPagination: false };
   const listType = parsedTypes.list || { fields: [], hasId: false, hasPagination: false };
-  
+
   const createFieldDestructuring = generateFieldDestructuring(createType.fields);
   const createFieldObject = generateFieldObject(createType.fields);
-  const updateFieldDestructuring = generateFieldDestructuring(updateType.fields.filter(f => f.name !== 'id'));
+  const updateFieldDestructuring = generateFieldDestructuring(
+    updateType.fields.filter(f => f.name !== 'id')
+  );
   const updateFieldObject = generateFieldObject(updateType.fields.filter(f => f.name !== 'id'));
   const listFieldDestructuring = generateFieldDestructuring(listType.fields);
-  
+
   return `// Repository layer - Pure domain logic, returns raw data, throws exceptions
 // This layer is reusable and independent of API concerns
 
@@ -175,7 +186,10 @@ ${updateFieldDestructuring}
     // Example with Prisma:
     // const ${moduleName} = await db.${moduleName}.update({
     //   where: { id },
-    //   data: { ${updateType.fields.filter(f => f.name !== 'id').map(f => f.name).join(', ')}, updated_at: new Date().toISOString() }
+    //   data: { ${updateType.fields
+      .filter(f => f.name !== 'id')
+      .map(f => f.name)
+      .join(', ')}, updated_at: new Date().toISOString() }
     // });
     // return ${moduleName};
 
@@ -235,16 +249,20 @@ export function remove(id: string, permanent: boolean = false) {
  * Generates custom repository content with parsed types
  */
 const generateTypedCustomRepositoryContent = (
-  moduleName: string, 
-  _capitalizedModule: string, 
+  moduleName: string,
+  _capitalizedModule: string,
   customNames: string[],
   parsedTypes: Record<string, ParsedTypePayload>
 ): string => {
   const customMethods = customNames
     .map(customName => {
-      const parsedType = parsedTypes[customName] || { fields: [], hasId: false, hasPagination: false };
+      const parsedType = parsedTypes[customName] || {
+        fields: [],
+        hasId: false,
+        hasPagination: false,
+      };
       const fieldDestructuring = generateFieldDestructuring(parsedType.fields);
-      
+
       return `
 /**
  * ${customName} operation for ${moduleName}
@@ -279,7 +297,10 @@ ${customMethods}
 /**
  * Generates generic repository content
  */
-const generateTypedGenericRepositoryContent = (moduleName: string, capitalizedModule: string): string => {
+const generateTypedGenericRepositoryContent = (
+  moduleName: string,
+  capitalizedModule: string
+): string => {
   return `// Repository layer - Pure domain logic
 // This layer is reusable and independent of API concerns
 

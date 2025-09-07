@@ -5,57 +5,83 @@
 /**
  * Gets the list of CRUD test file names for a module
  */
-export const getCrudTestFileNames = ({ moduleName }: { moduleName: string }): string[] => {
+export const getCrudTestFileNames = (): string[] => {
   const operations = ['create', 'get', 'list', 'update', 'delete'];
   const testTypes = ['validation.test.ts', 'success.test.ts', 'errors.test.ts'];
-  
+
   const testFiles: string[] = [];
-  
+
   operations.forEach(operation => {
     testTypes.forEach(testType => {
-      testFiles.push(`${operation}-${moduleName}/${testType}`);
+      testFiles.push(`${operation}/${testType}`);
     });
   });
-  
+
   // Add shared helpers
   testFiles.push('shared/helpers.ts');
-  
+
   return testFiles;
 };
 
 /**
  * Generates test file content for CRUD operations
  */
-export const generateCrudTestContent = ({ 
-  operation, 
+export const generateCrudTestContent = ({
+  operation,
   moduleName,
-  testType 
-}: { 
-  operation: string; 
+  testType,
+}: {
+  operation: string;
   moduleName: string;
   testType: 'validation' | 'success' | 'errors' | 'helpers';
 }): string => {
   const capitalizedModule = moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
   const capitalizedOperation = operation.charAt(0).toUpperCase() + operation.slice(1);
-  
+
   switch (testType) {
     case 'validation':
-      return generateValidationTestContent(operation, capitalizedModule, capitalizedOperation, moduleName);
+      return generateValidationTestContent(
+        operation,
+        capitalizedModule,
+        capitalizedOperation,
+        moduleName
+      );
     case 'success':
-      return generateSuccessTestContent(operation, capitalizedModule, capitalizedOperation, moduleName);
+      return generateSuccessTestContent(
+        operation,
+        capitalizedModule,
+        capitalizedOperation,
+        moduleName
+      );
     case 'errors':
-      return generateErrorsTestContent(operation, capitalizedModule, capitalizedOperation, moduleName);
+      return generateErrorsTestContent(
+        operation,
+        capitalizedModule,
+        capitalizedOperation,
+        moduleName
+      );
     case 'helpers':
       return generateHelpersContent(capitalizedModule, moduleName);
     default:
-      return generateGenericTestContent(operation, capitalizedModule, capitalizedOperation, moduleName, testType);
+      return generateGenericTestContent(
+        operation,
+        capitalizedModule,
+        capitalizedOperation,
+        moduleName,
+        testType
+      );
   }
 };
 
 /**
  * Generates validation test content
  */
-const generateValidationTestContent = (operation: string, _capitalizedModule: string, capitalizedOperation: string, moduleName: string): string => {
+const generateValidationTestContent = (
+  operation: string,
+  _capitalizedModule: string,
+  capitalizedOperation: string,
+  moduleName: string
+): string => {
   return `import { describe, it, expect } from 'vitest';
 import { validatePayload } from '../../../src/apis/${moduleName}/validators/${operation}.${moduleName}';
 import { typePayload, typeResult, typeResultData, typeResultError } from '../../../src/apis/${moduleName}/types/${operation}.${moduleName}';
@@ -95,7 +121,12 @@ describe('${capitalizedOperation} ${moduleName.charAt(0).toUpperCase() + moduleN
 /**
  * Generates success test content
  */
-const generateSuccessTestContent = (operation: string, _capitalizedModule: string, capitalizedOperation: string, moduleName: string): string => {
+const generateSuccessTestContent = (
+  operation: string,
+  _capitalizedModule: string,
+  capitalizedOperation: string,
+  moduleName: string
+): string => {
   return `import { describe, it, expect } from 'vitest';
 import request from 'supertest';
 import app from '../../../src/app';
@@ -123,7 +154,12 @@ describe('${capitalizedOperation} ${moduleName.charAt(0).toUpperCase() + moduleN
 /**
  * Generates errors test content
  */
-const generateErrorsTestContent = (operation: string, _capitalizedModule: string, capitalizedOperation: string, moduleName: string): string => {
+const generateErrorsTestContent = (
+  operation: string,
+  _capitalizedModule: string,
+  capitalizedOperation: string,
+  moduleName: string
+): string => {
   return `import { describe, it, expect } from 'vitest';
 import request from 'supertest';
 import app from '../../../src/app';
@@ -218,27 +254,37 @@ const getSuccessPayload = (operation: string, moduleName: string): string => {
   return `// Add success payload for ${operation} ${moduleName}`;
 };
 
-
-
 const getHttpMethod = (operation: string): string => {
   switch (operation) {
-    case 'create': return 'post';
-    case 'get': return 'get';
-    case 'list': return 'get';
-    case 'update': return 'put';
-    case 'delete': return 'delete';
-    default: return 'post';
+    case 'create':
+      return 'post';
+    case 'get':
+      return 'get';
+    case 'list':
+      return 'get';
+    case 'update':
+      return 'put';
+    case 'delete':
+      return 'delete';
+    default:
+      return 'post';
   }
 };
 
 const getApiEndpoint = (operation: string, moduleName: string): string => {
   switch (operation) {
-    case 'create': return `/api/${moduleName}s`;
-    case 'get': return `/api/${moduleName}s/test-id`;
-    case 'list': return `/api/${moduleName}s`;
-    case 'update': return `/api/${moduleName}s/test-id`;
-    case 'delete': return `/api/${moduleName}s/test-id`;
-    default: return `/api/${moduleName}s`;
+    case 'create':
+      return `/api/${moduleName}s`;
+    case 'get':
+      return `/api/${moduleName}s/test-id`;
+    case 'list':
+      return `/api/${moduleName}s`;
+    case 'update':
+      return `/api/${moduleName}s/test-id`;
+    case 'delete':
+      return `/api/${moduleName}s/test-id`;
+    default:
+      return `/api/${moduleName}s`;
   }
 };
 
@@ -248,12 +294,18 @@ const getRequestBody = (operation: string): string => {
 
 const getSuccessStatusCode = (operation: string): number => {
   switch (operation) {
-    case 'create': return 201;
-    case 'get': return 200;
-    case 'list': return 200;
-    case 'update': return 200;
-    case 'delete': return 200;
-    default: return 200;
+    case 'create':
+      return 201;
+    case 'get':
+      return 200;
+    case 'list':
+      return 200;
+    case 'update':
+      return 200;
+    case 'delete':
+      return 200;
+    default:
+      return 200;
   }
 };
 
@@ -357,8 +409,6 @@ const getAdditionalSuccessTests = (operation: string, moduleName: string): strin
       return '';
   }
 };
-
-
 
 const getIntegrationErrorTests = (operation: string, moduleName: string): string => {
   switch (operation) {
@@ -502,8 +552,12 @@ const getIntegrationErrorTests = (operation: string, moduleName: string): string
   }
 };
 
-
-
-const generateGenericTestContent = (operation: string, _capitalizedModule: string, _capitalizedOperation: string, moduleName: string, testType: string): string => {
+const generateGenericTestContent = (
+  operation: string,
+  _capitalizedModule: string,
+  _capitalizedOperation: string,
+  moduleName: string,
+  testType: string
+): string => {
   return `// Generic test content for ${operation} ${moduleName} - ${testType}`;
 };

@@ -11,17 +11,17 @@ import { validateModuleName } from '../../validators/module-name.validator';
  */
 export const promptModuleChoice = async (): Promise<PromptResult<'new' | 'existing'>> => {
   try {
-    const answer = await inquirer.prompt([
+    const answer = (await inquirer.prompt([
       {
         type: 'list',
         name: 'moduleChoice',
         message: 'What would you like to do?',
         choices: [
           { name: '➕ Create a new module', value: 'new' },
-          { name: '🔧 Add operations to existing module', value: 'existing' }
-        ]
-      }
-    ]) as InquirerAnswers;
+          { name: '🔧 Add operations to existing module', value: 'existing' },
+        ],
+      },
+    ])) as InquirerAnswers;
 
     return { success: true, data: answer.moduleChoice };
   } catch (error) {
@@ -32,16 +32,18 @@ export const promptModuleChoice = async (): Promise<PromptResult<'new' | 'existi
 /**
  * Prompts user to select an existing module
  */
-export const promptExistingModuleSelection = async (modules: string[]): Promise<PromptResult<string>> => {
+export const promptExistingModuleSelection = async (
+  modules: string[]
+): Promise<PromptResult<string>> => {
   try {
-    const answer = await inquirer.prompt([
+    const answer = (await inquirer.prompt([
       {
         type: 'list',
         name: 'existingModule',
         message: 'Which module do you want to add operations to?',
-        choices: modules.map(module => ({ name: module, value: module }))
-      }
-    ]) as InquirerAnswers;
+        choices: modules.map(module => ({ name: module, value: module })),
+      },
+    ])) as InquirerAnswers;
 
     return { success: true, data: answer.existingModule };
   } catch (error) {
@@ -54,7 +56,7 @@ export const promptExistingModuleSelection = async (modules: string[]): Promise<
  */
 export const promptModuleName = async (): Promise<PromptResult<string>> => {
   try {
-    const answer = await inquirer.prompt([
+    const answer = (await inquirer.prompt([
       {
         type: 'input',
         name: 'moduleName',
@@ -63,9 +65,9 @@ export const promptModuleName = async (): Promise<PromptResult<string>> => {
           const validation = validateModuleName({ name: input });
           return validation.isValid || validation.error!;
         },
-        filter: (input: string) => input.trim()
-      }
-    ]) as InquirerAnswers;
+        filter: (input: string) => input.trim(),
+      },
+    ])) as InquirerAnswers;
 
     return { success: true, data: answer.moduleName };
   } catch (error) {
@@ -78,17 +80,17 @@ export const promptModuleName = async (): Promise<PromptResult<string>> => {
  */
 export const promptApiType = async (): Promise<PromptResult<'crud' | 'custom'>> => {
   try {
-    const answer = await inquirer.prompt([
+    const answer = (await inquirer.prompt([
       {
         type: 'list',
         name: 'apiType',
         message: 'What type of API operations do you need?',
         choices: [
           { name: 'CRUD operations (Create, Read, Update, Delete)', value: 'crud' },
-          { name: 'Custom API operations', value: 'custom' }
-        ]
-      }
-    ]) as InquirerAnswers;
+          { name: 'Custom API operations', value: 'custom' },
+        ],
+      },
+    ])) as InquirerAnswers;
 
     return { success: true, data: answer.apiType };
   } catch (error) {
@@ -101,7 +103,7 @@ export const promptApiType = async (): Promise<PromptResult<'crud' | 'custom'>> 
  */
 export const promptCustomOperations = async (): Promise<PromptResult<string[]>> => {
   try {
-    const answer = await inquirer.prompt([
+    const answer = (await inquirer.prompt([
       {
         type: 'input',
         name: 'customNames',
@@ -111,9 +113,9 @@ export const promptCustomOperations = async (): Promise<PromptResult<string[]>> 
           if (!trimmed) return 'Please enter at least one operation name';
           return true;
         },
-        filter: (input: string) => input.trim()
-      }
-    ]) as InquirerAnswers;
+        filter: (input: string) => input.trim(),
+      },
+    ])) as InquirerAnswers;
 
     const customNames = answer.customNames
       .split(',')
@@ -129,16 +131,18 @@ export const promptCustomOperations = async (): Promise<PromptResult<string[]>> 
 /**
  * Prompts user for confirmation
  */
-export const promptConfirmation = async (message: string = 'Proceed with module generation?'): Promise<PromptResult<boolean>> => {
+export const promptConfirmation = async (
+  message: string = 'Proceed with module generation?'
+): Promise<PromptResult<boolean>> => {
   try {
-    const answer = await inquirer.prompt([
+    const answer = (await inquirer.prompt([
       {
         type: 'confirm',
         name: 'confirm',
         message,
-        default: true
-      }
-    ]) as InquirerAnswers;
+        default: true,
+      },
+    ])) as InquirerAnswers;
 
     return { success: true, data: answer.confirm };
   } catch (error) {

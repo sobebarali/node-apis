@@ -49,6 +49,7 @@ node-apis --name book --crud
 ```
 
 **That's it!** You'll get a complete, production-ready API module with:
+
 - ✅ Controllers with request logging
 - ✅ Handlers with performance monitoring
 - ✅ Repository with clean data access
@@ -97,12 +98,14 @@ tests/book/             # Comprehensive test suite
 ## 💡 Three-Phase Generation Process
 
 **Phase 1: Types First**
+
 ```bash
 node-apis --name book --crud
 # Generates type files and asks for confirmation
 ```
 
 **Phase 2: Code Generation**
+
 ```bash
 # After you review and confirm types (type 'yes')
 # Generates controllers, handlers, repositories, validators
@@ -110,6 +113,7 @@ node-apis --name book --crud
 ```
 
 **Phase 3: Test Generation**
+
 ```bash
 # Automatically generates comprehensive test suite
 # ✅ Integration tests for all endpoints
@@ -121,19 +125,23 @@ node-apis --name book --crud
 ## 🔥 Generated Code Examples
 
 ### Controller (HTTP Layer)
+
 ```typescript
 export default async function createBookController(req: Request, res: Response): Promise<void> {
   const requestId = (req.headers['x-request-id'] as string) || generateRequestId();
 
   // Complete payload logging for debugging
-  console.info(`${requestId} [CONTROLLER] - CREATE BOOK payload:`, JSON.stringify(req.body, null, 2));
+  console.info(
+    `${requestId} [CONTROLLER] - CREATE BOOK payload:`,
+    JSON.stringify(req.body, null, 2)
+  );
 
   // Validation with detailed error responses
   const validation = validatePayload(req.body);
   if (!validation.success) {
     res.status(400).json({
       data: null,
-      error: { code: 'VALIDATION_ERROR', message: validation.error.message, statusCode: 400 }
+      error: { code: 'VALIDATION_ERROR', message: validation.error.message, statusCode: 400 },
     });
     return;
   }
@@ -146,6 +154,7 @@ export default async function createBookController(req: Request, res: Response):
 ```
 
 ### Handler (Business Logic)
+
 ```typescript
 export default async function createBookHandler(
   payload: typePayload,
@@ -179,6 +188,7 @@ export default async function createBookHandler(
 ```
 
 ### Repository (Data Access)
+
 ```typescript
 export default async function create(payload: CreatePayload) {
   try {
@@ -191,7 +201,9 @@ export default async function create(payload: CreatePayload) {
     };
     return book;
   } catch (error) {
-    throw new DatabaseError(`Failed to create book: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new DatabaseError(
+      `Failed to create book: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }
 ```
@@ -199,6 +211,7 @@ export default async function create(payload: CreatePayload) {
 ## 🧪 **Generated Test Suite**
 
 ### **Integration Tests (Focus on Real API Testing)**
+
 ```typescript
 // tests/book/create-book/success.test.ts
 import { describe, it, expect } from 'vitest';
@@ -211,13 +224,10 @@ describe('Create Book - Success Tests', () => {
     const payload: typePayload = {
       title: 'Test Book',
       author: 'Test Author',
-      metadata: { publisher: 'Test Publisher' }
+      metadata: { publisher: 'Test Publisher' },
     };
 
-    const response = await request(app)
-      .post('/api/books')
-      .send(payload)
-      .expect(201);
+    const response = await request(app).post('/api/books').send(payload).expect(201);
 
     expect(response.body.data).toBeDefined();
     expect(response.body.error).toBeNull();
@@ -226,16 +236,14 @@ describe('Create Book - Success Tests', () => {
 ```
 
 ### **Error Handling Tests**
+
 ```typescript
 // tests/book/create-book/errors.test.ts
 describe('Create Book - Error Tests', () => {
   it('should return 400 for invalid payload', async () => {
     const invalidPayload = { invalidField: 'invalid-value' };
 
-    const response = await request(app)
-      .post('/api/books')
-      .send(invalidPayload)
-      .expect(400);
+    const response = await request(app).post('/api/books').send(invalidPayload).expect(400);
 
     expect(response.body.data).toBeNull();
     expect(response.body.error.code).toBe('VALIDATION_ERROR');
@@ -244,6 +252,7 @@ describe('Create Book - Error Tests', () => {
 ```
 
 ### **Validation Tests**
+
 ```typescript
 // tests/book/create-book/validation.test.ts
 describe('Create Book - Validation Tests', () => {
@@ -251,7 +260,7 @@ describe('Create Book - Validation Tests', () => {
     const payload: typePayload = {
       title: 'Valid Book',
       author: 'Valid Author',
-      metadata: { publisher: 'Valid Publisher' }
+      metadata: { publisher: 'Valid Publisher' },
     };
 
     const result = validatePayload(payload);
@@ -263,6 +272,7 @@ describe('Create Book - Validation Tests', () => {
 ## 🎯 Usage Examples
 
 ### Basic CRUD API with Tests
+
 ```bash
 # Generate a complete book API
 node-apis --name book --crud
@@ -279,6 +289,7 @@ node-apis --name book --crud
 ```
 
 ### Custom Operations with Tests
+
 ```bash
 # Generate custom user operations
 node-apis --name user --custom "login,logout,resetPassword"
@@ -293,6 +304,7 @@ node-apis --name user --custom "login,logout,resetPassword"
 ```
 
 ### Interactive Mode (Recommended)
+
 ```bash
 # Just run the command - it's smart!
 node-apis
@@ -306,6 +318,7 @@ node-apis
 ```
 
 ### Type-Driven Development
+
 ```bash
 # 1. Generate types first
 node-apis --name product --crud
@@ -318,6 +331,7 @@ node-apis --name product --crud
 ```
 
 ### Run Your Tests
+
 ```bash
 # Run all tests
 npm test
@@ -334,25 +348,27 @@ npm run test:watch
 
 ## 📋 Command Line Options
 
-| Option | Alias | Description |
-|--------|-------|-------------|
-| `--name <name>` | `-n` | Module name (skips interactive prompt) |
-| `--crud` | | Generate CRUD operations (create, get, list, update, delete) |
-| `--custom <names>` | | Generate custom operations (comma-separated) |
-| `--force` | `-f` | Overwrite existing files |
-| `--no-interactive` | | Skip interactive prompts |
-| `--version` | `-V` | Show version number |
-| `--help` | `-h` | Show help information |
+| Option             | Alias | Description                                                  |
+| ------------------ | ----- | ------------------------------------------------------------ |
+| `--name <name>`    | `-n`  | Module name (skips interactive prompt)                       |
+| `--crud`           |       | Generate CRUD operations (create, get, list, update, delete) |
+| `--custom <names>` |       | Generate custom operations (comma-separated)                 |
+| `--force`          | `-f`  | Overwrite existing files                                     |
+| `--no-interactive` |       | Skip interactive prompts                                     |
+| `--version`        | `-V`  | Show version number                                          |
+| `--help`           | `-h`  | Show help information                                        |
 
 ## 🎨 What Makes the Generated Code Special?
 
 ### ✅ Performance Monitoring Built-In
+
 ```bash
 req-1703123456789-abc123 [BOOK] - CREATE handler started
 req-1703123456789-abc123 [BOOK] - CREATE handler completed successfully in 45ms
 ```
 
 ### ✅ Complete Request Tracing
+
 ```bash
 req-1703123456789-abc123 [CONTROLLER] - CREATE BOOK payload: {
   "title": "The Great Gatsby",
@@ -361,6 +377,7 @@ req-1703123456789-abc123 [CONTROLLER] - CREATE BOOK payload: {
 ```
 
 ### ✅ Production-Ready Error Handling
+
 ```typescript
 {
   "data": null,
@@ -373,6 +390,7 @@ req-1703123456789-abc123 [CONTROLLER] - CREATE BOOK payload: {
 ```
 
 ### ✅ Type-Safe Throughout
+
 - Controllers know exact request/response types
 - Handlers use your custom field definitions
 - Repositories match your data structure
@@ -381,12 +399,14 @@ req-1703123456789-abc123 [CONTROLLER] - CREATE BOOK payload: {
 ## 🚀 Advanced Features
 
 ### Smart Type-Driven Generation
+
 - **Parses your TypeScript types** and generates matching code
 - **Regenerates handlers** when you update type definitions
 - **Maintains consistency** between types and implementation
 - **Tests automatically use your exact types** for complete type safety
 
 ### Comprehensive Testing
+
 - **Integration tests only** - focus on real API behavior
 - **No complex mocking** - tests actual endpoints with supertest
 - **Type-safe tests** - all tests use your TypeScript types
@@ -394,17 +414,20 @@ req-1703123456789-abc123 [CONTROLLER] - CREATE BOOK payload: {
 - **Ready-to-run** - includes Vitest configuration and scripts
 
 ### Automatic Code Formatting
+
 - **Prettier integration** formats all generated code
 - **Consistent style** across your entire codebase
 - **No manual formatting** needed
 
 ### Clean Architecture
+
 - **No service layer bloat** - direct handler-to-repository pattern
 - **Single responsibility** - each layer has a clear purpose
 - **Easy to test** - clean separation of concerns
 - **Performance monitoring** built into every handler
 
 ### Developer Experience
+
 - **Interactive CLI** that guides you through the process
 - **Smart defaults** that work out of the box
 - **Incremental development** - add operations to existing modules
@@ -432,27 +455,29 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🎉 Why Developers Love This Tool
 
-> *"Finally, a code generator that creates code I actually want to use in production!"*
+> _"Finally, a code generator that creates code I actually want to use in production!"_
 
-> *"The comprehensive test suite saved me days of writing tests manually."*
+> _"The comprehensive test suite saved me days of writing tests manually."_
 
-> *"The performance monitoring and request tracing saved me hours of debugging."*
+> _"The performance monitoring and request tracing saved me hours of debugging."_
 
-> *"Clean architecture out of the box - no more service layer spaghetti!"*
+> _"Clean architecture out of the box - no more service layer spaghetti!"_
 
-> *"The type-driven approach is genius - my handlers always match my data structure."*
+> _"The type-driven approach is genius - my handlers always match my data structure."_
 
-> *"Integration tests that actually test the real API - brilliant!"*
+> _"Integration tests that actually test the real API - brilliant!"_
 
 ## 📊 **What You Get**
 
 ### **For CRUD APIs:**
+
 - 🏗️ **22 files generated** (5 operations × 4 files + routes + repository)
 - 🧪 **15 integration tests** (3 per operation)
 - ⚡ **Production-ready** with monitoring and error handling
 - 🎯 **Type-safe** throughout the entire stack
 
 ### **For Custom APIs:**
+
 - 🏗️ **N×4 files generated** (N operations × 4 files + routes + repository)
 - 🧪 **N×3 integration tests** (3 per operation)
 - ⚡ **Production-ready** with monitoring and error handling

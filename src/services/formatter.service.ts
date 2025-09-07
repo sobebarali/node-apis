@@ -15,7 +15,7 @@ export const formatGeneratedFiles = async (filePaths: string[]): Promise<void> =
     // Check if prettier is available
     const prettierPath = path.join(process.cwd(), 'node_modules', '.bin', 'prettier');
     const prettierExists = await fs.pathExists(prettierPath);
-    
+
     if (!prettierExists) {
       console.warn('⚠️  Prettier not found. Skipping code formatting.');
       return;
@@ -28,13 +28,19 @@ export const formatGeneratedFiles = async (filePaths: string[]): Promise<void> =
           await execAsync(`"${prettierPath}" --write "${filePath}"`);
         }
       } catch (error) {
-        console.warn(`⚠️  Failed to format ${filePath}:`, error instanceof Error ? error.message : 'Unknown error');
+        console.warn(
+          `⚠️  Failed to format ${filePath}:`,
+          error instanceof Error ? error.message : 'Unknown error'
+        );
       }
     }
 
     console.log(`✨ Formatted ${filePaths.length} generated files`);
   } catch (error) {
-    console.warn('⚠️  Code formatting failed:', error instanceof Error ? error.message : 'Unknown error');
+    console.warn(
+      '⚠️  Code formatting failed:',
+      error instanceof Error ? error.message : 'Unknown error'
+    );
   }
 };
 
@@ -45,7 +51,7 @@ export const formatDirectory = async (directoryPath: string): Promise<void> => {
   try {
     const prettierPath = path.join(process.cwd(), 'node_modules', '.bin', 'prettier');
     const prettierExists = await fs.pathExists(prettierPath);
-    
+
     if (!prettierExists) {
       console.warn('⚠️  Prettier not found. Skipping code formatting.');
       return;
@@ -54,10 +60,13 @@ export const formatDirectory = async (directoryPath: string): Promise<void> => {
     // Format all TypeScript files in the directory
     const pattern = path.join(directoryPath, '**/*.ts');
     await execAsync(`"${prettierPath}" --write "${pattern}"`);
-    
+
     console.log(`✨ Formatted all TypeScript files in ${directoryPath}`);
   } catch (error) {
-    console.warn('⚠️  Directory formatting failed:', error instanceof Error ? error.message : 'Unknown error');
+    console.warn(
+      '⚠️  Directory formatting failed:',
+      error instanceof Error ? error.message : 'Unknown error'
+    );
   }
 };
 
@@ -68,7 +77,7 @@ export const formatFile = async (filePath: string): Promise<void> => {
   try {
     const prettierPath = path.join(process.cwd(), 'node_modules', '.bin', 'prettier');
     const prettierExists = await fs.pathExists(prettierPath);
-    
+
     if (!prettierExists) {
       console.warn('⚠️  Prettier not found. Skipping code formatting.');
       return;
@@ -79,6 +88,9 @@ export const formatFile = async (filePath: string): Promise<void> => {
       console.log(`✨ Formatted ${filePath}`);
     }
   } catch (error) {
-    console.warn(`⚠️  Failed to format ${filePath}:`, error instanceof Error ? error.message : 'Unknown error');
+    console.warn(
+      `⚠️  Failed to format ${filePath}:`,
+      error instanceof Error ? error.message : 'Unknown error'
+    );
   }
 };

@@ -7,21 +7,21 @@ import { ApiType } from '../types/common.types';
 /**
  * Generates route file content for a module
  */
-export const generateRouteContent = ({ 
-  moduleName, 
-  apiType 
-}: { 
-  moduleName: string; 
-  apiType: ApiType; 
+export const generateRouteContent = ({
+  moduleName,
+  apiType,
+}: {
+  moduleName: string;
+  apiType: ApiType;
 }): string => {
   const capitalizedModule = moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
-  
+
   if (apiType.type === 'crud') {
     return generateCrudRouteContent(moduleName, capitalizedModule);
   } else if (apiType.type === 'custom' && apiType.customNames) {
     return generateCustomRouteContent(moduleName, capitalizedModule, apiType.customNames);
   }
-  
+
   return generateGenericRouteContent(moduleName, capitalizedModule);
 };
 
@@ -52,15 +52,25 @@ export default router;
 /**
  * Generates custom route content
  */
-const generateCustomRouteContent = (moduleName: string, capitalizedModule: string, customNames: string[]): string => {
+const generateCustomRouteContent = (
+  moduleName: string,
+  capitalizedModule: string,
+  customNames: string[]
+): string => {
   const imports = customNames
-    .map(customName => `import { ${customName}${capitalizedModule} } from './controllers/${customName}.${moduleName}';`)
+    .map(
+      customName =>
+        `import { ${customName}${capitalizedModule} } from './controllers/${customName}.${moduleName}';`
+    )
     .join('\n');
-  
+
   const routes = customNames
-    .map(customName => `router.post('/${customName}', ${customName}${capitalizedModule});    // POST /api/${moduleName}s/${customName}`)
+    .map(
+      customName =>
+        `router.post('/${customName}', ${customName}${capitalizedModule});    // POST /api/${moduleName}s/${customName}`
+    )
     .join('\n');
-  
+
   return `import { Router } from 'express';
 ${imports}
 
