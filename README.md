@@ -57,6 +57,30 @@ npm install -g node-apis
 npx node-apis
 ```
 
+#### 🚨 Monorepo Users - Important Note
+
+If you're working in a **monorepo** (pnpm workspaces, Yarn workspaces, npm workspaces) and encounter this error:
+```
+npm error Unsupported URL Type "workspace:": workspace:*
+```
+
+**Solution**: Use global installation to avoid workspace conflicts:
+```bash
+# ✅ Recommended: Install globally
+npm install -g node-apis
+
+# ✅ Alternative: Use npx (no installation)
+npx node-apis
+
+# ✅ pnpm users: Bypass workspace
+pnpm add -g node-apis
+
+# ✅ Yarn users: Global install
+yarn global add node-apis
+```
+
+**Why this happens**: Monorepos use `workspace:` protocol for local packages, which can conflict with npm registry installations. Global installation bypasses workspace resolution.
+
 ### Generate Your First API
 
 ```bash
@@ -72,6 +96,8 @@ node-apis --name productCategory --crud
 node-apis --name book --crud --framework express  # Default
 node-apis --name book --crud --framework hono     # Lightweight alternative
 ```
+
+> 💡 **Monorepo users**: If you get workspace protocol errors, use `npm install -g node-apis` or `npx node-apis` instead.
 
 **That's it!** You'll get a complete, production-ready API module with:
 
@@ -491,6 +517,63 @@ req-1703123456789-abc123 [CONTROLLER] - CREATE BOOK payload: {
 - **Node.js >= 16.0.0**
 - **TypeScript project** (the generator creates TypeScript files)
 
+## 🔧 Troubleshooting
+
+### Common Issues and Solutions
+
+#### 🚨 Workspace Protocol Error (Monorepo Users)
+```
+npm error Unsupported URL Type "workspace:": workspace:*
+```
+**Solution**: Install globally to avoid workspace conflicts:
+```bash
+npm install -g node-apis  # ✅ Recommended
+# or
+npx node-apis            # ✅ No installation needed
+```
+
+#### 🚨 Permission Denied (macOS/Linux)
+```
+Error: EACCES: permission denied
+```
+**Solution**: Use sudo or fix npm permissions:
+```bash
+sudo npm install -g node-apis  # Quick fix
+# or
+npm config set prefix ~/.npm-global  # Better long-term solution
+```
+
+#### 🚨 Command Not Found After Global Install
+```
+bash: node-apis: command not found
+```
+**Solution**: Check your PATH or use npx:
+```bash
+npx node-apis  # Always works
+# or
+echo $PATH     # Check if npm global bin is in PATH
+```
+
+#### 🚨 TypeScript Compilation Errors in Generated Code
+**Solution**: Ensure you have TypeScript installed:
+```bash
+npm install -g typescript  # Global TypeScript
+# or in your project
+npm install --save-dev typescript
+```
+
+#### 🚨 Tests Failing After Generation
+**Solution**: Install test dependencies:
+```bash
+npm install --save-dev vitest supertest @types/supertest
+```
+
+### 💡 Pro Tips
+- **Always use global installation** for CLI tools like `node-apis`
+- **Use npx** if you prefer not to install globally
+- **Check the generated files** - they include helpful TODO comments
+- **Customize the types first** before generating the full code
+
 ## 🤝 Contributing
 
 We welcome contributions! Here's how:
@@ -502,6 +585,19 @@ We welcome contributions! Here's how:
 5. **Open** a Pull Request
 
 ## 📋 Changelog
+
+### v3.1.5 - Critical Bug Fix 🐛
+
+**🔧 Critical Fix:**
+- ✅ **Module Import Error**: Fixed `Cannot find module 'test-config-generator.service'` error
+- ✅ **Package Stability**: Temporarily disabled test config generation to ensure package works
+- ✅ **Global Installation**: Package now works correctly when installed globally
+
+### v3.1.4 - Bug Fix Release 🐛
+
+**🔧 Critical Fix:**
+- ✅ **Missing Module Fix**: Fixed missing `test-config-generator.service` in published package
+- ✅ **Import Resolution**: Resolved module import errors when using the npm package globally
 
 ### v3.1.3 - Smart Naming System 🎨
 

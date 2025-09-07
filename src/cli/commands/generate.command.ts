@@ -9,7 +9,7 @@ import {
   generateCodeWithParsedTypes,
 } from '../../services/two-phase-generator.service';
 import { generateTestFiles } from '../../services/file-generator.service';
-import { generateCompleteTestSetup } from '../../services/test-config-generator.service';
+// import { generateCompleteTestSetup } from '../../services/test-config-generator.service';
 import {
   promptTypeReview,
   displayTypeInstructions,
@@ -221,15 +221,16 @@ const handleTwoPhaseGeneration = async ({
     // Generate test configuration (only once per project)
     let testConfigFiles: any[] = [];
     try {
-      const testSetup = await generateCompleteTestSetup({
-        projectRoot: '.',
-        appendMode: true, // Don't overwrite existing config
-      });
-      testConfigFiles = [...testSetup.configFiles, ...testSetup.additionalFiles];
+      // TODO: Re-enable test configuration generation in future version
+      // const testSetup = await generateCompleteTestSetup({
+      //   projectRoot: '.',
+      //   appendMode: true, // Don't overwrite existing config
+      // });
+      // testConfigFiles = [...testSetup.configFiles, ...testSetup.additionalFiles];
 
-      if (testSetup.packageJsonUpdated) {
-        console.log('📦 Updated package.json with test scripts and dependencies');
-      }
+      // if (testSetup.packageJsonUpdated) {
+      //   console.log('📦 Updated package.json with test scripts and dependencies');
+      // }
     } catch (error) {
       console.log('⚠️  Test configuration already exists or failed to generate');
     }
