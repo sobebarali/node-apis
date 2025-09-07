@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.1] - 2024-01-07
+
+### Fixed
+- **Critical Bug**: Fixed Hono framework controller generation
+  - All CRUD controllers (get, list, update, delete) were incorrectly generating Express.js code when Hono framework was selected
+  - Only the create controller was properly using Hono framework
+  - Custom controllers were also affected by the same issue
+  - All controllers now correctly generate framework-specific code (Hono vs Express)
+  - Custom routes now properly use Hono app instead of Express router when Hono is selected
+
+### Technical Details
+- Fixed `generateGetControllerContent`, `generateListControllerContent`, `generateUpdateControllerContent`, and `generateDeleteControllerContent` functions to respect framework parameter
+- Fixed `generateCustomControllerContent` and `generateGenericCustomControllerContent` to support Hono framework
+- Fixed `generateCustomRouteContent` and `generateGenericRouteContent` to use correct framework imports and syntax
+- Updated two-phase generator to pass framework parameter to custom controller generation
+
 ## [3.2.0] - 2024-01-07
 
 ### Added

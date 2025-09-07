@@ -73,8 +73,35 @@ export default router;
 const generateCustomRouteContent = (
   naming: ModuleNaming,
   customNames: string[],
-  _framework: string = 'express'
+  framework: string = 'express'
 ): string => {
+  if (framework === 'hono') {
+    const imports = customNames
+      .map(
+        customName =>
+          `import { ${customName}${naming.class} } from './controllers/${customName}.${naming.file}';`
+      )
+      .join('\n');
+
+    const routes = customNames
+      .map(
+        customName =>
+          `app.post('/${customName}', ${customName}${naming.class});    // POST /api/${naming.url}s/${customName}`
+      )
+      .join('\n');
+
+    return `import { Hono } from 'hono';
+${imports}
+
+const app = new Hono();
+
+// Custom Routes
+${routes}
+
+export default app;
+`;
+  }
+
   const imports = customNames
     .map(
       customName =>
@@ -104,7 +131,21 @@ export default router;
 /**
  * Generates generic route content
  */
-const generateGenericRouteContent = (naming: ModuleNaming, _framework: string = 'express'): string => {
+const generateGenericRouteContent = (naming: ModuleNaming, framework: string = 'express'): string => {
+  if (framework === 'hono') {
+    return `import { Hono } from 'hono';
+
+const app = new Hono();
+
+// TODO: Add your ${naming.variable} routes here
+// Example:
+// import { create${naming.class} } from './controllers/create.${naming.file}';
+// app.post('/', create${naming.class});
+
+export default app;
+`;
+  }
+
   return `import { Router } from 'express';
 
 const router = Router();

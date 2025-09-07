@@ -214,7 +214,7 @@ export const generateCodeWithParsedTypes = async ({
       // Generate controller file
       const controllerFilePath = path.join(controllersDir, controllerFileName);
       if (!appendMode || !(await fileExists({ filePath: controllerFilePath }))) {
-        const controllerContent = generateCustomControllerContent({ customName, moduleName });
+        const controllerContent = generateCustomControllerContent({ customName, moduleName, framework });
         await writeFile({ filePath: controllerFilePath, content: controllerContent });
         generatedFiles.push({
           fileName: controllerFileName,
