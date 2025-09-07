@@ -17,6 +17,7 @@
 - **🧪 Comprehensive Testing** - Complete integration test suite generated automatically
 - **🛡️ Production Ready** - Error handling, validation, and observability built-in
 - **🚫 No Service Layer** - Direct handler-to-repository pattern for simplicity
+- **⚙️ Smart Configuration** - Set preferences once, skip repetitive prompts
 - **📦 Zero Config** - Works out of the box with sensible defaults
 
 ## 🎯 What Makes This Different?
@@ -59,6 +60,18 @@ npm install -g node-apis
 npx node-apis
 ```
 
+### First-Time Setup (Optional)
+
+Set your framework preference to skip repetitive prompts:
+
+```bash
+# Interactive setup - choose your preferred framework
+node-apis --init-config
+
+# Or set directly
+node-apis --set-framework hono  # or express
+```
+
 #### 🚨 Monorepo Users - Important Note
 
 If you're working in a **monorepo** (pnpm workspaces, Yarn workspaces, npm workspaces) and encounter this error:
@@ -97,6 +110,45 @@ node-apis --name productCategory --crud
 # Choose your framework
 node-apis --name book --crud --framework express  # Default
 node-apis --name book --crud --framework hono     # Lightweight alternative
+```
+
+## ⚙️ Configuration
+
+Set your preferences once and skip repetitive prompts:
+
+```bash
+# Initialize configuration (interactive)
+node-apis --init-config
+
+# Set default framework
+node-apis --set-framework express
+node-apis --set-framework hono
+
+# Now generate without specifying framework
+node-apis --name user --crud  # Uses your configured framework
+```
+
+The config file (`node-apis.config.json`) stores your preferences and is extensible for future features like database ORM selection.
+
+### Configuration Workflow Example
+
+```bash
+# First time setup - choose your preferred framework
+node-apis --init-config
+# ✅ Configuration file created successfully!
+# 🚀 Default framework: express (or hono if you chose it interactively)
+
+# Change framework preference anytime
+node-apis --set-framework hono
+# ✅ Framework set to: hono
+
+# Now generate APIs without specifying framework
+node-apis --name user --crud
+# Uses Hono framework from config
+
+# Override config for specific generation
+node-apis --name admin --crud --framework express
+# Uses Express despite Hono being configured
 ```
 
 > 💡 **Monorepo users**: If you get workspace protocol errors, use `npm install -g node-apis` or `npx node-apis` instead.
@@ -700,6 +752,45 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 - 🧪 **N×3 integration tests** (3 per operation)
 - ⚡ **Production-ready** with monitoring and error handling
 - 🎯 **Type-safe** throughout the entire stack
+
+## 📋 Configuration File
+
+The `node-apis.config.json` file stores your preferences:
+
+```json
+{
+  "version": "1.0.0",
+  "framework": "express",
+  "database": {
+    "orm": "prisma",
+    "type": "postgresql"
+  },
+  "preferences": {
+    "autoFormat": true,
+    "generateTests": true,
+    "skipConfirmation": false
+  }
+}
+```
+
+### Configuration Options
+
+- **`framework`**: Web framework (`express` | `hono`)
+- **`database`**: Database settings (future feature)
+  - `orm`: ORM preference (`prisma` | `typeorm` | `drizzle`)
+  - `type`: Database type (`postgresql` | `mysql` | `sqlite`)
+- **`preferences`**: Generation preferences
+  - `autoFormat`: Auto-format generated code
+  - `generateTests`: Generate test files
+  - `skipConfirmation`: Skip confirmation prompts
+
+### Configuration Benefits
+
+- **🚀 Faster Workflow** - Skip repetitive framework selection prompts
+- **👥 Team Consistency** - Share config files across team members
+- **🔧 Flexible Override** - CLI options still work to override config
+- **📈 Future-Proof** - Extensible for database ORM and other preferences
+- **💾 Persistent** - Settings saved locally per project
 
 ---
 

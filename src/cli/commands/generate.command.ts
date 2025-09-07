@@ -18,6 +18,13 @@ import {
 
 import { getExistingModules, detectExistingModule } from '../../services/module-detection.service';
 import {
+  getEffectiveFramework,
+  initializeConfig,
+  setFramework,
+  configExists,
+} from '../../services/config.service';
+import { SupportedFramework } from '../../types/config.types';
+import {
   displayWelcomeMessage,
   displayExistingModules,
   displayExistingFiles,
@@ -34,13 +41,25 @@ import {
   promptApiType,
   promptCustomOperations,
   promptConfirmation,
+  promptFrameworkSelection,
+  promptSaveFrameworkToConfig,
 } from '../prompts/interactive.prompts';
 
 
 export const handleGenerateCommand = async (options: CommandOptions): Promise<void> => {
   try {
-    displayWelcomeMessage();
+    // Handle config-only operations first
+    if (options.initConfig) {
+      await handleInitConfig(options);
+      return;
+    }
 
+    if (options.setFramework) {
+      await handleSetFramework(options);
+      return;
+    }
+
+    displayWelcomeMessage();
 
     const locationValidation = await validateTargetLocation();
     if (!locationValidation.isValid) {
@@ -57,7 +76,7 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
 
 
     if (options.interactive !== false) {
-      const interactiveResult = await handleInteractiveFlow(moduleName);
+      const interactiveResult = await handleInteractiveFlow(moduleName, options.framework);
       if (!interactiveResult.success) {
         displayCancellation();
         process.exit(0);
@@ -97,10 +116,15 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
 
 
     if (apiType) {
+      // Get effective framework from config, CLI option, or prompt user
+      const framework = await getEffectiveFramework({
+        ...(options.framework && { cliFramework: options.framework })
+      });
+
       await handleTwoPhaseGeneration({
         moduleName,
         apiType,
-        framework: options.framework || 'express',
+        framework,
         options: {
           force: options.force || false,
           appendMode,
@@ -270,7 +294,8 @@ const parseCommandLineApiType = (options: CommandOptions): ApiType | undefined =
  * Handles interactive flow for module and API type selection
  */
 const handleInteractiveFlow = async (
-  initialModuleName?: string
+  initialModuleName?: string,
+  cliFramework?: string
 ): Promise<{
   success: boolean;
   moduleName?: string;
@@ -336,6 +361,36 @@ const handleInteractiveFlow = async (
     }
   }
 
+  // Handle framework selection if not provided via CLI and not in config
+  if (!cliFramework && apiType) {
+    const configFramework = await getEffectiveFramework();
+
+    // If no framework in config (defaults to express), prompt user and offer to save
+    if (configFramework === 'express') {
+      const hasConfig = await configExists();
+
+      if (!hasConfig) {
+        const frameworkResult = await promptFrameworkSelection();
+        if (!frameworkResult.success) {
+          return { success: false, appendMode: false };
+        }
+
+        const selectedFramework = frameworkResult.data!;
+
+        // Ask if user wants to save this choice
+        const saveResult = await promptSaveFrameworkToConfig({ framework: selectedFramework });
+        if (saveResult.success && saveResult.data) {
+          try {
+            await setFramework({ framework: selectedFramework });
+            console.log(`✅ Saved ${selectedFramework} as default framework in node-apis.config.json\n`);
+          } catch (error: any) {
+            console.warn(`⚠️  Could not save framework to config: ${error.message}\n`);
+          }
+        }
+      }
+    }
+  }
+
   return {
     success: true,
     moduleName: moduleName!,
@@ -357,4 +412,62 @@ const getOperationNames = (apiType?: ApiType): string[] | undefined => {
   }
 
   return undefined;
+};
+
+/**
+ * Handles config initialization
+ */
+const handleInitConfig = async (options: CommandOptions): Promise<void> => {
+  try {
+    const exists = await configExists();
+
+    if (exists && !options.force) {
+      displayError('Config file already exists. Use --force to overwrite.');
+      process.exit(1);
+    }
+
+    let framework: SupportedFramework = 'express';
+
+    // If interactive mode, prompt for framework
+    if (options.interactive !== false) {
+      const frameworkResult = await promptFrameworkSelection();
+      if (!frameworkResult.success) {
+        displayCancellation();
+        process.exit(0);
+      }
+      framework = frameworkResult.data!;
+    }
+
+    const config = await initializeConfig({ framework, force: options.force || false });
+
+    console.log('✅ Configuration file created successfully!');
+    console.log(`📁 Location: node-apis.config.json`);
+    console.log(`🚀 Default framework: ${config.framework}`);
+    console.log('\nYou can now run commands without specifying the framework.');
+  } catch (error: any) {
+    displayError(`Failed to initialize config: ${error.message}`);
+    process.exit(1);
+  }
+};
+
+/**
+ * Handles setting framework in config
+ */
+const handleSetFramework = async (options: CommandOptions): Promise<void> => {
+  try {
+    const framework = options.setFramework as SupportedFramework;
+
+    if (!['express', 'hono'].includes(framework)) {
+      displayError(`Invalid framework: ${framework}. Must be 'express' or 'hono'`);
+      process.exit(1);
+    }
+
+    await setFramework({ framework });
+
+    console.log(`✅ Framework set to: ${framework}`);
+    console.log('📁 Updated: node-apis.config.json');
+  } catch (error: any) {
+    displayError(`Failed to set framework: ${error.message}`);
+    process.exit(1);
+  }
 };

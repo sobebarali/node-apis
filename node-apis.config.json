@@ -1,0 +1,10 @@
+{
+  "version": "1.0.0",
+  "framework": "hono",
+  "database": {},
+  "preferences": {
+    "autoFormat": true,
+    "generateTests": true,
+    "skipConfirmation": false
+  }
+}

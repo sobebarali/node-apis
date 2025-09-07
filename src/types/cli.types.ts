@@ -9,6 +9,8 @@ export interface CommandOptions {
   crud?: boolean;
   custom?: string;
   framework?: string;
+  initConfig?: boolean;
+  setFramework?: string;
 }
 
 export interface InquirerAnswers {
@@ -19,6 +21,8 @@ export interface InquirerAnswers {
   moduleChoice: 'new' | 'existing';
   existingModule: string;
   operationMode: 'replace' | 'append';
+  framework: 'express' | 'hono';
+  saveToConfig: boolean;
 }
 
 export interface PromptResult<T = any> {

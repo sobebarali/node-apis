@@ -4,6 +4,7 @@
 
 import inquirer from 'inquirer';
 import { InquirerAnswers, PromptResult } from '../../types/cli.types';
+import { SupportedFramework } from '../../types/config.types';
 import { validateModuleName } from '../../validators/module-name.validator';
 
 /**
@@ -123,6 +124,50 @@ export const promptCustomOperations = async (): Promise<PromptResult<string[]>> 
       .filter(name => name.length > 0);
 
     return { success: true, data: customNames };
+  } catch (error) {
+    return { success: false, cancelled: true };
+  }
+};
+
+/**
+ * Prompts user for framework selection
+ */
+export const promptFrameworkSelection = async (): Promise<PromptResult<SupportedFramework>> => {
+  try {
+    const answer = (await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'framework',
+        message: 'Which web framework would you like to use?',
+        choices: [
+          { name: 'Express.js (Traditional, widely adopted)', value: 'express' },
+          { name: 'Hono (Modern, lightweight, fast)', value: 'hono' },
+        ],
+        default: 'express',
+      },
+    ])) as InquirerAnswers;
+
+    return { success: true, data: answer.framework };
+  } catch (error) {
+    return { success: false, cancelled: true };
+  }
+};
+
+/**
+ * Prompts user to save framework choice to config
+ */
+export const promptSaveFrameworkToConfig = async ({ framework }: { framework: SupportedFramework }): Promise<PromptResult<boolean>> => {
+  try {
+    const answer = (await inquirer.prompt([
+      {
+        type: 'confirm',
+        name: 'saveToConfig',
+        message: `Save ${framework} as your default framework? (This will create/update node-apis.config.json)`,
+        default: true,
+      },
+    ])) as InquirerAnswers;
+
+    return { success: true, data: answer.saveToConfig };
   } catch (error) {
     return { success: false, cancelled: true };
   }
