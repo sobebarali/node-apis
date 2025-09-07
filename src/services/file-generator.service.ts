@@ -5,6 +5,7 @@
 import * as path from 'path';
 import { ApiType, GeneratedFile } from '../types/common.types';
 import { fileExists, writeFile } from '../filesystem/file.operations';
+import { ensureDirectory } from '../filesystem/directory.operations';
 import { getCrudFileNames, generateCrudFileContent } from '../templates/crud.templates';
 import { getCustomFileNames, generateCustomFileContent } from '../templates/custom.templates';
 import { getCrudValidatorFileNames, generateCrudValidatorContent } from '../templates/crud.validators';
@@ -15,6 +16,8 @@ import { getCustomControllerFileNames, generateCustomControllerContent } from '.
 import { getCustomServiceFileNames, generateCustomServiceContent } from '../templates/custom.services';
 import { generateRouteContent } from '../templates/routes.templates';
 import { generateRepositoryContent } from '../templates/repository.templates';
+import { generateCrudTestContent } from '../templates/crud.tests';
+import { generateCustomTestContent } from '../templates/custom.tests';
 
 /**
  * Generates TypeScript files based on API type (types + validators + controllers + services + repository + routes)
@@ -154,6 +157,98 @@ export const generateApiFiles = async ({
     const routeContent = generateRouteContent({ moduleName, apiType });
     await writeFile({ filePath: routeFilePath, content: routeContent });
     generatedFiles.push({ fileName: routeFileName, filePath: routeFilePath, content: routeContent });
+  }
+
+  return generatedFiles;
+};
+
+/**
+ * Generates test files based on API type
+ */
+export const generateTestFiles = async ({
+  moduleName,
+  testPath,
+  apiType,
+  appendMode = false
+}: {
+  moduleName: string;
+  testPath: string;
+  apiType: ApiType;
+  appendMode?: boolean;
+}): Promise<GeneratedFile[]> => {
+  const generatedFiles: GeneratedFile[] = [];
+  const moduleTestDir = path.join(testPath, moduleName);
+
+  if (apiType.type === 'crud') {
+    const crudOperations = ['create', 'get', 'list', 'update', 'delete'];
+    const testTypes: ('validation' | 'success' | 'errors')[] = ['validation', 'success', 'errors'];
+
+    for (const operation of crudOperations) {
+      const operationDir = path.join(moduleTestDir, `${operation}-${moduleName}`);
+
+      // Ensure operation directory exists
+      await ensureDirectory({ dirPath: operationDir });
+
+      for (const testType of testTypes) {
+        const testFileName = `${testType}.test.ts`;
+        const testFilePath = path.join(operationDir, testFileName);
+
+        if (!appendMode || !await fileExists({ filePath: testFilePath })) {
+          const testContent = generateCrudTestContent({ operation, moduleName, testType });
+          await writeFile({ filePath: testFilePath, content: testContent });
+          generatedFiles.push({
+            fileName: testFileName,
+            filePath: testFilePath,
+            content: testContent
+          });
+        }
+      }
+    }
+  } else if (apiType.type === 'custom' && apiType.customNames) {
+    const testTypes: ('validation' | 'success' | 'errors')[] = ['validation', 'success', 'errors'];
+
+    for (const customName of apiType.customNames) {
+      const operationDir = path.join(moduleTestDir, `${customName}-${moduleName}`);
+
+      // Ensure operation directory exists
+      await ensureDirectory({ dirPath: operationDir });
+
+      for (const testType of testTypes) {
+        const testFileName = `${testType}.test.ts`;
+        const testFilePath = path.join(operationDir, testFileName);
+
+        if (!appendMode || !await fileExists({ filePath: testFilePath })) {
+          const testContent = generateCustomTestContent({ customName, moduleName, testType });
+          await writeFile({ filePath: testFilePath, content: testContent });
+          generatedFiles.push({
+            fileName: testFileName,
+            filePath: testFilePath,
+            content: testContent
+          });
+        }
+      }
+    }
+  }
+
+  // Generate shared helpers
+  const sharedDir = path.join(moduleTestDir, 'shared');
+  const helpersFileName = 'helpers.ts';
+  const helpersFilePath = path.join(sharedDir, helpersFileName);
+
+  // Ensure shared directory exists
+  await ensureDirectory({ dirPath: sharedDir });
+
+  if (!appendMode || !await fileExists({ filePath: helpersFilePath })) {
+    const helpersContent = apiType.type === 'crud'
+      ? generateCrudTestContent({ operation: 'create', moduleName, testType: 'helpers' })
+      : generateCustomTestContent({ customName: 'default', moduleName, testType: 'helpers' });
+
+    await writeFile({ filePath: helpersFilePath, content: helpersContent });
+    generatedFiles.push({
+      fileName: helpersFileName,
+      filePath: helpersFilePath,
+      content: helpersContent
+    });
   }
 
   return generatedFiles;

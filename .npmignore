@@ -4,11 +4,15 @@ tsconfig.json
 .prettierrc
 
 # Development files
-test-type-parser.js
-regenerate-services.js
-example-app.ts
-debug-parser.js
+*.log
+debug-*.js
+test-*.js
+regenerate-*.js
+example-*.ts
 .augment/
+
+# Test files (keep test templates but exclude generated tests)
+tests/*/
 
 # Generated APIs (examples)
 src/apis/

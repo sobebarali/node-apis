@@ -7,6 +7,8 @@ import { ApiType } from '../../types/common.types';
 import { validateTargetLocation } from '../../validators/location.validator';
 import { generateModuleStructure } from '../../services/module-generator.service';
 import { generateTypeFilesOnly, generateCodeWithParsedTypes } from '../../services/two-phase-generator.service';
+import { generateTestFiles } from '../../services/file-generator.service';
+import { generateCompleteTestSetup } from '../../services/test-config-generator.service';
 import { promptTypeReview, displayTypeInstructions, displayTypeReviewComplete } from '../prompts/type-review.prompts';
 import { getModulePath } from '../../filesystem/path.utils';
 import { getExistingModules, detectExistingModule } from '../../services/module-detection.service';
@@ -195,8 +197,35 @@ const handleTwoPhaseGeneration = async ({
       appendMode
     });
 
+    // Phase 3: Generate test files
+    console.log('🧪 Phase 3: Generating comprehensive test suite...\n');
+
+    const testPath = 'tests';
+    const testFiles = await generateTestFiles({
+      moduleName,
+      testPath,
+      apiType,
+      appendMode
+    });
+
+    // Generate test configuration (only once per project)
+    let testConfigFiles: any[] = [];
+    try {
+      const testSetup = await generateCompleteTestSetup({
+        projectRoot: '.',
+        appendMode: true // Don't overwrite existing config
+      });
+      testConfigFiles = [...testSetup.configFiles, ...testSetup.additionalFiles];
+
+      if (testSetup.packageJsonUpdated) {
+        console.log('📦 Updated package.json with test scripts and dependencies');
+      }
+    } catch (error) {
+      console.log('⚠️  Test configuration already exists or failed to generate');
+    }
+
     // Display final results
-    const allFiles = [...typeFiles, ...codeFiles];
+    const allFiles = [...typeFiles, ...codeFiles, ...testFiles, ...testConfigFiles];
     displayGenerationResult({
       success: true,
       moduleName,

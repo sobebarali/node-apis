@@ -120,3 +120,9 @@ ehthumbs.db
 Thumbs.db
 
 .augment
+# Test coverage
+# Test results
+test-results/
+junit.xml
+# Test artifacts
+*.tar.gz
