@@ -1,25 +1,22 @@
-/**
- * CRUD handler templates with your preferred format
- */
+
 
 import { ParsedTypePayload } from '../services/type-parser.service';
 
-/**
- * Gets the list of CRUD handler file names for a module
- */
+
+import { getModuleNaming, ModuleNaming } from '../shared/utils/naming.utils';
+
 export const getCrudHandlerFileNames = ({ moduleName }: { moduleName: string }): string[] => {
+  const naming = getModuleNaming(moduleName);
   return [
-    `create.${moduleName}.ts`,
-    `get.${moduleName}.ts`,
-    `list.${moduleName}.ts`,
-    `delete.${moduleName}.ts`,
-    `update.${moduleName}.ts`,
+    `create.${naming.file}.ts`,
+    `get.${naming.file}.ts`,
+    `list.${naming.file}.ts`,
+    `delete.${naming.file}.ts`,
+    `update.${naming.file}.ts`,
   ];
 };
 
-/**
- * Generates TypeScript handler file content for CRUD operations
- */
+
 export const generateCrudHandlerContent = ({
   operation,
   moduleName,
@@ -29,52 +26,46 @@ export const generateCrudHandlerContent = ({
   moduleName: string;
   parsedType: ParsedTypePayload;
 }): string => {
-  const capitalizedModule = moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
+  const naming = getModuleNaming(moduleName);
   const capitalizedOperation = operation.charAt(0).toUpperCase() + operation.slice(1);
 
   // Generate operation-specific handler content
   switch (operation) {
     case 'create':
       return generateTypedCreateHandlerContent(
-        capitalizedModule,
+        naming,
         capitalizedOperation,
-        moduleName,
         parsedType
       );
     case 'get':
       return generateTypedGetHandlerContent(
-        capitalizedModule,
+        naming,
         capitalizedOperation,
-        moduleName,
         parsedType
       );
     case 'list':
       return generateTypedListHandlerContent(
-        capitalizedModule,
+        naming,
         capitalizedOperation,
-        moduleName,
         parsedType
       );
     case 'update':
       return generateTypedUpdateHandlerContent(
-        capitalizedModule,
+        naming,
         capitalizedOperation,
-        moduleName,
         parsedType
       );
     case 'delete':
       return generateTypedDeleteHandlerContent(
-        capitalizedModule,
+        naming,
         capitalizedOperation,
-        moduleName,
         parsedType
       );
     default:
       return generateGenericHandlerContent(
-        capitalizedModule,
+        naming,
         capitalizedOperation,
         operation,
-        moduleName,
         parsedType
       );
   }
@@ -84,15 +75,14 @@ export const generateCrudHandlerContent = ({
  * Generates CREATE handler content with your preferred format
  */
 const generateTypedCreateHandlerContent = (
-  _capitalizedModule: string,
+  naming: ModuleNaming,
   _capitalizedOperation: string,
-  moduleName: string,
   _parsedType: ParsedTypePayload
 ): string => {
-  return `import { typePayload, typeResult, typeResultData, typeResultError } from '../types/create.${moduleName}';
-import create from '../repository/${moduleName}.repository';
+  return `import { typePayload, typeResult, typeResultData, typeResultError } from '../types/create.${naming.file}';
+import create from '../repository/${naming.directory}.repository';
 
-export default async function create${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Handler(
+export default async function create${naming.class}Handler(
   payload: typePayload,
   requestId: string
 ): Promise<typeResult> {
@@ -101,19 +91,19 @@ export default async function create${moduleName.charAt(0).toUpperCase() + modul
 
   try {
     const startTime = Date.now();
-    console.info(\`\${requestId} [${moduleName.toUpperCase()}] - CREATE handler started\`);
+    console.info(\`\${requestId} [${naming.constant}] - CREATE handler started\`);
 
     // Business logic here - direct repository call
-    const ${moduleName} = await create(payload);
+    const ${naming.variable} = await create(payload);
 
-    data = ${moduleName};
+    data = ${naming.variable};
 
     const duration = Date.now() - startTime;
-    console.info(\`\${requestId} [${moduleName.toUpperCase()}] - CREATE handler completed successfully in \${duration}ms\`);
+    console.info(\`\${requestId} [${naming.constant}] - CREATE handler completed successfully in \${duration}ms\`);
   } catch (err) {
     const customError = err as any;
     console.error(
-      \`\${requestId} [${moduleName.toUpperCase()}] - CREATE handler error: \${customError.message}\`
+      \`\${requestId} [${naming.constant}] - CREATE handler error: \${customError.message}\`
     );
     error = {
       code: customError.errorCode ?? 'INTERNAL_ERROR',
@@ -131,15 +121,14 @@ export default async function create${moduleName.charAt(0).toUpperCase() + modul
  * Generates GET handler content with your preferred format
  */
 const generateTypedGetHandlerContent = (
-  _capitalizedModule: string,
+  naming: ModuleNaming,
   _capitalizedOperation: string,
-  moduleName: string,
   _parsedType: ParsedTypePayload
 ): string => {
-  return `import { typePayload, typeResult, typeResultData, typeResultError } from '../types/get.${moduleName}';
-import { findById } from '../repository/${moduleName}.repository';
+  return `import { typePayload, typeResult, typeResultData, typeResultError } from '../types/get.${naming.file}';
+import { findById } from '../repository/${naming.directory}.repository';
 
-export default async function get${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Handler(
+export default async function get${naming.class}Handler(
   payload: typePayload,
   requestId: string
 ): Promise<typeResult> {
@@ -148,25 +137,25 @@ export default async function get${moduleName.charAt(0).toUpperCase() + moduleNa
 
   try {
     const startTime = Date.now();
-    console.info(\`\${requestId} [${moduleName.toUpperCase()}] - GET handler started\`);
+    console.info(\`\${requestId} [${naming.constant}] - GET handler started\`);
 
     // Business logic here - direct repository call
-    const ${moduleName} = await findById(payload.id);
+    const ${naming.variable} = await findById(payload.id);
 
-    data = ${moduleName};
+    data = ${naming.variable};
 
     const duration = Date.now() - startTime;
-    console.info(\`\${requestId} [${moduleName.toUpperCase()}] - GET handler completed successfully in \${duration}ms\`);
+    console.info(\`\${requestId} [${naming.constant}] - GET handler completed successfully in \${duration}ms\`);
   } catch (err) {
     const customError = err as any;
     console.error(
-      \`\${requestId} [${moduleName.toUpperCase()}] - GET handler error: \${customError.message}\`
+      \`\${requestId} [${naming.constant}] - GET handler error: \${customError.message}\`
     );
 
     if (customError.name === 'NotFoundError') {
       error = {
         code: 'NOT_FOUND',
-        message: \`${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)} not found\`,
+        message: \`${naming.class} not found\`,
         statusCode: 404,
       };
     } else {
@@ -187,16 +176,15 @@ export default async function get${moduleName.charAt(0).toUpperCase() + moduleNa
  * Generates generic handler content (fallback)
  */
 const generateGenericHandlerContent = (
-  _capitalizedModule: string,
+  naming: ModuleNaming,
   _capitalizedOperation: string,
   operation: string,
-  moduleName: string,
   _parsedType: ParsedTypePayload
 ): string => {
-  return `import { typePayload, typeResult, typeResultData, typeResultError } from '../types/${operation}.${moduleName}';
-import { ${operation === 'delete' ? 'remove' : operation === 'list' ? 'findMany' : operation} } from '../repository/${moduleName}.repository';
+  return `import { typePayload, typeResult, typeResultData, typeResultError } from '../types/${operation}.${naming.file}';
+import { ${operation === 'delete' ? 'remove' : operation === 'list' ? 'findMany' : operation} } from '../repository/${naming.directory}.repository';
 
-export default async function ${operation}${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Handler(
+export default async function ${operation}${naming.class}Handler(
   payload: typePayload,
   requestId: string
 ): Promise<typeResult> {
@@ -205,7 +193,7 @@ export default async function ${operation}${moduleName.charAt(0).toUpperCase() +
 
   try {
     const startTime = Date.now();
-    console.info(\`\${requestId} [${moduleName.toUpperCase()}] - ${operation.toUpperCase()} handler started\`);
+    console.info(\`\${requestId} [${naming.constant}] - ${operation.toUpperCase()} handler started\`);
 
     // Business logic here - direct repository call
     ${
@@ -228,11 +216,11 @@ export default async function ${operation}${moduleName.charAt(0).toUpperCase() +
     }
 
     const duration = Date.now() - startTime;
-    console.info(\`\${requestId} [${moduleName.toUpperCase()}] - ${operation.toUpperCase()} handler completed successfully in \${duration}ms\`);
+    console.info(\`\${requestId} [${naming.constant}] - ${operation.toUpperCase()} handler completed successfully in \${duration}ms\`);
   } catch (err) {
     const customError = err as any;
     console.error(
-      \`\${requestId} [${moduleName.toUpperCase()}] - ${operation.toUpperCase()} handler error: \${customError.message}\`
+      \`\${requestId} [${naming.constant}] - ${operation.toUpperCase()} handler error: \${customError.message}\`
     );
 
     ${
@@ -240,7 +228,7 @@ export default async function ${operation}${moduleName.charAt(0).toUpperCase() +
       `if (customError.name === 'NotFoundError') {
       error = {
         code: 'NOT_FOUND',
-        message: \`${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)} not found\`,
+        message: \`${naming.class} not found\`,
         statusCode: 404,
       };
     } else {`
@@ -260,43 +248,37 @@ export default async function ${operation}${moduleName.charAt(0).toUpperCase() +
 
 // Placeholder functions for other operations
 const generateTypedListHandlerContent = (
-  capitalizedModule: string,
+  naming: ModuleNaming,
   capitalizedOperation: string,
-  moduleName: string,
   parsedType: ParsedTypePayload
 ): string =>
   generateGenericHandlerContent(
-    capitalizedModule,
+    naming,
     capitalizedOperation,
     'list',
-    moduleName,
     parsedType
   );
 
 const generateTypedUpdateHandlerContent = (
-  capitalizedModule: string,
+  naming: ModuleNaming,
   capitalizedOperation: string,
-  moduleName: string,
   parsedType: ParsedTypePayload
 ): string =>
   generateGenericHandlerContent(
-    capitalizedModule,
+    naming,
     capitalizedOperation,
     'update',
-    moduleName,
     parsedType
   );
 
 const generateTypedDeleteHandlerContent = (
-  capitalizedModule: string,
+  naming: ModuleNaming,
   capitalizedOperation: string,
-  moduleName: string,
   parsedType: ParsedTypePayload
 ): string =>
   generateGenericHandlerContent(
-    capitalizedModule,
+    naming,
     capitalizedOperation,
     'delete',
-    moduleName,
     parsedType
   );

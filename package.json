@@ -30,6 +30,7 @@
     "typescript",
     "nodejs",
     "express",
+    "hono",
     "crud",
     "clean-architecture",
     "code-generator",

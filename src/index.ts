@@ -3,9 +3,7 @@ import chalk from 'chalk';
 import { CommandOptions } from './types/cli.types';
 import { handleGenerateCommand } from './cli/commands/generate.command';
 
-/**
- * Main CLI function using clean architecture
- */
+
 export const main = async (): Promise<void> => {
   const program = new Command();
 
@@ -18,17 +16,16 @@ export const main = async (): Promise<void> => {
     .option('--no-interactive', 'disable interactive mode')
     .option('--crud', 'generate CRUD operations (create, get, list, delete, update)')
     .option('--custom <names>', 'generate custom API operations (comma-separated names)')
+    .option('--framework <framework>', 'web framework to use (express|hono)', 'express')
     .parse();
 
   const options = program.opts() as CommandOptions;
 
-  // Delegate to the generate command handler
+
   await handleGenerateCommand(options);
 };
 
-/**
- * Handle CLI interruption gracefully
- */
+
 process.on('SIGINT', () => {
   console.log(chalk.yellow('\n\n⏹️  Generation cancelled by user'));
   process.exit(0);

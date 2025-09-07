@@ -1,8 +1,4 @@
-/**
- * Two-phase file generation service
- * Phase 1: Generate type files only
- * Phase 2: Parse types and generate services/repositories with actual field names
- */
+
 
 import * as path from 'path';
 import { ApiType, GeneratedFile } from '../types/common.types';
@@ -36,9 +32,7 @@ import {
 import { generateRouteContent } from '../templates/routes.templates';
 import { formatGeneratedFiles } from './formatter.service';
 
-/**
- * Phase 1: Generate only type files
- */
+
 export const generateTypeFilesOnly = async ({
   moduleName,
   modulePath,
@@ -92,18 +86,18 @@ export const generateTypeFilesOnly = async ({
   return generatedFiles;
 };
 
-/**
- * Phase 2: Parse types and generate services/repositories with actual field names
- */
+
 export const generateCodeWithParsedTypes = async ({
   moduleName,
   modulePath,
   apiType,
+  framework = 'express',
   appendMode = false,
 }: {
   moduleName: string;
   modulePath: string;
   apiType: ApiType;
+  framework?: string;
   appendMode?: boolean;
 }): Promise<GeneratedFile[]> => {
   const generatedFiles: GeneratedFile[] = [];
@@ -150,7 +144,7 @@ export const generateCodeWithParsedTypes = async ({
       // Generate controller file
       const controllerFilePath = path.join(controllersDir, controllerFileName);
       if (!appendMode || !(await fileExists({ filePath: controllerFilePath }))) {
-        const controllerContent = generateCrudControllerContent({ operation, moduleName });
+        const controllerContent = generateCrudControllerContent({ operation, moduleName, framework });
         await writeFile({ filePath: controllerFilePath, content: controllerContent });
         generatedFiles.push({
           fileName: controllerFileName,
@@ -254,7 +248,7 @@ export const generateCodeWithParsedTypes = async ({
   const routesFileName = `${moduleName}.routes.ts`;
   const routesFilePath = path.join(modulePath, routesFileName);
   if (!appendMode || !(await fileExists({ filePath: routesFilePath }))) {
-    const routesContent = generateRouteContent({ moduleName, apiType });
+    const routesContent = generateRouteContent({ moduleName, apiType, framework });
     await writeFile({ filePath: routesFilePath, content: routesContent });
     generatedFiles.push({
       fileName: routesFileName,

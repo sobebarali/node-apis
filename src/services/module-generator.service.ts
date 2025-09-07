@@ -4,7 +4,7 @@
 
 import { GenerationInput, GenerationResult } from '../types/generation.types';
 import { GeneratedFile } from '../types/common.types';
-import { validateModuleName } from '../validators/module-name.validator';
+import { validateModuleName, EnhancedValidationResult } from '../validators/module-name.validator';
 import { getModulePath, getModuleSubdirectories } from '../filesystem/path.utils';
 import {
   directoryExists,
@@ -24,8 +24,8 @@ export const generateModuleStructure = async ({
   const { baseDir = process.cwd(), force = false, appendMode = false } = options;
 
   try {
-    // Validate the module name
-    const validation = validateModuleName({ name: moduleName });
+    // Validate the module name with enhanced naming
+    const validation = validateModuleName({ name: moduleName }) as EnhancedValidationResult;
     if (!validation.isValid) {
       return {
         success: false,

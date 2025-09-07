@@ -1,6 +1,4 @@
-/**
- * Generate command handler
- */
+
 
 import { CommandOptions } from '../../types/cli.types';
 import { ApiType } from '../../types/common.types';
@@ -17,7 +15,7 @@ import {
   displayTypeInstructions,
   displayTypeReviewComplete,
 } from '../prompts/type-review.prompts';
-import { getModulePath } from '../../filesystem/path.utils';
+
 import { getExistingModules, detectExistingModule } from '../../services/module-detection.service';
 import {
   displayWelcomeMessage,
@@ -38,14 +36,12 @@ import {
   promptConfirmation,
 } from '../prompts/interactive.prompts';
 
-/**
- * Main generate command handler
- */
+
 export const handleGenerateCommand = async (options: CommandOptions): Promise<void> => {
   try {
     displayWelcomeMessage();
 
-    // Validate target location
+
     const locationValidation = await validateTargetLocation();
     if (!locationValidation.isValid) {
       displayError(locationValidation.error!);
@@ -56,10 +52,10 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
     let apiType: ApiType | undefined;
     let appendMode = false;
 
-    // Handle command line API type options
+
     apiType = parseCommandLineApiType(options);
 
-    // Interactive mode: enhanced developer-friendly flow
+
     if (options.interactive !== false) {
       const interactiveResult = await handleInteractiveFlow(moduleName);
       if (!interactiveResult.success) {
@@ -75,13 +71,13 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
       }
     }
 
-    // Validate module name is provided
+
     if (!moduleName) {
       displayError('Module name is required');
       process.exit(1);
     }
 
-    // Display generation summary
+
     displayGenerationSummary({
       moduleName,
       targetPath: `src/apis/${moduleName.toLowerCase()}`,
@@ -90,7 +86,7 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
       operationNames: getOperationNames(apiType),
     });
 
-    // Confirm generation in interactive mode
+
     if (options.interactive !== false) {
       const confirmResult = await promptConfirmation();
       if (!confirmResult.success || !confirmResult.data) {
@@ -99,11 +95,12 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
       }
     }
 
-    // Two-phase generation approach
+
     if (apiType) {
       await handleTwoPhaseGeneration({
         moduleName,
         apiType,
+        framework: options.framework || 'express',
         options: {
           force: options.force || false,
           appendMode,
@@ -111,7 +108,7 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
         interactive: options.interactive !== false,
       });
     } else {
-      // Fallback to old approach for directory-only generation
+
       displayProgress();
 
       const result = await generateModuleStructure({
@@ -143,17 +140,17 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
 const handleTwoPhaseGeneration = async ({
   moduleName,
   apiType,
+  framework,
   options,
   interactive,
 }: {
   moduleName: string;
   apiType: ApiType;
+  framework: string;
   options: { force: boolean; appendMode: boolean };
   interactive: boolean;
 }) => {
-  const baseDir = process.cwd();
   const { force = false, appendMode = false } = options;
-  const modulePath = getModulePath({ moduleName, baseDir });
 
   try {
     // Phase 1: Generate directory structure and type files only
@@ -169,8 +166,12 @@ const handleTwoPhaseGeneration = async ({
       process.exit(1);
     }
 
+    // Use the normalized module name and path from the structure result
+    const normalizedModuleName = structureResult.moduleName!;
+    const modulePath = structureResult.modulePath!;
+
     const typeFiles = await generateTypeFilesOnly({
-      moduleName,
+      moduleName: normalizedModuleName,
       modulePath,
       apiType,
       appendMode,
@@ -181,9 +182,9 @@ const handleTwoPhaseGeneration = async ({
     // Show instructions and get user confirmation in interactive mode
     if (interactive) {
       const operations = getOperationNames(apiType) || [];
-      displayTypeInstructions(moduleName, operations);
+      displayTypeInstructions(normalizedModuleName, operations);
 
-      const reviewResult = await promptTypeReview(moduleName, `${modulePath}/types`);
+      const reviewResult = await promptTypeReview(normalizedModuleName, `${modulePath}/types`);
 
       if (!reviewResult.success || !reviewResult.data) {
         console.log(
@@ -195,13 +196,14 @@ const handleTwoPhaseGeneration = async ({
       displayTypeReviewComplete();
     }
 
-    // Phase 2: Parse types and generate services/repositories
-    console.log('🚀 Phase 2: Generating services and repositories with your defined types...\n');
+    // Phase 2: Parse types and generate services/repositories with framework support
+    console.log(`🚀 Phase 2: Generating services and repositories for ${framework} framework...\n`);
 
     const codeFiles = await generateCodeWithParsedTypes({
-      moduleName,
+      moduleName: normalizedModuleName,
       modulePath,
       apiType,
+      framework, // Pass framework to generation
       appendMode,
     });
 
@@ -210,7 +212,7 @@ const handleTwoPhaseGeneration = async ({
 
     const testPath = 'tests';
     const testFiles = await generateTestFiles({
-      moduleName,
+      moduleName: normalizedModuleName,
       testPath,
       apiType,
       appendMode,

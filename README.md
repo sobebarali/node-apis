@@ -5,6 +5,7 @@
 ## ✨ Why Choose Node APIs Generator?
 
 - **🏗️ Clean Architecture** - Controller → Handler → Repository pattern
+- **🌐 Multi-Framework** - Support for Express.js and Hono frameworks
 - **⚡ Performance Monitoring** - Built-in execution timing and request correlation
 - **🔍 Request Tracing** - Complete payload logging for easy debugging
 - **🎯 Type-Driven** - Intelligent code generation from TypeScript types
@@ -46,6 +47,10 @@ node-apis
 
 # Or specify directly
 node-apis --name book --crud
+
+# Choose your framework
+node-apis --name book --crud --framework express  # Default
+node-apis --name book --crud --framework hono     # Lightweight alternative
 ```
 
 **That's it!** You'll get a complete, production-ready API module with:
@@ -348,15 +353,16 @@ npm run test:watch
 
 ## 📋 Command Line Options
 
-| Option             | Alias | Description                                                  |
-| ------------------ | ----- | ------------------------------------------------------------ |
-| `--name <name>`    | `-n`  | Module name (skips interactive prompt)                       |
-| `--crud`           |       | Generate CRUD operations (create, get, list, update, delete) |
-| `--custom <names>` |       | Generate custom operations (comma-separated)                 |
-| `--force`          | `-f`  | Overwrite existing files                                     |
-| `--no-interactive` |       | Skip interactive prompts                                     |
-| `--version`        | `-V`  | Show version number                                          |
-| `--help`           | `-h`  | Show help information                                        |
+| Option                  | Alias | Description                                                  |
+| ----------------------- | ----- | ------------------------------------------------------------ |
+| `--name <name>`         | `-n`  | Module name (skips interactive prompt)                       |
+| `--crud`                |       | Generate CRUD operations (create, get, list, update, delete) |
+| `--custom <names>`      |       | Generate custom operations (comma-separated)                 |
+| `--framework <framework>` |     | Web framework to use (express\|hono), defaults to express    |
+| `--force`               | `-f`  | Overwrite existing files                                     |
+| `--no-interactive`      |       | Skip interactive prompts                                     |
+| `--version`             | `-V`  | Show version number                                          |
+| `--help`                | `-h`  | Show help information                                        |
 
 ## 🎨 What Makes the Generated Code Special?
 

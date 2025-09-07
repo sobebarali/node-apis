@@ -8,6 +8,15 @@ export interface ValidationResult {
   normalizedName?: string;
 }
 
+export interface ModuleNaming {
+  directory: string;
+  file: string;
+  class: string;
+  variable: string;
+  constant: string;
+  url: string;
+}
+
 export interface ApiType {
   type: 'crud' | 'custom';
   customNames?: string[];

@@ -2,16 +2,19 @@
  * CRUD operation templates
  */
 
+import { getModuleNaming } from '../shared/utils/naming.utils';
+
 /**
  * Gets the list of CRUD operation file names for a module
  */
 export const getCrudFileNames = ({ moduleName }: { moduleName: string }): string[] => {
+  const naming = getModuleNaming(moduleName);
   return [
-    `create.${moduleName}.ts`,
-    `get.${moduleName}.ts`,
-    `list.${moduleName}.ts`,
-    `delete.${moduleName}.ts`,
-    `update.${moduleName}.ts`,
+    `create.${naming.file}.ts`,
+    `get.${naming.file}.ts`,
+    `list.${naming.file}.ts`,
+    `delete.${naming.file}.ts`,
+    `update.${naming.file}.ts`,
   ];
 };
 
@@ -25,23 +28,23 @@ export const generateCrudFileContent = ({
   operation: string;
   moduleName: string;
 }): string => {
-  const capitalizedModule = moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
+  const naming = getModuleNaming(moduleName);
   const capitalizedOperation = operation.charAt(0).toUpperCase() + operation.slice(1);
 
   // Generate operation-specific content
   switch (operation) {
     case 'create':
-      return generateCreateContent(capitalizedModule, capitalizedOperation, moduleName);
+      return generateCreateContent(naming.class, capitalizedOperation, naming.file);
     case 'get':
-      return generateGetContent(capitalizedModule, capitalizedOperation, moduleName);
+      return generateGetContent(naming.class, capitalizedOperation, naming.file);
     case 'list':
-      return generateListContent(capitalizedModule, capitalizedOperation, moduleName);
+      return generateListContent(naming.class, capitalizedOperation, naming.file);
     case 'update':
-      return generateUpdateContent(capitalizedModule, capitalizedOperation, moduleName);
+      return generateUpdateContent(naming.class, capitalizedOperation, naming.file);
     case 'delete':
-      return generateDeleteContent(capitalizedModule, capitalizedOperation, moduleName);
+      return generateDeleteContent(naming.class, capitalizedOperation, naming.file);
     default:
-      return generateGenericContent(capitalizedModule, capitalizedOperation, operation, moduleName);
+      return generateGenericContent(naming.class, capitalizedOperation, operation, naming.file);
   }
 };
 

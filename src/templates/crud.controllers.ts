@@ -1,74 +1,109 @@
 /**
- * CRUD controller templates
- */
-
-/**
  * Gets the list of CRUD controller file names for a module
  */
+import { getModuleNaming, ModuleNaming } from '../shared/utils/naming.utils';
+
 export const getCrudControllerFileNames = ({ moduleName }: { moduleName: string }): string[] => {
+  const naming = getModuleNaming(moduleName);
   return [
-    `create.${moduleName}.ts`,
-    `get.${moduleName}.ts`,
-    `list.${moduleName}.ts`,
-    `delete.${moduleName}.ts`,
-    `update.${moduleName}.ts`,
+    `create.${naming.file}.ts`,
+    `get.${naming.file}.ts`,
+    `list.${naming.file}.ts`,
+    `delete.${naming.file}.ts`,
+    `update.${naming.file}.ts`,
   ];
 };
 
-/**
- * Generates TypeScript controller file content for CRUD operations
- */
+
 export const generateCrudControllerContent = ({
   operation,
   moduleName,
+  framework = 'express',
 }: {
   operation: string;
   moduleName: string;
+  framework?: string;
 }): string => {
-  const capitalizedModule = moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
+  const naming = getModuleNaming(moduleName);
   const capitalizedOperation = operation.charAt(0).toUpperCase() + operation.slice(1);
 
-  // Generate operation-specific controller content
+
   switch (operation) {
     case 'create':
-      return generateCreateControllerContent(capitalizedModule, capitalizedOperation, moduleName);
+      return generateCreateControllerContent(naming, capitalizedOperation, framework);
     case 'get':
-      return generateGetControllerContent(capitalizedModule, capitalizedOperation, moduleName);
+      return generateGetControllerContent(naming, capitalizedOperation, framework);
     case 'list':
-      return generateListControllerContent(capitalizedModule, capitalizedOperation, moduleName);
+      return generateListControllerContent(naming, capitalizedOperation, framework);
     case 'update':
-      return generateUpdateControllerContent(capitalizedModule, capitalizedOperation, moduleName);
+      return generateUpdateControllerContent(naming, capitalizedOperation, framework);
     case 'delete':
-      return generateDeleteControllerContent(capitalizedModule, capitalizedOperation, moduleName);
+      return generateDeleteControllerContent(naming, capitalizedOperation, framework);
     default:
-      return generateGenericControllerContent(
-        capitalizedModule,
-        capitalizedOperation,
-        operation,
-        moduleName
-      );
+      return generateGenericControllerContent(naming, capitalizedOperation, operation, framework);
   }
 };
 
-/**
- * Generates CREATE controller content
- */
-const generateCreateControllerContent = (
-  _capitalizedModule: string,
-  _capitalizedOperation: string,
-  moduleName: string
-): string => {
-  return `import { Request, Response } from 'express';
-import { validatePayload } from '../validators/create.${moduleName}';
-import create${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Handler from '../handlers/create.${moduleName}';
 
-export default async function create${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Controller(req: Request, res: Response): Promise<void> {
+const generateCreateControllerContent = (
+  naming: ModuleNaming,
+  _capitalizedOperation: string,
+  framework: string = 'express'
+): string => {
+
+  if (framework === 'hono') {
+    return `import { Context } from 'hono';
+import { validatePayload } from '../validators/create.${naming.file}';
+import create${naming.class}Handler from '../handlers/create.${naming.file}';
+
+export default async function create${naming.class}Controller(c: Context): Promise<Response> {
+  try {
+    const requestId = c.req.header('x-request-id') || \`req-\${Date.now()}-\${Math.random().toString(36).substr(2, 9)}\`;
+
+    const body = await c.req.json();
+
+    console.info(\`\${requestId} [CONTROLLER] - CREATE ${naming.constant} payload:\`, JSON.stringify(body, null, 2));
+
+    const validation = validatePayload(body);
+    if (!validation.success) {
+      return c.json({
+        data: null,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: validation.error.message,
+          statusCode: 400
+        }
+      }, 400);
+    }
+
+    const result = await create${naming.class}Handler(validation.data, requestId);
+
+    const statusCode = result.error ? result.error.statusCode : 201;
+    return c.json(result, statusCode);
+  } catch (error) {
+    return c.json({
+      data: null,
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to process request',
+        statusCode: 500
+      }
+    }, 500);
+  }
+}
+`;
+  }
+
+
+  return `import { Request, Response } from 'express';
+import { validatePayload } from '../validators/create.${naming.file}';
+import create${naming.class}Handler from '../handlers/create.${naming.file}';
+
+export default async function create${naming.class}Controller(req: Request, res: Response): Promise<void> {
   const requestId = (req.headers['x-request-id'] as string) || \`req-\${Date.now()}-\${Math.random().toString(36).substr(2, 9)}\`;
 
-  // Log complete payload for debugging
-  console.info(\`\${requestId} [CONTROLLER] - CREATE ${moduleName.toUpperCase()} payload:\`, JSON.stringify(req.body, null, 2));
+  console.info(\`\${requestId} [CONTROLLER] - CREATE ${naming.constant} payload:\`, JSON.stringify(req.body, null, 2));
 
-  // Validate request payload
   const validation = validatePayload(req.body);
   if (!validation.success) {
     res.status(400).json({
@@ -82,10 +117,8 @@ export default async function create${moduleName.charAt(0).toUpperCase() + modul
     return;
   }
 
-  // Call handler (contains business logic)
-  const result = await create${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Handler(validation.data, requestId);
+  const result = await create${naming.class}Handler(validation.data, requestId);
 
-  // Return handler result
   const statusCode = result.error ? result.error.statusCode : 201;
   res.status(statusCode).json(result);
 }
@@ -96,21 +129,19 @@ export default async function create${moduleName.charAt(0).toUpperCase() + modul
  * Generates GET controller content
  */
 const generateGetControllerContent = (
-  _capitalizedModule: string,
+  naming: ModuleNaming,
   _capitalizedOperation: string,
-  moduleName: string
+  _framework: string = 'express'
 ): string => {
   return `import { Request, Response } from 'express';
-import { validatePayload } from '../validators/get.${moduleName}';
-import get${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Handler from '../handlers/get.${moduleName}';
+import { validatePayload } from '../validators/get.${naming.file}';
+import get${naming.class}Handler from '../handlers/get.${naming.file}';
 
-export default async function get${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Controller(req: Request, res: Response): Promise<void> {
+export default async function get${naming.class}Controller(req: Request, res: Response): Promise<void> {
   const requestId = (req.headers['x-request-id'] as string) || \`req-\${Date.now()}-\${Math.random().toString(36).substr(2, 9)}\`;
 
-  // Log complete payload for debugging
-  console.info(\`\${requestId} [CONTROLLER] - GET ${moduleName.toUpperCase()} payload:\`, JSON.stringify({ id: req.params.id }, null, 2));
+  console.info(\`\${requestId} [CONTROLLER] - GET ${naming.constant} payload:\`, JSON.stringify({ id: req.params.id }, null, 2));
 
-  // Validate request payload (ID from params)
   const validation = validatePayload({ id: req.params.id });
   if (!validation.success) {
     res.status(400).json({
@@ -124,10 +155,8 @@ export default async function get${moduleName.charAt(0).toUpperCase() + moduleNa
     return;
   }
 
-  // Call handler (contains business logic)
-  const result = await get${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Handler(validation.data, requestId);
+  const result = await get${naming.class}Handler(validation.data, requestId);
 
-  // Return handler result
   const statusCode = result.error ? result.error.statusCode : 200;
   res.status(statusCode).json(result);
 }
@@ -138,21 +167,19 @@ export default async function get${moduleName.charAt(0).toUpperCase() + moduleNa
  * Generates LIST controller content
  */
 const generateListControllerContent = (
-  _capitalizedModule: string,
+  naming: ModuleNaming,
   _capitalizedOperation: string,
-  moduleName: string
+  _framework: string = 'express'
 ): string => {
   return `import { Request, Response } from 'express';
-import { validatePayload } from '../validators/list.${moduleName}';
-import list${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}sHandler from '../handlers/list.${moduleName}';
+import { validatePayload } from '../validators/list.${naming.file}';
+import list${naming.class}sHandler from '../handlers/list.${naming.file}';
 
-export default async function list${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}sController(req: Request, res: Response): Promise<void> {
+export default async function list${naming.class}sController(req: Request, res: Response): Promise<void> {
   const requestId = (req.headers['x-request-id'] as string) || \`req-\${Date.now()}-\${Math.random().toString(36).substr(2, 9)}\`;
 
-  // Log complete payload for debugging
-  console.info(\`\${requestId} [CONTROLLER] - LIST ${moduleName.toUpperCase()} payload:\`, JSON.stringify(req.query, null, 2));
+  console.info(\`\${requestId} [CONTROLLER] - LIST ${naming.constant} payload:\`, JSON.stringify(req.query, null, 2));
 
-  // Validate query parameters
   const validation = validatePayload(req.query);
   if (!validation.success) {
     res.status(400).json({
@@ -166,10 +193,8 @@ export default async function list${moduleName.charAt(0).toUpperCase() + moduleN
     return;
   }
 
-  // Call handler (contains business logic)
-  const result = await list${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}sHandler(validation.data, requestId);
+  const result = await list${naming.class}sHandler(validation.data, requestId);
 
-  // Return handler result
   const statusCode = result.error ? result.error.statusCode : 200;
   res.status(statusCode).json(result);
 }
@@ -180,21 +205,19 @@ export default async function list${moduleName.charAt(0).toUpperCase() + moduleN
  * Generates UPDATE controller content
  */
 const generateUpdateControllerContent = (
-  _capitalizedModule: string,
+  naming: ModuleNaming,
   _capitalizedOperation: string,
-  moduleName: string
+  _framework: string = 'express'
 ): string => {
   return `import { Request, Response } from 'express';
-import { validatePayload } from '../validators/update.${moduleName}';
-import update${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Handler from '../handlers/update.${moduleName}';
+import { validatePayload } from '../validators/update.${naming.file}';
+import update${naming.class}Handler from '../handlers/update.${naming.file}';
 
-export default async function update${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Controller(req: Request, res: Response): Promise<void> {
+export default async function update${naming.class}Controller(req: Request, res: Response): Promise<void> {
   const requestId = (req.headers['x-request-id'] as string) || \`req-\${Date.now()}-\${Math.random().toString(36).substr(2, 9)}\`;
 
-  // Log complete payload for debugging
-  console.info(\`\${requestId} [CONTROLLER] - UPDATE ${moduleName.toUpperCase()} payload:\`, JSON.stringify({ id: req.params.id, ...req.body }, null, 2));
+  console.info(\`\${requestId} [CONTROLLER] - UPDATE ${naming.constant} payload:\`, JSON.stringify({ id: req.params.id, ...req.body }, null, 2));
 
-  // Validate request payload (ID from params + body data)
   const validation = validatePayload({ id: req.params.id, ...req.body });
   if (!validation.success) {
     res.status(400).json({
@@ -208,10 +231,8 @@ export default async function update${moduleName.charAt(0).toUpperCase() + modul
     return;
   }
 
-  // Call handler (contains business logic)
-  const result = await update${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Handler(validation.data, requestId);
+  const result = await update${naming.class}Handler(validation.data, requestId);
 
-  // Return handler result
   const statusCode = result.error ? result.error.statusCode : 200;
   res.status(statusCode).json(result);
 }
@@ -222,21 +243,19 @@ export default async function update${moduleName.charAt(0).toUpperCase() + modul
  * Generates DELETE controller content
  */
 const generateDeleteControllerContent = (
-  _capitalizedModule: string,
+  naming: ModuleNaming,
   _capitalizedOperation: string,
-  moduleName: string
+  _framework: string = 'express'
 ): string => {
   return `import { Request, Response } from 'express';
-import { validatePayload } from '../validators/delete.${moduleName}';
-import delete${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Handler from '../handlers/delete.${moduleName}';
+import { validatePayload } from '../validators/delete.${naming.file}';
+import delete${naming.class}Handler from '../handlers/delete.${naming.file}';
 
-export default async function delete${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Controller(req: Request, res: Response): Promise<void> {
+export default async function delete${naming.class}Controller(req: Request, res: Response): Promise<void> {
   const requestId = (req.headers['x-request-id'] as string) || \`req-\${Date.now()}-\${Math.random().toString(36).substr(2, 9)}\`;
 
-  // Log complete payload for debugging
-  console.info(\`\${requestId} [CONTROLLER] - DELETE ${moduleName.toUpperCase()} payload:\`, JSON.stringify({ id: req.params.id, ...req.body }, null, 2));
+  console.info(\`\${requestId} [CONTROLLER] - DELETE ${naming.constant} payload:\`, JSON.stringify({ id: req.params.id, ...req.body }, null, 2));
 
-  // Validate request payload (ID from params + optional body data)
   const validation = validatePayload({ id: req.params.id, ...req.body });
   if (!validation.success) {
     res.status(400).json({
@@ -250,10 +269,8 @@ export default async function delete${moduleName.charAt(0).toUpperCase() + modul
     return;
   }
 
-  // Call handler (contains business logic)
-  const result = await delete${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Handler(validation.data, requestId);
+  const result = await delete${naming.class}Handler(validation.data, requestId);
 
-  // Return handler result
   const statusCode = result.error ? result.error.statusCode : 200;
   res.status(statusCode).json(result);
 }
@@ -264,18 +281,17 @@ export default async function delete${moduleName.charAt(0).toUpperCase() + modul
  * Generates generic controller content (fallback)
  */
 const generateGenericControllerContent = (
-  _capitalizedModule: string,
+  naming: ModuleNaming,
   _capitalizedOperation: string,
   operation: string,
-  moduleName: string
+  _framework: string = 'express'
 ): string => {
   return `import { Request, Response } from 'express';
-import { typeResult } from '../types/${operation}.${moduleName}';
-import { validatePayload } from '../validators/${operation}.${moduleName}';
+import { typeResult } from '../types/${operation}.${naming.file}';
+import { validatePayload } from '../validators/${operation}.${naming.file}';
 
-export const ${operation}${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)} = async (req: Request, res: Response): Promise<void> => {
+export const ${operation}${naming.class} = async (req: Request, res: Response): Promise<void> => {
   try {
-    // Validate request payload
     const validation = validatePayload(req.body);
     if (!validation.success) {
       res.status(400).json({
@@ -292,7 +308,7 @@ export const ${operation}${moduleName.charAt(0).toUpperCase() + moduleName.slice
     const payload = validation.data;
 
     // TODO: Implement your business logic here
-    // Example: const result = await ${moduleName}Service.${operation}(payload);
+    // Example: const result = await ${naming.variable}Service.${operation}(payload);
 
     // Mock response - replace with actual implementation
     const result: typeResult = {

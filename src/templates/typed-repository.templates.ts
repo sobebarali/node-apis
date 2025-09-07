@@ -1,6 +1,4 @@
-/**
- * Typed repository templates - generates repositories with actual field names from parsed types
- */
+
 
 import { ApiType } from '../types/common.types';
 import {
@@ -9,9 +7,7 @@ import {
   generateFieldObject,
 } from '../services/type-parser.service';
 
-/**
- * Generates repository file content for a module with parsed types
- */
+
 export const generateTypedRepositoryContent = ({
   moduleName,
   apiType,
@@ -57,28 +53,14 @@ const generateTypedCrudRepositoryContent = (
   const updateFieldObject = generateFieldObject(updateType.fields.filter(f => f.name !== 'id'));
   const listFieldDestructuring = generateFieldDestructuring(listType.fields);
 
-  return `// Repository layer - Pure domain logic, returns raw data, throws exceptions
-// This layer is reusable and independent of API concerns
-
-import { typePayload as CreatePayload } from '../types/create.${moduleName}';
+  return `import { typePayload as CreatePayload } from '../types/create.${moduleName}';
 import { typePayload as UpdatePayload } from '../types/update.${moduleName}';
 import { typePayload as ListPayload } from '../types/list.${moduleName}';
 import { NotFoundError, DatabaseError } from '../../../shared/errors';
-
-/**
- * Creates a new ${moduleName}
- */
 export default async function create({
 ${createFieldDestructuring}
 }: CreatePayload) {
   try {
-    // TODO: Replace with your database implementation
-    // Example with Prisma:
-    // return await db.${moduleName}.create({
-    //   data: { ${createType.fields.map(f => f.name).join(', ')} }
-    // });
-
-    // Mock implementation - replace with actual database call
     const ${moduleName} = {
       id: \`mock-id-\${Date.now()}\`,
 ${createFieldObject}

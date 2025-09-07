@@ -3,9 +3,10 @@
  */
 
 import { ApiType } from '../types/common.types';
+import { getModuleNaming, ModuleNaming } from '../shared/utils/naming.utils';
 
 /**
- * Generates repository file content for a module
+ * Generates repository content based on API type
  */
 export const generateRepositoryContent = ({
   moduleName,
@@ -14,217 +15,178 @@ export const generateRepositoryContent = ({
   moduleName: string;
   apiType: ApiType;
 }): string => {
-  const capitalizedModule = moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
+  const naming = getModuleNaming(moduleName);
 
   if (apiType.type === 'crud') {
-    return generateCrudRepositoryContent(moduleName, capitalizedModule);
+    return generateCrudRepositoryContent(naming);
   } else if (apiType.type === 'custom' && apiType.customNames) {
-    return generateCustomRepositoryContent(moduleName, capitalizedModule, apiType.customNames);
+    return generateCustomRepositoryContent(naming, apiType.customNames);
   }
 
-  return generateGenericRepositoryContent(moduleName, capitalizedModule);
+  return generateGenericRepositoryContent(naming);
 };
 
 /**
  * Generates CRUD repository content
  */
-const generateCrudRepositoryContent = (moduleName: string, capitalizedModule: string): string => {
+const generateCrudRepositoryContent = (naming: ModuleNaming): string => {
   return `// Repository layer - Pure domain logic, returns raw data, throws exceptions
 // This layer is reusable and independent of API concerns
 
-import { typePayload as CreatePayload } from '../types/create.${moduleName}';
-import { typePayload as UpdatePayload } from '../types/update.${moduleName}';
-import { typePayload as ListPayload } from '../types/list.${moduleName}';
+import { typePayload as CreatePayload } from '../types/create.${naming.file}';
+import { typePayload as UpdatePayload } from '../types/update.${naming.file}';
+import { typePayload as ListPayload } from '../types/list.${naming.file}';
 import { NotFoundError, DatabaseError } from '../../../shared/errors';
 
 /**
- * Creates a new ${moduleName}
+ * Creates a new ${naming.variable}
  */
-export const create = async ({
-  // TODO: Add your specific fields here, e.g.:
-  // name,
-  // description,
-}: CreatePayload) => {
+export const create = async (payload: CreatePayload) => {
   try {
     // TODO: Replace with your database implementation
     // Example with Prisma:
-    // return await db.${moduleName}.create({
-    //   data: { name, description }
-    // });
+    // return await db.${naming.variable}.create({ data: payload });
 
     // Mock implementation - replace with actual database call
-    const ${moduleName} = {
+    const ${naming.variable} = {
       id: \`mock-id-\${Date.now()}\`,
-      // TODO: Add your specific fields here, e.g.:
-      // name,
-      // description,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      ...payload,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
-    return ${moduleName};
+    return ${naming.variable};
   } catch (error) {
-    throw new DatabaseError(\`Failed to create ${moduleName}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
+    throw new DatabaseError(\`Failed to create ${naming.variable}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
 };
 
 /**
- * Finds a ${moduleName} by ID
+ * Finds a ${naming.variable} by ID
  */
 export const findById = async (id: string) => {
   try {
     // TODO: Replace with your database implementation
     // Example with Prisma:
-    // const ${moduleName} = await db.${moduleName}.findUnique({ where: { id } });
-    // if (!${moduleName}) throw new NotFoundError('${capitalizedModule}', id);
-    // return ${moduleName};
+    // const ${naming.variable} = await db.${naming.variable}.findUnique({ where: { id } });
+    // if (!${naming.variable}) throw new NotFoundError('${naming.class}', id);
+    // return ${naming.variable};
 
     // Mock implementation - replace with actual database call
     if (id === 'not-found') {
-      throw new NotFoundError('${capitalizedModule}', id);
+      throw new NotFoundError('${naming.class}', id);
     }
 
-    const ${moduleName} = {
+    const ${naming.variable} = {
       id,
-      // Add your ${moduleName} fields here
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      // Add your ${naming.variable} fields here
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
-    return ${moduleName};
+    return ${naming.variable};
   } catch (error) {
     if (error instanceof NotFoundError) throw error;
-    throw new DatabaseError(\`Failed to find ${moduleName}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
+    throw new DatabaseError(\`Failed to find ${naming.variable}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
 };
 
 /**
- * Finds multiple ${moduleName}s with pagination and filtering
+ * Finds multiple ${naming.variable}s with pagination and filtering
  */
-export const findMany = async ({
-  page = 1,
-  limit = 10,
-  sort_by = 'created_at',
-  sort_order = 'desc',
-  search,
-  ...options
-}: ListPayload) => {
+export const findMany = async (params: ListPayload) => {
   try {
-
     // TODO: Replace with your database implementation
     // Example with Prisma:
-    // const where = search ? { title: { contains: search, mode: 'insensitive' } } : {};
-    // const [items, total_count] = await Promise.all([
-    //   db.${moduleName}.findMany({
-    //     where,
-    //     orderBy: { [sort_by]: sort_order },
-    //     skip: (page - 1) * limit,
-    //     take: limit,
-    //   }),
-    //   db.${moduleName}.count({ where })
-    // ]);
+    // const items = await db.${naming.variable}.findMany({
+    //   where: buildWhereClause(params),
+    //   skip: (params.page - 1) * params.limit,
+    //   take: params.limit,
+    //   orderBy: { [params.sortBy]: params.sortOrder }
+    // });
+    // const total = await db.${naming.variable}.count({ where: buildWhereClause(params) });
 
     // Mock implementation - replace with actual database call
-    // Using parameters to avoid unused variable warnings
-    console.log('Query params:', { page, limit, sort_by, sort_order, search });
-
-    const items = [
-      {
-        id: 'mock-id-1',
-        // Add your ${moduleName} fields here
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }
-    ];
-
-    const total_count = 1;
-    const total_pages = Math.ceil(total_count / limit);
+    const items = Array.from({ length: 5 }, (_, index) => ({
+      id: \`mock-id-\${index + 1}\`,
+      // Add your ${naming.variable} fields here
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }));
 
     return {
       items,
-      _metadata: {
-        page,
-        limit,
-        total_count,
-        total_pages,
-        has_next: page < total_pages,
-        has_prev: page > 1,
-      }
+      total: items.length,
+      page: params.page || 1,
+      limit: params.limit || 10,
     };
   } catch (error) {
-    throw new DatabaseError(\`Failed to list ${moduleName}s: \${error instanceof Error ? error.message : 'Unknown error'}\`);
+    throw new DatabaseError(\`Failed to list ${naming.variable}s: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
 };
 
 /**
- * Updates a ${moduleName}
+ * Updates a ${naming.variable}
  */
-export const update = async (id: string, {
-  // TODO: Add your updatable fields here, e.g.:
-  // name,
-  // description,
-}: Omit<UpdatePayload, 'id'>) => {
+export const update = async (id: string, payload: UpdatePayload) => {
   try {
     // TODO: Replace with your database implementation
     // Example with Prisma:
-    // const ${moduleName} = await db.${moduleName}.update({
+    // const ${naming.variable} = await db.${naming.variable}.update({
     //   where: { id },
-    //   data: { name, description, updated_at: new Date().toISOString() }
+    //   data: payload
     // });
-    // return ${moduleName};
+    // return ${naming.variable};
 
     // Mock implementation - replace with actual database call
     if (id === 'not-found') {
-      throw new NotFoundError('${capitalizedModule}', id);
+      throw new NotFoundError('${naming.class}', id);
     }
 
-    const ${moduleName} = {
+    const ${naming.variable} = {
       id,
-      // TODO: Add your updatable fields here, e.g.:
-      // name,
-      // description,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      ...payload,
+      updatedAt: new Date().toISOString(),
     };
 
-    return ${moduleName};
+    return ${naming.variable};
   } catch (error) {
     if (error instanceof NotFoundError) throw error;
-    throw new DatabaseError(\`Failed to update ${moduleName}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
+    throw new DatabaseError(\`Failed to update ${naming.variable}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
 };
 
 /**
- * Deletes a ${moduleName}
+ * Deletes a ${naming.variable}
  */
-export const remove = async (id: string, permanent: boolean = false) => {
+export const remove = async (id: string) => {
   try {
     // TODO: Replace with your database implementation
-    // Example with Prisma:
-    // if (permanent) {
-    //   await db.${moduleName}.delete({ where: { id } });
-    // } else {
-    //   await db.${moduleName}.update({ where: { id }, data: { deleted_at: new Date() } });
-    // }
+    // Example with Prisma (hard delete):
+    //   await db.${naming.variable}.delete({ where: { id } });
+    // Example with Prisma (soft delete):
+    //   await db.${naming.variable}.update({ where: { id }, data: { deleted_at: new Date() } });
 
     // Mock implementation - replace with actual database call
     if (id === 'not-found') {
-      throw new NotFoundError('${capitalizedModule}', id);
+      throw new NotFoundError('${naming.class}', id);
     }
 
-    return {
-      deleted_id: id,
-      deleted_at: new Date().toISOString(),
-      permanent
-    };
+    // Return success (void function)
+    return;
   } catch (error) {
     if (error instanceof NotFoundError) throw error;
-    throw new DatabaseError(\`Failed to delete ${moduleName}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
+    throw new DatabaseError(\`Failed to delete ${naming.variable}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
 };
 
-// Alias for consistency with service layer
-export { remove as delete };
+export default {
+  create,
+  findById,
+  findMany,
+  update,
+  remove,
+};
 `;
 };
 
@@ -232,40 +194,42 @@ export { remove as delete };
  * Generates custom repository content
  */
 const generateCustomRepositoryContent = (
-  moduleName: string,
-  _capitalizedModule: string,
+  naming: ModuleNaming,
   customNames: string[]
 ): string => {
   const customMethods = customNames
     .map(
       customName => `
 /**
- * ${customName} operation for ${moduleName}
+ * Custom ${customName} operation for ${naming.variable}
  */
-export const ${customName} = async ({
-  // TODO: Add your specific fields here based on your operation needs
-}: any): Promise<any> => {
+export const ${customName} = async (payload: any) => {
   try {
-    // TODO: Implement your ${customName} logic here
-    // Example: return await db.${moduleName}.${customName}({
-    //   // Pass your specific fields here
-    // });
-
-    // Mock implementation - replace with actual database call
-    return { success: true, operation: '${customName}' };
+    // TODO: Implement your custom ${customName} logic here
+    // Example: return await db.${naming.variable}.${customName}(payload);
+    
+    // Mock implementation - replace with actual logic
+    return {
+      success: true,
+      message: '${customName} operation completed successfully',
+      data: payload,
+    };
   } catch (error) {
-    throw new DatabaseError(\`Failed to ${customName} ${moduleName}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
+    throw new DatabaseError(\`Failed to ${customName} ${naming.variable}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
 };`
     )
     .join('\n');
 
-  return `// Repository layer - Pure domain logic for custom operations
+  return `// Repository layer - Custom operations for ${naming.variable}
 // This layer is reusable and independent of API concerns
 
-import { NotFoundError, ValidationError, DatabaseError } from '../../../shared/errors';
-
+import { DatabaseError } from '../../../shared/errors';
 ${customMethods}
+
+export default {
+${customNames.map(name => `  ${name},`).join('\n')}
+};
 `;
 };
 
@@ -273,20 +237,35 @@ ${customMethods}
  * Generates generic repository content
  */
 const generateGenericRepositoryContent = (
-  moduleName: string,
-  capitalizedModule: string
+  naming: ModuleNaming
 ): string => {
   return `// Repository layer - Pure domain logic
 // This layer is reusable and independent of API concerns
 
-import { NotFoundError, ValidationError, DatabaseError } from '../../../shared/errors';
+import { DatabaseError } from '../../../shared/errors';
 
-// TODO: Add your ${moduleName} repository methods here
-// Example:
-// export const create = async ({
-//   // Add your specific fields here
-// }: Create${capitalizedModule}Data): Promise<${capitalizedModule}> => {
-//   // Implementation here
-// };
+/**
+ * Generic repository operations for ${naming.variable}
+ */
+export const create = async (payload: any) => {
+  try {
+    // TODO: Implement your database logic here
+    // Example: return await db.${naming.variable}.create({ data: payload });
+
+    // Mock implementation - replace with actual database call
+    return {
+      id: \`mock-id-\${Date.now()}\`,
+      ...payload,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    throw new DatabaseError(\`Failed to create ${naming.variable}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
+  }
+};
+
+export default {
+  create,
+};
 `;
 };

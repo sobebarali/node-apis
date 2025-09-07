@@ -1,49 +1,67 @@
-/**
- * Route templates
- */
+
 
 import { ApiType } from '../types/common.types';
+import { getModuleNaming, ModuleNaming } from '../shared/utils/naming.utils';
 
-/**
- * Generates route file content for a module
- */
+
 export const generateRouteContent = ({
   moduleName,
   apiType,
+  framework = 'express',
 }: {
   moduleName: string;
   apiType: ApiType;
+  framework?: string;
 }): string => {
-  const capitalizedModule = moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
+  const naming = getModuleNaming(moduleName);
 
   if (apiType.type === 'crud') {
-    return generateCrudRouteContent(moduleName, capitalizedModule);
+    return generateCrudRouteContent(naming, framework);
   } else if (apiType.type === 'custom' && apiType.customNames) {
-    return generateCustomRouteContent(moduleName, capitalizedModule, apiType.customNames);
+    return generateCustomRouteContent(naming, apiType.customNames, framework);
   }
 
-  return generateGenericRouteContent(moduleName, capitalizedModule);
+  return generateGenericRouteContent(naming, framework);
 };
 
-/**
- * Generates CRUD route content
- */
-const generateCrudRouteContent = (moduleName: string, capitalizedModule: string): string => {
+
+const generateCrudRouteContent = (naming: ModuleNaming, framework: string = 'express'): string => {
+  if (framework === 'hono') {
+    return `import { Hono } from 'hono';
+import create${naming.class}Controller from './controllers/create.${naming.file}';
+import get${naming.class}Controller from './controllers/get.${naming.file}';
+import list${naming.class}sController from './controllers/list.${naming.file}';
+import update${naming.class}Controller from './controllers/update.${naming.file}';
+import delete${naming.class}Controller from './controllers/delete.${naming.file}';
+
+const app = new Hono();
+
+app.post('/', create${naming.class}Controller);
+app.get('/', list${naming.class}sController);
+app.get('/:id', get${naming.class}Controller);
+app.put('/:id', update${naming.class}Controller);
+app.delete('/:id', delete${naming.class}Controller);
+
+export default app;
+`;
+  }
+
+  // Default to Express
   return `import { Router } from 'express';
-import create${capitalizedModule}Controller from './controllers/create.${moduleName}';
-import get${capitalizedModule}Controller from './controllers/get.${moduleName}';
-import list${capitalizedModule}sController from './controllers/list.${moduleName}';
-import update${capitalizedModule}Controller from './controllers/update.${moduleName}';
-import delete${capitalizedModule}Controller from './controllers/delete.${moduleName}';
+import create${naming.class}Controller from './controllers/create.${naming.file}';
+import get${naming.class}Controller from './controllers/get.${naming.file}';
+import list${naming.class}sController from './controllers/list.${naming.file}';
+import update${naming.class}Controller from './controllers/update.${naming.file}';
+import delete${naming.class}Controller from './controllers/delete.${naming.file}';
 
 const router = Router();
 
 // CRUD Routes
-router.post('/', create${capitalizedModule}Controller);           // POST /api/${moduleName}s
-router.get('/', list${capitalizedModule}sController);             // GET /api/${moduleName}s
-router.get('/:id', get${capitalizedModule}Controller);            // GET /api/${moduleName}s/:id
-router.put('/:id', update${capitalizedModule}Controller);         // PUT /api/${moduleName}s/:id
-router.delete('/:id', delete${capitalizedModule}Controller);      // DELETE /api/${moduleName}s/:id
+router.post('/', create${naming.class}Controller);
+router.get('/', list${naming.class}sController);
+router.get('/:id', get${naming.class}Controller);
+router.put('/:id', update${naming.class}Controller);
+router.delete('/:id', delete${naming.class}Controller);
 
 export default router;
 `;
@@ -53,21 +71,21 @@ export default router;
  * Generates custom route content
  */
 const generateCustomRouteContent = (
-  moduleName: string,
-  capitalizedModule: string,
-  customNames: string[]
+  naming: ModuleNaming,
+  customNames: string[],
+  _framework: string = 'express'
 ): string => {
   const imports = customNames
     .map(
       customName =>
-        `import { ${customName}${capitalizedModule} } from './controllers/${customName}.${moduleName}';`
+        `import { ${customName}${naming.class} } from './controllers/${customName}.${naming.file}';`
     )
     .join('\n');
 
   const routes = customNames
     .map(
       customName =>
-        `router.post('/${customName}', ${customName}${capitalizedModule});    // POST /api/${moduleName}s/${customName}`
+        `router.post('/${customName}', ${customName}${naming.class});    // POST /api/${naming.url}s/${customName}`
     )
     .join('\n');
 
@@ -86,15 +104,15 @@ export default router;
 /**
  * Generates generic route content
  */
-const generateGenericRouteContent = (moduleName: string, capitalizedModule: string): string => {
+const generateGenericRouteContent = (naming: ModuleNaming, _framework: string = 'express'): string => {
   return `import { Router } from 'express';
 
 const router = Router();
 
-// TODO: Add your ${moduleName} routes here
+// TODO: Add your ${naming.variable} routes here
 // Example:
-// import { create${capitalizedModule} } from './controllers/create.${moduleName}';
-// router.post('/', create${capitalizedModule});
+// import { create${naming.class} } from './controllers/create.${naming.file}';
+// router.post('/', create${naming.class});
 
 export default router;
 `;

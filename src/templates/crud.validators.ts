@@ -2,16 +2,19 @@
  * CRUD validator templates
  */
 
+import { getModuleNaming } from '../shared/utils/naming.utils';
+
 /**
  * Gets the list of CRUD validator file names for a module
  */
 export const getCrudValidatorFileNames = ({ moduleName }: { moduleName: string }): string[] => {
+  const naming = getModuleNaming(moduleName);
   return [
-    `create.${moduleName}.ts`,
-    `get.${moduleName}.ts`,
-    `list.${moduleName}.ts`,
-    `delete.${moduleName}.ts`,
-    `update.${moduleName}.ts`,
+    `create.${naming.file}.ts`,
+    `get.${naming.file}.ts`,
+    `list.${naming.file}.ts`,
+    `delete.${naming.file}.ts`,
+    `update.${naming.file}.ts`,
   ];
 };
 
@@ -25,27 +28,27 @@ export const generateCrudValidatorContent = ({
   operation: string;
   moduleName: string;
 }): string => {
-  const capitalizedModule = moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
+  const naming = getModuleNaming(moduleName);
   const capitalizedOperation = operation.charAt(0).toUpperCase() + operation.slice(1);
 
   // Generate operation-specific validator content
   switch (operation) {
     case 'create':
-      return generateCreateValidatorContent(capitalizedModule, capitalizedOperation, moduleName);
+      return generateCreateValidatorContent(naming.class, capitalizedOperation, naming.file);
     case 'get':
-      return generateGetValidatorContent(capitalizedModule, capitalizedOperation, moduleName);
+      return generateGetValidatorContent(naming.class, capitalizedOperation, naming.file);
     case 'list':
-      return generateListValidatorContent(capitalizedModule, capitalizedOperation, moduleName);
+      return generateListValidatorContent(naming.class, capitalizedOperation, naming.file);
     case 'update':
-      return generateUpdateValidatorContent(capitalizedModule, capitalizedOperation, moduleName);
+      return generateUpdateValidatorContent(naming.class, capitalizedOperation, naming.file);
     case 'delete':
-      return generateDeleteValidatorContent(capitalizedModule, capitalizedOperation, moduleName);
+      return generateDeleteValidatorContent(naming.class, capitalizedOperation, naming.file);
     default:
       return generateGenericValidatorContent(
-        capitalizedModule,
+        naming.class,
         capitalizedOperation,
         operation,
-        moduleName
+        naming.file
       );
   }
 };

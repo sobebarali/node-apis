@@ -1,13 +1,28 @@
 /**
- * Module name validation logic
+ * Module name validation logic with smart naming transformations
  */
 
 import { ValidationResult, ModuleNameInput } from '../types/common.types';
+import { getModuleNaming, isValidIdentifierBase, ensureValidStart } from '../shared/utils/naming.utils';
 
 /**
- * Validates a module name using functional programming style
+ * Enhanced validation result with naming transformations
  */
-export const validateModuleName = ({ name }: ModuleNameInput): ValidationResult => {
+export interface EnhancedValidationResult extends ValidationResult {
+  naming?: {
+    directory: string;
+    file: string;
+    class: string;
+    variable: string;
+    constant: string;
+    url: string;
+  };
+}
+
+/**
+ * Validates and transforms a module name with smart naming conventions
+ */
+export const validateModuleName = ({ name }: ModuleNameInput): EnhancedValidationResult => {
   if (!name || typeof name !== 'string') {
     return {
       isValid: false,
@@ -24,25 +39,28 @@ export const validateModuleName = ({ name }: ModuleNameInput): ValidationResult 
     };
   }
 
-  // Check for valid characters (alphanumeric, hyphens, underscores)
-  const validNameRegex = /^[a-zA-Z0-9_-]+$/;
-  if (!validNameRegex.test(trimmedName)) {
+  // Check if the name can be transformed to valid identifiers
+  if (!isValidIdentifierBase(trimmedName)) {
     return {
       isValid: false,
-      error: 'Module name can only contain letters, numbers, hyphens, and underscores',
+      error: 'Module name contains invalid characters. Use only letters, numbers, hyphens, underscores, and spaces.',
     };
   }
 
-  // Check if name starts with a letter or underscore
-  if (!/^[a-zA-Z_]/.test(trimmedName)) {
-    return {
-      isValid: false,
-      error: 'Module name must start with a letter or underscore',
-    };
-  }
+  // Generate all naming conventions
+  const processedName = ensureValidStart(trimmedName);
+  const naming = getModuleNaming(processedName);
 
   return {
     isValid: true,
-    normalizedName: trimmedName.toLowerCase(),
+    normalizedName: naming.directory, // Use kebab-case for directory names
+    naming: {
+      directory: naming.directory,
+      file: naming.file,
+      class: naming.class,
+      variable: naming.variable,
+      constant: naming.constant,
+      url: naming.url,
+    },
   };
 };

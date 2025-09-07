@@ -2,6 +2,8 @@
  * Custom validator templates
  */
 
+import { getModuleNaming } from '../shared/utils/naming.utils';
+
 /**
  * Gets custom validator file names for a module
  */
@@ -12,7 +14,8 @@ export const getCustomValidatorFileNames = ({
   customNames: string[];
   moduleName: string;
 }): string[] => {
-  return customNames.map(customName => `${customName}.${moduleName}.ts`);
+  const naming = getModuleNaming(moduleName);
+  return customNames.map(customName => `${customName}.${naming.file}.ts`);
 };
 
 /**
@@ -25,14 +28,14 @@ export const generateCustomValidatorContent = ({
   customName: string;
   moduleName: string;
 }): string => {
-  const capitalizedModule = moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
+  const naming = getModuleNaming(moduleName);
   const capitalizedCustom = customName.charAt(0).toUpperCase() + customName.slice(1);
 
   return generateGenericCustomValidatorContent(
     customName,
-    capitalizedModule,
+    naming.class,
     capitalizedCustom,
-    moduleName
+    naming.file
   );
 };
 

@@ -8,6 +8,7 @@ export interface CommandOptions {
   interactive?: boolean;
   crud?: boolean;
   custom?: string;
+  framework?: string;
 }
 
 export interface InquirerAnswers {
