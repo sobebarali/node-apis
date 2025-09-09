@@ -10,7 +10,7 @@ export const main = async (): Promise<void> => {
   program
     .name('node-apis')
     .description('Generate boilerplate folder structures for Node.js API modules')
-    .version('3.3.0')
+    .version('3.3.1')
     .option('-n, --name <name>', 'module name (skips interactive prompt)')
     .option('-f, --force', 'overwrite existing directories')
     .option('--no-interactive', 'disable interactive mode')

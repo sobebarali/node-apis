@@ -13,7 +13,7 @@
 - **🔧 TypeScript Strict Mode** - Generated code passes strict TypeScript compilation
 - **📦 Dependency-Free** - Generated repositories have zero external dependencies
 - **✨ Auto-Formatting** - Prettier integration for consistent code style
-- **🔄 Two-Phase Generation** - Review types first, then generate code
+- **🔄 Two-Phase Generation** - Review types first, then generate code with optimized folder structures
 - **🧪 Comprehensive Testing** - Complete integration test suite generated automatically
 - **🛡️ Production Ready** - Error handling, validation, and observability built-in
 - **🚫 No Service Layer** - Direct handler-to-repository pattern for simplicity
@@ -114,25 +114,28 @@ node-apis --name book --crud --framework hono     # Lightweight alternative
 
 ## 🎯 Three API Types
 
-The generator supports three distinct API types for different use cases:
+The generator supports three distinct API types with optimized folder structures:
 
 ### 1. **CRUD APIs** (`--crud`)
 Full-stack database operations with HTTP endpoints:
 - **Use for**: User management, product catalogs, blog posts
 - **Generates**: Controllers, handlers, repository, validators, routes, tests
 - **Pattern**: HTTP → Controller → Handler → Repository → Database
+- **Folders**: `controllers/`, `handlers/`, `repository/`, `services/`, `types/`, `validators/`, `routes`
 
 ### 2. **Custom APIs** (`--custom`)
 Business logic operations with HTTP endpoints:
 - **Use for**: Authentication, notifications, file uploads
 - **Generates**: Controllers, services, validators, routes, tests
 - **Pattern**: HTTP → Controller → Service → External APIs/Logic
+- **Folders**: `controllers/`, `handlers/`, `repository/`, `services/`, `types/`, `validators/`, `routes`
 
-### 3. **Internal Services** (`--services`)
+### 3. **Internal Services** (`--services`) ⭐ **Optimized Structure**
 Third-party integrations for internal use (no HTTP layer):
 - **Use for**: Payment processing, email services, cloud APIs
 - **Generates**: Pure service functions, types, comprehensive tests
 - **Pattern**: Direct function calls → External APIs
+- **Folders**: Only `services/` and `types/` (clean & minimal)
 - **Import**: Use in other modules via `import { serviceFunction } from '../module/services/...'`
 
 ## ⚙️ Configuration
@@ -223,32 +226,55 @@ tests/user-profile/             # Comprehensive test suite
     └── helpers.ts              # Test utilities
 ```
 
-## 💡 Three-Phase Generation Process
+## 💡 Improved Two-Phase Generation Process
 
-**Phase 1: Types First**
+### **Phase 1: Type Definition & Review**
 
 ```bash
 node-apis --name book --crud
-# Generates type files and asks for confirmation
+# 🚀 Phase 1: Generating directory structure and type files...
+# ✅ Type files generated successfully!
 ```
 
-**Phase 2: Code Generation**
+**What happens:**
+- Creates main module directory and `types/` subdirectory only
+- Generates TypeScript type files with placeholder interfaces
+- Shows detailed instructions for each operation type
+- Prompts you to review and customize the `typePayload` interfaces
+
+**Example type file generated:**
+```typescript
+export type typePayload = {
+  // Add your specific fields here
+  // name: string;
+  // description: string;
+  // category?: string;
+};
+```
+
+### **Phase 2: Code Generation & Testing**
 
 ```bash
-# After you review and confirm types (type 'yes')
-# Generates controllers, handlers, repositories, validators
-# All code is automatically formatted with Prettier
+# After you review types and confirm (type 'yes' or 'y')
+# 🚀 Phase 2: Generating services and repositories...
+# 🧪 Phase 3: Generating comprehensive test suite...
 ```
 
-**Phase 3: Test Generation**
+**What happens:**
+- Creates remaining directories based on API type:
+  - **Services**: Only `services/` (no HTTP layer)
+  - **CRUD/Custom**: All folders (controllers, handlers, repository, validators, routes)
+- Generates all code files using your confirmed type definitions
+- Auto-formats all generated code with Prettier
+- Creates comprehensive test suite with validation, success, and error cases
 
-```bash
-# Automatically generates comprehensive test suite
-# ✅ Integration tests for all endpoints
-# ✅ Validation tests for all inputs
-# ✅ Error handling tests
-# ✅ Test configuration (Vitest + Supertest)
-```
+### **Benefits of Two-Phase Approach**
+
+- **🎯 Type-First Development**: Define your data structures before implementation
+- **🔧 Customizable**: Edit types to match your exact requirements
+- **🚫 No Rework**: Generated code uses your confirmed field definitions
+- **📁 Clean Structure**: Services get minimal folders, APIs get full structure
+- **⚡ Efficient**: Only creates what each API type actually needs
 
 ## 🔥 Generated Code Examples
 
@@ -478,11 +504,28 @@ node-apis --name sendgrid --services "sendEmail,sendBulkEmail"
 
 # What you get:
 # ✅ Pure service functions (no HTTP layer)
+# ✅ Clean folder structure (only services/ and types/)
 # ✅ Type-safe request/response interfaces
 # ✅ Error handling with consistent patterns
 # ✅ Comprehensive test suites (validation, success, error cases)
 # ✅ Ready for internal use in other modules
 # ✅ Template code with TODO comments for easy implementation
+```
+
+**Generated Structure for Services:**
+```
+src/apis/stripe/
+├── services/
+│   ├── createPayment.stripe.ts
+│   ├── refund.stripe.ts
+│   └── getPaymentStatus.stripe.ts
+└── types/
+    ├── createPayment.stripe.ts
+    ├── refund.stripe.ts
+    └── getPaymentStatus.stripe.ts
+
+# No controllers/, handlers/, validators/, repository/ folders
+# Services are pure functions for internal use
 ```
 
 ### Interactive Mode (Recommended)

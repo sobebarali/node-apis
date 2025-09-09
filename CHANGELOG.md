@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.1] - 2024-01-07
+
+### Fixed
+- **🏗️ Service Folder Structure**: Services now create only necessary folders (`services/` and `types/`) instead of all API folders
+  - **Before**: Services created unnecessary `controllers/`, `handlers/`, `validators/`, `repository/` folders
+  - **After**: Services create only `services/` and `types/` folders for cleaner architecture
+  - **Impact**: Cleaner project structure for internal service operations
+
+- **⚡ Two-Phase Generation Flow**: Fixed generation workflow to properly separate type creation from code generation
+  - **Phase 1**: Now creates only main directory + `types/` subdirectory, generates type files
+  - **User Review**: Prompts user to review and confirm generated types before proceeding
+  - **Phase 2**: After confirmation, creates remaining directories and generates all other files
+  - **Impact**: Better user experience with type customization before full code generation
+
+- **🔧 CLI Integration**: Fixed interactive mode to respect API types provided via command line flags
+  - **Before**: Always prompted for API type even when provided via `--crud`, `--custom`, or `--services`
+  - **After**: Only prompts for missing information, respects CLI-provided API types
+  - **Impact**: Smoother CLI experience with fewer redundant prompts
+
+### Technical Improvements
+- Enhanced `getModuleSubdirectories()` to accept API type parameter for conditional directory creation
+- Added `generateModuleStructurePhase1()` and `generateModuleStructurePhase2()` functions
+- Updated interactive flow to handle pre-provided API types correctly
+- Improved type safety with exact optional property types
+
+### Examples
+```bash
+# Services now create clean structure
+node-apis --name stripe --services "createPayment,refund"
+# Creates: src/apis/stripe/services/ and src/apis/stripe/types/ only
+
+# Two-phase flow for all API types
+node-apis --name user --crud
+# Phase 1: Creates types/ and prompts for review
+# Phase 2: Creates all remaining folders after confirmation
+```
+
 ## [3.3.0] - 2024-01-07
 
 ### Added
