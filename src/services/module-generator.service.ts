@@ -3,7 +3,7 @@
  */
 
 import { GenerationInput, GenerationResult } from '../types/generation.types';
-import { GeneratedFile } from '../types/common.types';
+import { GeneratedFile, ApiType } from '../types/common.types';
 import { validateModuleName, EnhancedValidationResult } from '../validators/module-name.validator';
 import { getModulePath, getModuleSubdirectories } from '../filesystem/path.utils';
 import {
@@ -12,6 +12,7 @@ import {
   createDirectories,
 } from '../filesystem/directory.operations';
 import { generateApiFiles } from './file-generator.service';
+import * as path from 'path';
 
 /**
  * Generates the API module folder structure
@@ -48,8 +49,8 @@ export const generateModuleStructure = async ({
     // Create the main module directory
     await ensureDirectory({ dirPath: modulePath });
 
-    // Create all subdirectories
-    const subdirectories = getModuleSubdirectories();
+    // Create all subdirectories based on API type
+    const subdirectories = getModuleSubdirectories(apiType);
     const createdDirs = await createDirectories({
       basePath: modulePath,
       subdirectories,
@@ -67,7 +68,11 @@ export const generateModuleStructure = async ({
     }
 
     // Format success message
-    const message = formatSuccessMessage({ moduleName: normalizedName, modulePath });
+    const message = formatSuccessMessage({
+      moduleName: normalizedName,
+      modulePath,
+      ...(apiType && { apiType })
+    });
 
     return {
       success: true,
@@ -83,16 +88,107 @@ export const generateModuleStructure = async ({
 };
 
 /**
+ * Phase 1: Creates only the main module directory and types subdirectory
+ * Used for two-phase generation where we want to generate types first
+ */
+export const generateModuleStructurePhase1 = async ({
+  moduleName,
+  options = {},
+}: Omit<GenerationInput, 'apiType'>): Promise<GenerationResult> => {
+  const { baseDir = process.cwd(), force = false, appendMode = false } = options;
+
+  try {
+    // Validate the module name with enhanced naming
+    const validation = validateModuleName({ name: moduleName }) as EnhancedValidationResult;
+    if (!validation.isValid) {
+      return {
+        success: false,
+        error: validation.error!,
+      };
+    }
+
+    const normalizedName = validation.normalizedName!;
+    const modulePath = getModulePath({ moduleName: normalizedName, baseDir });
+
+    // Check if directory already exists
+    const exists = await directoryExists({ dirPath: modulePath });
+    if (exists && !force && !appendMode) {
+      return {
+        success: false,
+        error: `Module directory already exists: ${modulePath}\nUse --force flag to overwrite or run in interactive mode to append.`,
+      };
+    }
+
+    // Create the main module directory
+    await ensureDirectory({ dirPath: modulePath });
+
+    // Create only the types subdirectory for phase 1
+    const typesDir = path.join(modulePath, 'types');
+    await ensureDirectory({ dirPath: typesDir });
+
+    return {
+      success: true,
+      moduleName: normalizedName,
+      modulePath,
+      createdDirectories: [modulePath, typesDir],
+      generatedFiles: [],
+      message: `✅ Phase 1: Created module directory and types folder for "${normalizedName}"`,
+    };
+  } catch (error: any) {
+    return handleGenerationError(error, moduleName, baseDir);
+  }
+};
+
+/**
+ * Phase 2: Creates remaining subdirectories based on API type
+ * Used after user confirms the generated types
+ */
+export const generateModuleStructurePhase2 = async ({
+  modulePath,
+  apiType,
+}: {
+  modulePath: string;
+  apiType: ApiType;
+}): Promise<{ success: boolean; createdDirectories: string[]; error?: string }> => {
+  try {
+    // Get all subdirectories for this API type
+    const allSubdirectories = getModuleSubdirectories(apiType);
+
+    // Filter out 'types' since it was already created in phase 1
+    const remainingSubdirectories = allSubdirectories.filter(dir => dir !== 'types');
+
+    // Create remaining subdirectories
+    const createdDirs = await createDirectories({
+      basePath: modulePath,
+      subdirectories: remainingSubdirectories,
+    });
+
+    return {
+      success: true,
+      createdDirectories: createdDirs,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      createdDirectories: [],
+      error: `Failed to create remaining directories: ${error.message}`,
+    };
+  }
+};
+
+/**
  * Formats a success message with the created structure
  */
 const formatSuccessMessage = ({
   moduleName,
   modulePath,
+  apiType,
 }: {
   moduleName: string;
   modulePath: string;
+  apiType?: ApiType;
 }): string => {
-  const subdirs = getModuleSubdirectories();
+  const subdirs = getModuleSubdirectories(apiType);
   const structure = subdirs.map(dir => `  ├── ${dir}/`).join('\n');
 
   return `

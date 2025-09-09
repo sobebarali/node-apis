@@ -8,6 +8,7 @@ export interface CommandOptions {
   interactive?: boolean;
   crud?: boolean;
   custom?: string;
+  services?: string;
   framework?: string;
   initConfig?: boolean;
   setFramework?: string;
@@ -16,8 +17,9 @@ export interface CommandOptions {
 export interface InquirerAnswers {
   moduleName: string;
   confirm: boolean;
-  apiType: 'crud' | 'custom';
+  apiType: 'crud' | 'custom' | 'services';
   customNames: string;
+  serviceNames: string;
   moduleChoice: 'new' | 'existing';
   existingModule: string;
   operationMode: 'replace' | 'append';

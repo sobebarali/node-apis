@@ -18,8 +18,9 @@ export interface ModuleNaming {
 }
 
 export interface ApiType {
-  type: 'crud' | 'custom';
+  type: 'crud' | 'custom' | 'services';
   customNames?: string[];
+  serviceNames?: string[];
 }
 
 export interface GeneratedFile {

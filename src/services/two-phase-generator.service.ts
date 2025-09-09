@@ -5,6 +5,7 @@ import { ApiType, GeneratedFile } from '../types/common.types';
 import { fileExists, writeFile } from '../filesystem/file.operations';
 import { getCrudFileNames, generateCrudFileContent } from '../templates/crud.templates';
 import { getCustomFileNames, generateCustomFileContent } from '../templates/custom.templates';
+import { getServiceFileNames, generateServiceTypeContent, generateServiceContent } from '../templates/services.templates';
 import { parseModuleTypes } from './type-parser.service';
 
 import { generateTypedRepositoryContent } from '../templates/typed-repository.templates';
@@ -77,6 +78,24 @@ export const generateTypeFilesOnly = async ({
       const typeFilePath = path.join(typesDir, fileName);
       if (!appendMode || !(await fileExists({ filePath: typeFilePath }))) {
         const typeContent = generateCustomFileContent({ customName, moduleName });
+        await writeFile({ filePath: typeFilePath, content: typeContent });
+        generatedFiles.push({ fileName, filePath: typeFilePath, content: typeContent });
+      }
+    }
+  } else if (apiType.type === 'services' && apiType.serviceNames) {
+    const serviceFileNames = getServiceFileNames({
+      moduleName,
+      serviceNames: apiType.serviceNames,
+    });
+
+    for (let i = 0; i < serviceFileNames.length; i++) {
+      const fileName = serviceFileNames[i];
+      const serviceName = apiType.serviceNames[i];
+
+      // Generate type file
+      const typeFilePath = path.join(typesDir, fileName);
+      if (!appendMode || !(await fileExists({ filePath: typeFilePath }))) {
+        const typeContent = generateServiceTypeContent({ serviceName, moduleName });
         await writeFile({ filePath: typeFilePath, content: typeContent });
         generatedFiles.push({ fileName, filePath: typeFilePath, content: typeContent });
       }
@@ -242,6 +261,36 @@ export const generateCodeWithParsedTypes = async ({
         content: repositoryContent,
       });
     }
+  } else if (apiType.type === 'services' && apiType.serviceNames) {
+    const servicesDir = path.join(modulePath, 'services');
+    const serviceFileNames = getServiceFileNames({
+      moduleName,
+      serviceNames: apiType.serviceNames,
+    });
+
+    for (let i = 0; i < apiType.serviceNames.length; i++) {
+      const serviceFileName = serviceFileNames[i];
+      const serviceName = apiType.serviceNames[i];
+
+      // Generate service file
+      const serviceFilePath = path.join(servicesDir, serviceFileName);
+      if (!appendMode || !(await fileExists({ filePath: serviceFilePath }))) {
+        const serviceContent = generateServiceContent({ serviceName, moduleName });
+        await writeFile({ filePath: serviceFilePath, content: serviceContent });
+        generatedFiles.push({
+          fileName: serviceFileName,
+          filePath: serviceFilePath,
+          content: serviceContent,
+        });
+      }
+    }
+
+    // Skip routes generation for services (they are internal)
+    // Format all generated files
+    const filePaths = generatedFiles.map(file => file.filePath);
+    await formatGeneratedFiles(filePaths);
+
+    return generatedFiles;
   }
 
   // Generate routes file

@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.0] - 2024-01-07
+
+### Added
+- **New API Type**: Internal Service Operations (`--services`)
+  - Generate third-party API integrations for internal use
+  - Pure service functions without HTTP layer (no controllers, validators, routes)
+  - Consistent type patterns with existing CRUD/Custom APIs
+  - Comprehensive test generation (validation, success, error cases)
+  - Template code with TODO comments for easy implementation
+  - Perfect for payment processing, email services, cloud APIs
+
+### Features
+- **CLI Support**: Added `--services <names>` flag for service generation
+- **Interactive Mode**: Added "Internal service operations" option in prompts
+- **Service Templates**: Complete template system for service generation
+- **Test Generation**: Full test suite generation for service modules
+- **Type Consistency**: Uses same `typePayload`/`typeResult` pattern as CRUD/Custom
+- **Documentation**: Updated README with service examples and three API types explanation
+
+### Technical Implementation
+- Added service templates (`services.templates.ts`, `services.tests.ts`)
+- Updated CLI commands and prompts to support services
+- Enhanced two-phase generator for service module generation
+- Added 'services' directory to module subdirectories
+- Updated type definitions for service operations
+
+### Examples
+```bash
+# Generate payment service
+node-apis --name stripe --services "createPayment,refund,getPaymentStatus"
+
+# Generate email service
+node-apis --name sendgrid --services "sendEmail,sendBulkEmail"
+```
+
 ## [3.2.1] - 2024-01-07
 
 ### Fixed

@@ -79,7 +79,7 @@ export const promptModuleName = async (): Promise<PromptResult<string>> => {
 /**
  * Prompts user for API type selection
  */
-export const promptApiType = async (): Promise<PromptResult<'crud' | 'custom'>> => {
+export const promptApiType = async (): Promise<PromptResult<'crud' | 'custom' | 'services'>> => {
   try {
     const answer = (await inquirer.prompt([
       {
@@ -89,6 +89,7 @@ export const promptApiType = async (): Promise<PromptResult<'crud' | 'custom'>> 
         choices: [
           { name: 'CRUD operations (Create, Read, Update, Delete)', value: 'crud' },
           { name: 'Custom API operations', value: 'custom' },
+          { name: 'Internal service operations (Third-party integrations)', value: 'services' },
         ],
       },
     ])) as InquirerAnswers;
@@ -124,6 +125,36 @@ export const promptCustomOperations = async (): Promise<PromptResult<string[]>> 
       .filter(name => name.length > 0);
 
     return { success: true, data: customNames };
+  } catch (error) {
+    return { success: false, cancelled: true };
+  }
+};
+
+/**
+ * Prompts user for service operation names
+ */
+export const promptServiceOperations = async (): Promise<PromptResult<string[]>> => {
+  try {
+    const answer = (await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'serviceNames',
+        message: 'Enter service operation names (comma-separated):',
+        validate: (input: string) => {
+          const trimmed = input.trim();
+          if (!trimmed) return 'Please enter at least one service operation name';
+          return true;
+        },
+        filter: (input: string) => input.trim(),
+      },
+    ])) as InquirerAnswers;
+
+    const serviceNames = answer.serviceNames
+      .split(',')
+      .map(name => name.trim())
+      .filter(name => name.length > 0);
+
+    return { success: true, data: serviceNames };
   } catch (error) {
     return { success: false, cancelled: true };
   }

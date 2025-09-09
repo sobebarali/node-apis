@@ -3,7 +3,11 @@
 import { CommandOptions } from '../../types/cli.types';
 import { ApiType } from '../../types/common.types';
 import { validateTargetLocation } from '../../validators/location.validator';
-import { generateModuleStructure } from '../../services/module-generator.service';
+import {
+  generateModuleStructure,
+  generateModuleStructurePhase1,
+  generateModuleStructurePhase2
+} from '../../services/module-generator.service';
 import {
   generateTypeFilesOnly,
   generateCodeWithParsedTypes,
@@ -40,6 +44,7 @@ import {
   promptModuleName,
   promptApiType,
   promptCustomOperations,
+  promptServiceOperations,
   promptConfirmation,
   promptFrameworkSelection,
   promptSaveFrameworkToConfig,
@@ -76,7 +81,7 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
 
 
     if (options.interactive !== false) {
-      const interactiveResult = await handleInteractiveFlow(moduleName, options.framework);
+      const interactiveResult = await handleInteractiveFlow(moduleName, options.framework, apiType);
       if (!interactiveResult.success) {
         displayCancellation();
         process.exit(0);
@@ -177,10 +182,10 @@ const handleTwoPhaseGeneration = async ({
   const { force = false, appendMode = false } = options;
 
   try {
-    // Phase 1: Generate directory structure and type files only
+    // Phase 1: Generate only main directory, types subdirectory, and type files
     console.log('🚀 Phase 1: Generating directory structure and type files...\n');
 
-    const structureResult = await generateModuleStructure({
+    const structureResult = await generateModuleStructurePhase1({
       moduleName,
       options: { force, appendMode },
     });
@@ -220,8 +225,19 @@ const handleTwoPhaseGeneration = async ({
       displayTypeReviewComplete();
     }
 
-    // Phase 2: Parse types and generate services/repositories with framework support
+    // Phase 2: Create remaining directories and generate services/repositories with framework support
     console.log(`🚀 Phase 2: Generating services and repositories for ${framework} framework...\n`);
+
+    // Create remaining subdirectories based on API type
+    const phase2Result = await generateModuleStructurePhase2({
+      modulePath,
+      apiType,
+    });
+
+    if (!phase2Result.success) {
+      displayError(phase2Result.error || 'Failed to create remaining directories');
+      process.exit(1);
+    }
 
     const codeFiles = await generateCodeWithParsedTypes({
       moduleName: normalizedModuleName,
@@ -286,6 +302,12 @@ const parseCommandLineApiType = (options: CommandOptions): ApiType | undefined =
       .map(name => name.trim())
       .filter(name => name.length > 0);
     return { type: 'custom', customNames };
+  } else if (options.services) {
+    const serviceNames = options.services
+      .split(',')
+      .map(name => name.trim())
+      .filter(name => name.length > 0);
+    return { type: 'services', serviceNames };
   }
   return undefined;
 };
@@ -295,7 +317,8 @@ const parseCommandLineApiType = (options: CommandOptions): ApiType | undefined =
  */
 const handleInteractiveFlow = async (
   initialModuleName?: string,
-  cliFramework?: string
+  cliFramework?: string,
+  initialApiType?: ApiType
 ): Promise<{
   success: boolean;
   moduleName?: string;
@@ -303,7 +326,7 @@ const handleInteractiveFlow = async (
   appendMode: boolean;
 }> => {
   let moduleName = initialModuleName;
-  let apiType: ApiType | undefined;
+  let apiType: ApiType | undefined = initialApiType;
   let appendMode = false;
 
   // Check for existing modules and offer smart choices
@@ -352,12 +375,18 @@ const handleInteractiveFlow = async (
 
     if (apiTypeResult.data === 'crud') {
       apiType = { type: 'crud' };
-    } else {
+    } else if (apiTypeResult.data === 'custom') {
       const customOperationsResult = await promptCustomOperations();
       if (!customOperationsResult.success) {
         return { success: false, appendMode: false };
       }
       apiType = { type: 'custom', customNames: customOperationsResult.data! };
+    } else if (apiTypeResult.data === 'services') {
+      const serviceOperationsResult = await promptServiceOperations();
+      if (!serviceOperationsResult.success) {
+        return { success: false, appendMode: false };
+      }
+      apiType = { type: 'services', serviceNames: serviceOperationsResult.data! };
     }
   }
 
@@ -394,7 +423,7 @@ const handleInteractiveFlow = async (
   return {
     success: true,
     moduleName: moduleName!,
-    apiType,
+    apiType: apiType!,
     appendMode,
   };
 };
@@ -409,6 +438,8 @@ const getOperationNames = (apiType?: ApiType): string[] | undefined => {
     return ['create', 'get', 'list', 'delete', 'update'];
   } else if (apiType.type === 'custom' && apiType.customNames) {
     return apiType.customNames;
+  } else if (apiType.type === 'services' && apiType.serviceNames) {
+    return apiType.serviceNames;
   }
 
   return undefined;

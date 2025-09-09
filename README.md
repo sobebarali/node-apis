@@ -112,6 +112,29 @@ node-apis --name book --crud --framework express  # Default
 node-apis --name book --crud --framework hono     # Lightweight alternative
 ```
 
+## 🎯 Three API Types
+
+The generator supports three distinct API types for different use cases:
+
+### 1. **CRUD APIs** (`--crud`)
+Full-stack database operations with HTTP endpoints:
+- **Use for**: User management, product catalogs, blog posts
+- **Generates**: Controllers, handlers, repository, validators, routes, tests
+- **Pattern**: HTTP → Controller → Handler → Repository → Database
+
+### 2. **Custom APIs** (`--custom`)
+Business logic operations with HTTP endpoints:
+- **Use for**: Authentication, notifications, file uploads
+- **Generates**: Controllers, services, validators, routes, tests
+- **Pattern**: HTTP → Controller → Service → External APIs/Logic
+
+### 3. **Internal Services** (`--services`)
+Third-party integrations for internal use (no HTTP layer):
+- **Use for**: Payment processing, email services, cloud APIs
+- **Generates**: Pure service functions, types, comprehensive tests
+- **Pattern**: Direct function calls → External APIs
+- **Import**: Use in other modules via `import { serviceFunction } from '../module/services/...'`
+
 ## ⚙️ Configuration
 
 Set your preferences once and skip repetitive prompts:
@@ -446,6 +469,22 @@ node-apis --name user --custom "login,logout,resetPassword"
 # ✅ Validation tests
 ```
 
+### Internal Service Operations
+
+```bash
+# Generate third-party service integrations
+node-apis --name stripe --services "createPayment,refund,getPaymentStatus"
+node-apis --name sendgrid --services "sendEmail,sendBulkEmail"
+
+# What you get:
+# ✅ Pure service functions (no HTTP layer)
+# ✅ Type-safe request/response interfaces
+# ✅ Error handling with consistent patterns
+# ✅ Comprehensive test suites (validation, success, error cases)
+# ✅ Ready for internal use in other modules
+# ✅ Template code with TODO comments for easy implementation
+```
+
 ### Interactive Mode (Recommended)
 
 ```bash
@@ -501,6 +540,7 @@ npm run test:watch
 | `--name <name>`         | `-n`  | Module name (skips interactive prompt)                       |
 | `--crud`                |       | Generate CRUD operations (create, get, list, update, delete) |
 | `--custom <names>`      |       | Generate custom operations (comma-separated)                 |
+| `--services <names>`    |       | Generate internal service operations (comma-separated)       |
 | `--framework <framework>` |     | Web framework to use (express\|hono), defaults to express    |
 | `--force`               | `-f`  | Overwrite existing files                                     |
 | `--no-interactive`      |       | Skip interactive prompts                                     |

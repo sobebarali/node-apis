@@ -33,6 +33,12 @@ import { generateRouteContent } from '../templates/routes.templates';
 import { generateRepositoryContent } from '../templates/repository.templates';
 import { generateCrudTestContent } from '../templates/crud.tests';
 import { generateCustomTestContent } from '../templates/custom.tests';
+import {
+  generateServiceValidationTestContent,
+  generateServiceSuccessTestContent,
+  generateServiceErrorTestContent,
+  generateServiceTestHelpersContent,
+} from '../templates/services.tests';
 
 /**
  * Generates TypeScript files based on API type (types + validators + controllers + services + repository + routes)
@@ -271,6 +277,39 @@ export const generateTestFiles = async ({
         }
       }
     }
+  } else if (apiType.type === 'services' && apiType.serviceNames) {
+    const testTypes: ('validation' | 'success' | 'errors')[] = ['validation', 'success', 'errors'];
+
+    for (const serviceName of apiType.serviceNames) {
+      const operationDir = path.join(moduleTestDir, serviceName);
+
+      // Ensure operation directory exists
+      await ensureDirectory({ dirPath: operationDir });
+
+      for (const testType of testTypes) {
+        const testFileName = `${testType}.test.ts`;
+        const testFilePath = path.join(operationDir, testFileName);
+
+        if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
+          let testContent: string;
+
+          if (testType === 'validation') {
+            testContent = generateServiceValidationTestContent({ serviceName, moduleName });
+          } else if (testType === 'success') {
+            testContent = generateServiceSuccessTestContent({ serviceName, moduleName });
+          } else {
+            testContent = generateServiceErrorTestContent({ serviceName, moduleName });
+          }
+
+          await writeFile({ filePath: testFilePath, content: testContent });
+          generatedFiles.push({
+            fileName: testFileName,
+            filePath: testFilePath,
+            content: testContent,
+          });
+        }
+      }
+    }
   }
 
   // Generate shared helpers
@@ -282,10 +321,17 @@ export const generateTestFiles = async ({
   await ensureDirectory({ dirPath: sharedDir });
 
   if (!appendMode || !(await fileExists({ filePath: helpersFilePath }))) {
-    const helpersContent =
-      apiType.type === 'crud'
-        ? generateCrudTestContent({ operation: 'create', moduleName, testType: 'helpers' })
-        : generateCustomTestContent({ customName: 'default', moduleName, testType: 'helpers' });
+    let helpersContent: string;
+
+    if (apiType.type === 'crud') {
+      helpersContent = generateCrudTestContent({ operation: 'create', moduleName, testType: 'helpers' });
+    } else if (apiType.type === 'custom') {
+      helpersContent = generateCustomTestContent({ customName: 'default', moduleName, testType: 'helpers' });
+    } else if (apiType.type === 'services' && apiType.serviceNames) {
+      helpersContent = generateServiceTestHelpersContent({ moduleName, serviceNames: apiType.serviceNames });
+    } else {
+      helpersContent = '// No helpers generated for this API type';
+    }
 
     await writeFile({ filePath: helpersFilePath, content: helpersContent });
     generatedFiles.push({
