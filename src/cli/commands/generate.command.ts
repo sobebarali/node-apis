@@ -41,6 +41,7 @@ import {
 import {
   promptModuleChoice,
   promptExistingModuleSelection,
+  promptExistingModuleAction,
   promptModuleName,
   promptApiType,
   promptCustomOperations,
@@ -89,6 +90,11 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
 
       moduleName = interactiveResult.moduleName;
       appendMode = interactiveResult.appendMode;
+
+      // Use interactive force override if not already set via CLI
+      if (!options.force && interactiveResult.forceOverwrite) {
+        options.force = true;
+      }
 
       if (!apiType) {
         apiType = interactiveResult.apiType;
@@ -324,10 +330,12 @@ const handleInteractiveFlow = async (
   moduleName?: string;
   apiType?: ApiType;
   appendMode: boolean;
+  forceOverwrite: boolean;
 }> => {
   let moduleName = initialModuleName;
   let apiType: ApiType | undefined = initialApiType;
   let appendMode = false;
+  let forceOverwrite = false;
 
   // Check for existing modules and offer smart choices
   const existingModules = await getExistingModules();
@@ -337,13 +345,13 @@ const handleInteractiveFlow = async (
 
     const moduleChoiceResult = await promptModuleChoice();
     if (!moduleChoiceResult.success) {
-      return { success: false, appendMode: false };
+      return { success: false, appendMode: false, forceOverwrite: false };
     }
 
     if (moduleChoiceResult.data === 'existing') {
       const existingModuleResult = await promptExistingModuleSelection(existingModules);
       if (!existingModuleResult.success) {
-        return { success: false, appendMode: false };
+        return { success: false, appendMode: false, forceOverwrite: false };
       }
 
       moduleName = existingModuleResult.data;
@@ -361,16 +369,35 @@ const handleInteractiveFlow = async (
   if (!moduleName) {
     const moduleNameResult = await promptModuleName();
     if (!moduleNameResult.success) {
-      return { success: false, appendMode: false };
+      return { success: false, appendMode: false, forceOverwrite: false };
     }
     moduleName = moduleNameResult.data;
+
+    // Check if the new module name already exists
+    const existingModule = await detectExistingModule({ moduleName: moduleName! });
+    if (existingModule && existingModule.existingFiles.length > 0) {
+      displayExistingFiles(moduleName!, existingModule.existingFiles);
+
+      const actionResult = await promptExistingModuleAction(moduleName!);
+      if (!actionResult.success) {
+        return { success: false, appendMode: false, forceOverwrite: false };
+      }
+
+      if (actionResult.data === 'cancel') {
+        return { success: false, appendMode: false, forceOverwrite: false };
+      } else if (actionResult.data === 'append') {
+        appendMode = true;
+      } else if (actionResult.data === 'overwrite') {
+        forceOverwrite = true;
+      }
+    }
   }
 
   // Prompt for API type if not provided via command line
   if (!apiType) {
     const apiTypeResult = await promptApiType();
     if (!apiTypeResult.success) {
-      return { success: false, appendMode: false };
+      return { success: false, appendMode: false, forceOverwrite: false };
     }
 
     if (apiTypeResult.data === 'crud') {
@@ -378,13 +405,13 @@ const handleInteractiveFlow = async (
     } else if (apiTypeResult.data === 'custom') {
       const customOperationsResult = await promptCustomOperations();
       if (!customOperationsResult.success) {
-        return { success: false, appendMode: false };
+        return { success: false, appendMode: false, forceOverwrite: false };
       }
       apiType = { type: 'custom', customNames: customOperationsResult.data! };
     } else if (apiTypeResult.data === 'services') {
       const serviceOperationsResult = await promptServiceOperations();
       if (!serviceOperationsResult.success) {
-        return { success: false, appendMode: false };
+        return { success: false, appendMode: false, forceOverwrite: false };
       }
       apiType = { type: 'services', serviceNames: serviceOperationsResult.data! };
     }
@@ -401,7 +428,7 @@ const handleInteractiveFlow = async (
       if (!hasConfig) {
         const frameworkResult = await promptFrameworkSelection();
         if (!frameworkResult.success) {
-          return { success: false, appendMode: false };
+          return { success: false, appendMode: false, forceOverwrite: false };
         }
 
         const selectedFramework = frameworkResult.data!;
@@ -425,6 +452,7 @@ const handleInteractiveFlow = async (
     moduleName: moduleName!,
     apiType: apiType!,
     appendMode,
+    forceOverwrite,
   };
 };
 

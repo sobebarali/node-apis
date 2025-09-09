@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.4.0] - 2024-12-19
+
+### 🎉 Major Interactive Mode Improvements
+
+#### ✅ Fixed Critical Issues
+- **Fixed API Type Selection Navigation**: Replaced broken arrow key navigation with reliable numbered selection (1-3)
+- **Fixed Services Interactive Mode**: Users can now properly select and generate service operations interactively
+- **Fixed Custom Operations Interactive Mode**: Custom API operations now work correctly in interactive mode
+
+#### 🚀 New Interactive Features
+- **Interactive Force Override**: Smart handling of existing modules with three options:
+  - 🔄 Overwrite existing module (replace all files)
+  - ➕ Add operations to existing module (append mode)
+  - ❌ Cancel generation
+- **Enhanced Operation Name Validation**: Comprehensive validation for custom and service operation names:
+  - Validates camelCase format (e.g., `sendEmail`, `getUserProfile`)
+  - Checks for reserved words and invalid characters
+  - Provides helpful error messages and examples
+  - Enforces length limits (2-50 characters)
+- **Improved User Experience**:
+  - Added emojis and better visual formatting
+  - Clear examples and helpful tips for operation naming
+  - Better error messages and validation feedback
+
+#### 🔧 Technical Improvements
+- **Numbered Selection System**: Reliable terminal-compatible selection for all environments
+- **Enhanced Type Safety**: Improved TypeScript interfaces for all prompt responses
+- **Better Error Handling**: Graceful fallbacks and comprehensive error recovery
+- **Interactive Config Management**: Foundation for future config management features
+
+#### 📊 Feature Parity Achieved
+- **CLI vs Interactive**: All CLI functionality now available in interactive mode
+- **Services Support**: Full interactive support for service operations
+- **Custom Operations**: Complete interactive support for custom API operations
+- **CRUD Operations**: Existing CRUD interactive support maintained
+
+### 🧪 Testing & Validation
+- Comprehensive testing across different terminal environments
+- Validated all three API types (CRUD, Custom, Services) in interactive mode
+- Confirmed proper folder structure generation for each API type
+- Verified two-phase generation workflow for all operation types
+
 ## [3.3.1] - 2024-01-07
 
 ### Fixed

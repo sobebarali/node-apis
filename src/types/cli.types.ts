@@ -18,6 +18,7 @@ export interface InquirerAnswers {
   moduleName: string;
   confirm: boolean;
   apiType: 'crud' | 'custom' | 'services';
+  apiTypeNumber: string;
   customNames: string;
   serviceNames: string;
   moduleChoice: 'new' | 'existing';
@@ -25,6 +26,9 @@ export interface InquirerAnswers {
   operationMode: 'replace' | 'append';
   framework: 'express' | 'hono';
   saveToConfig: boolean;
+  action: 'overwrite' | 'append' | 'cancel' | 'view' | 'update' | 'reset';
+  configAction: 'view' | 'update' | 'reset' | 'cancel';
+  confirmReset: boolean;
 }
 
 export interface PromptResult<T = any> {

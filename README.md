@@ -14,6 +14,7 @@
 - **📦 Dependency-Free** - Generated repositories have zero external dependencies
 - **✨ Auto-Formatting** - Prettier integration for consistent code style
 - **🔄 Two-Phase Generation** - Review types first, then generate code with optimized folder structures
+- **🎯 Smart Interactive Mode** - Numbered selection, validation, and existing module handling
 - **🧪 Comprehensive Testing** - Complete integration test suite generated automatically
 - **🛡️ Production Ready** - Error handling, validation, and observability built-in
 - **🚫 No Service Layer** - Direct handler-to-repository pattern for simplicity
@@ -528,19 +529,41 @@ src/apis/stripe/
 # Services are pure functions for internal use
 ```
 
-### Interactive Mode (Recommended)
+### Interactive Mode (Recommended) ⭐
 
 ```bash
-# Just run the command - it's smart!
+# Just run the command - it's smart and user-friendly!
 node-apis
 
-# The CLI will:
-# 1. 🔍 Detect existing modules
-# 2. 🤔 Ask what you want to do
-# 3. 📝 Guide you through the process
-# 4. ✨ Generate beautiful, working code
-# 5. 🧪 Create comprehensive test suite
+# 🎯 Smart Features:
+# ✅ Numbered selection (works in all terminals)
+# ✅ Existing module detection with smart options
+# ✅ Enhanced validation with helpful examples
+# ✅ Clear visual feedback with emojis and formatting
+
+# 🔄 Interactive Flow:
+# 1. 🔍 Detect existing modules (if any)
+# 2. 📝 Enter module name with validation
+# 3. 🎯 Choose API type (1-3 numbered selection):
+#    1. 🗃️  CRUD operations (Create, Read, Update, Delete)
+#    2. ⚡ Custom API operations (Business logic endpoints)
+#    3. 🔧 Internal service operations (Third-party integrations)
+# 4. 📋 Enter operation names with smart validation
+# 5. ⚙️  Framework selection (saved to config)
+# 6. 🚨 Handle existing modules:
+#    • 🔄 Overwrite existing module (replace all files)
+#    • ➕ Add operations to existing module
+#    • ❌ Cancel generation
+# 7. ✨ Two-phase generation with type review
+# 8. 🧪 Comprehensive test suite generation
 ```
+
+#### 🎯 **Interactive Mode Benefits**
+- **Terminal Compatible**: Numbered selection works everywhere
+- **Smart Validation**: Helpful examples and error messages
+- **Existing Module Handling**: Never accidentally overwrite work
+- **Visual Feedback**: Emojis and clear formatting
+- **Type-First**: Review and customize types before code generation
 
 ### Type-Driven Development with Smart Naming
 
