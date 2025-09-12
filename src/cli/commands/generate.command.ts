@@ -101,9 +101,13 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
       process.exit(1);
     }
 
+    const targetPath = options.targetDir
+      ? `${options.targetDir}/src/apis/${moduleName.toLowerCase()}`
+      : `src/apis/${moduleName.toLowerCase()}`;
+
     displayGenerationSummary({
       moduleName,
-      targetPath: `src/apis/${moduleName.toLowerCase()}`,
+      targetPath,
       forceOverwrite: options.force || false,
       apiType: apiType?.type || undefined,
       operationNames: getOperationNames(apiType),
@@ -130,6 +134,7 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
         options: {
           force: options.force || false,
           appendMode,
+          ...(options.targetDir && { targetDir: options.targetDir }),
         },
         interactive: options.interactive !== false,
       });
@@ -141,6 +146,7 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
         options: {
           force: options.force || false,
           appendMode,
+          ...(options.targetDir && { targetDir: options.targetDir }),
         },
       });
 
@@ -172,10 +178,10 @@ const handleTwoPhaseGeneration = async ({
   moduleName: string;
   apiType: ApiType;
   framework: string;
-  options: { force: boolean; appendMode: boolean };
+  options: { force: boolean; appendMode: boolean; targetDir?: string };
   interactive: boolean;
 }) => {
-  const { force = false, appendMode = false } = options;
+  const { force = false, appendMode = false, targetDir } = options;
 
   try {
     // Phase 1: Generate only main directory, types subdirectory, and type files
@@ -183,7 +189,7 @@ const handleTwoPhaseGeneration = async ({
 
     const structureResult = await generateModuleStructurePhase1({
       moduleName,
-      options: { force, appendMode },
+      options: { force, appendMode, ...(targetDir && { targetDir }) },
     });
 
     if (!structureResult.success) {

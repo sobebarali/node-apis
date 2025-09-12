@@ -22,7 +22,7 @@ export const generateModuleStructure = async ({
   options = {},
   apiType,
 }: GenerationInput): Promise<GenerationResult> => {
-  const { baseDir = process.cwd(), force = false, appendMode = false } = options;
+  const { baseDir = process.cwd(), force = false, appendMode = false, targetDir } = options;
 
   try {
     // Validate the module name with enhanced naming
@@ -35,7 +35,11 @@ export const generateModuleStructure = async ({
     }
 
     const normalizedName = validation.normalizedName!;
-    const modulePath = getModulePath({ moduleName: normalizedName, baseDir });
+    const modulePath = getModulePath({
+      moduleName: normalizedName,
+      baseDir,
+      ...(targetDir && { targetDir }),
+    });
 
     // Check if directory already exists
     const exists = await directoryExists({ dirPath: modulePath });
@@ -95,7 +99,7 @@ export const generateModuleStructurePhase1 = async ({
   moduleName,
   options = {},
 }: Omit<GenerationInput, 'apiType'>): Promise<GenerationResult> => {
-  const { baseDir = process.cwd(), force = false, appendMode = false } = options;
+  const { baseDir = process.cwd(), force = false, appendMode = false, targetDir } = options;
 
   try {
     // Validate the module name with enhanced naming
@@ -108,7 +112,11 @@ export const generateModuleStructurePhase1 = async ({
     }
 
     const normalizedName = validation.normalizedName!;
-    const modulePath = getModulePath({ moduleName: normalizedName, baseDir });
+    const modulePath = getModulePath({
+      moduleName: normalizedName,
+      baseDir,
+      ...(targetDir && { targetDir }),
+    });
 
     // Check if directory already exists
     const exists = await directoryExists({ dirPath: modulePath });

@@ -12,6 +12,7 @@ export interface CommandOptions {
   framework?: string;
   initConfig?: boolean;
   setFramework?: string;
+  targetDir?: string;
 }
 
 export interface InquirerAnswers {

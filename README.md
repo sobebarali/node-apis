@@ -266,7 +266,74 @@ node-apis --name admin --crud --framework express
 # Uses Express despite Hono being configured
 ```
 
-> 💡 **Monorepo users**: If you get workspace protocol errors, use `npm install -g node-apis` or `npx node-apis` instead.
+## 🏢 Monorepo Support
+
+Working in a monorepo? The CLI supports custom target directories so you can generate APIs from any location:
+
+### Option 1: Use `--target-dir` Flag
+
+Generate APIs directly from your monorepo root:
+
+```bash
+# From monorepo root, generate in apps/server/
+node-apis --name user --crud --target-dir apps/server
+
+# From monorepo root, generate in packages/api/
+node-apis --name product --crud --target-dir packages/api
+
+# Target directory can be absolute or relative
+node-apis --name order --crud --target-dir /path/to/your/backend
+```
+
+### Option 2: Global Installation
+
+Install globally to avoid workspace protocol errors:
+
+```bash
+# ✅ Recommended for monorepos
+npm install -g node-apis
+
+# Use from anywhere in your monorepo
+cd monorepo-root
+node-apis --name user --crud --target-dir apps/api
+```
+
+### Option 3: Use npx
+
+Run without installation:
+
+```bash
+# Always works, no conflicts
+npx node-apis --name user --crud --target-dir apps/server
+```
+
+### Monorepo Examples
+
+```bash
+# Nx monorepo
+node-apis --name auth --crud --target-dir apps/backend
+
+# Lerna/Rush monorepo
+node-apis --name user --crud --target-dir packages/api
+
+# Yarn/pnpm workspaces
+node-apis --name product --crud --target-dir services/catalog-api
+
+# Custom structure
+node-apis --name notification --services --target-dir infrastructure/email-service
+```
+
+The generated structure will be:
+
+```
+your-target-dir/
+└── src/apis/your-module/
+    ├── controllers/
+    ├── handlers/
+    └── ...
+```
+
+> 💡 **Pro Tip**: Use global installation (`npm install -g node-apis`) to avoid workspace conflicts and enable usage from any directory.
 
 **That's it!** You'll get a complete, production-ready API module with:
 
@@ -704,17 +771,18 @@ npm run test:watch
 
 ## 📋 Command Line Options
 
-| Option                    | Alias | Description                                                  |
-| ------------------------- | ----- | ------------------------------------------------------------ |
-| `--name <name>`           | `-n`  | Module name (skips interactive prompt)                       |
-| `--crud`                  |       | Generate CRUD operations (create, get, list, update, delete) |
-| `--custom <names>`        |       | Generate custom operations (comma-separated)                 |
-| `--services <names>`      |       | Generate internal service operations (comma-separated)       |
-| `--framework <framework>` |       | Web framework to use (express\|hono), defaults to express    |
-| `--force`                 | `-f`  | Overwrite existing files                                     |
-| `--no-interactive`        |       | Skip interactive prompts                                     |
-| `--version`               | `-V`  | Show version number                                          |
-| `--help`                  | `-h`  | Show help information                                        |
+| Option                    | Alias | Description                                                       |
+| ------------------------- | ----- | ----------------------------------------------------------------- |
+| `--name <name>`           | `-n`  | Module name (skips interactive prompt)                            |
+| `--crud`                  |       | Generate CRUD operations (create, get, list, update, delete)      |
+| `--custom <names>`        |       | Generate custom operations (comma-separated)                      |
+| `--services <names>`      |       | Generate internal service operations (comma-separated)            |
+| `--framework <framework>` |       | Web framework to use (express\|hono), defaults to express         |
+| `--target-dir <dir>`      |       | Target directory for generated files (default: current directory) |
+| `--force`                 | `-f`  | Overwrite existing files                                          |
+| `--no-interactive`        |       | Skip interactive prompts                                          |
+| `--version`               | `-V`  | Show version number                                               |
+| `--help`                  | `-h`  | Show help information                                             |
 
 ## 🎨 What Makes the Generated Code Special?
 

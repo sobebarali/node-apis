@@ -8,7 +8,21 @@ import { ModulePathInput, ApiType } from '../types/common.types';
 /**
  * Generates the target directory path for a module
  */
-export const getModulePath = ({ moduleName, baseDir = process.cwd() }: ModulePathInput): string => {
+export const getModulePath = ({
+  moduleName,
+  baseDir = process.cwd(),
+  targetDir,
+}: ModulePathInput & { targetDir?: string }): string => {
+  if (targetDir) {
+    // If targetDir is absolute, use it directly
+    if (path.isAbsolute(targetDir)) {
+      return path.join(targetDir, 'src', 'apis', moduleName);
+    }
+    // If targetDir is relative, resolve it from baseDir
+    return path.join(baseDir, targetDir, 'src', 'apis', moduleName);
+  }
+
+  // Default behavior: use baseDir/src/apis/moduleName
   return path.join(baseDir, 'src', 'apis', moduleName);
 };
 

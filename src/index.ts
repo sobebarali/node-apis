@@ -19,6 +19,10 @@ export const main = async (): Promise<void> => {
     .option('--framework <framework>', 'web framework to use (express|hono)')
     .option('--init-config', 'initialize configuration file')
     .option('--set-framework <framework>', 'set default framework in config (express|hono)')
+    .option(
+      '--target-dir <dir>',
+      'target directory for generated files (default: current directory)'
+    )
     .parse();
 
   const options = program.opts() as CommandOptions;

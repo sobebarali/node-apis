@@ -8,6 +8,7 @@ export interface GenerationOptions {
   baseDir?: string;
   force?: boolean;
   appendMode?: boolean;
+  targetDir?: string;
 }
 
 export interface GenerationInput {
