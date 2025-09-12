@@ -1,12 +1,10 @@
-
-
 import { CommandOptions } from '../../types/cli.types';
 import { ApiType } from '../../types/common.types';
 import { validateTargetLocation } from '../../validators/location.validator';
 import {
   generateModuleStructure,
   generateModuleStructurePhase1,
-  generateModuleStructurePhase2
+  generateModuleStructurePhase2,
 } from '../../services/module-generator.service';
 import {
   generateTypeFilesOnly,
@@ -51,7 +49,6 @@ import {
   promptSaveFrameworkToConfig,
 } from '../prompts/interactive.prompts';
 
-
 export const handleGenerateCommand = async (options: CommandOptions): Promise<void> => {
   try {
     // Handle config-only operations first
@@ -77,9 +74,7 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
     let apiType: ApiType | undefined;
     let appendMode = false;
 
-
     apiType = parseCommandLineApiType(options);
-
 
     if (options.interactive !== false) {
       const interactiveResult = await handleInteractiveFlow(moduleName, options.framework, apiType);
@@ -101,12 +96,10 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
       }
     }
 
-
     if (!moduleName) {
       displayError('Module name is required');
       process.exit(1);
     }
-
 
     displayGenerationSummary({
       moduleName,
@@ -116,7 +109,6 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
       operationNames: getOperationNames(apiType),
     });
 
-
     if (options.interactive !== false) {
       const confirmResult = await promptConfirmation();
       if (!confirmResult.success || !confirmResult.data) {
@@ -125,11 +117,10 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
       }
     }
 
-
     if (apiType) {
       // Get effective framework from config, CLI option, or prompt user
       const framework = await getEffectiveFramework({
-        ...(options.framework && { cliFramework: options.framework })
+        ...(options.framework && { cliFramework: options.framework }),
       });
 
       await handleTwoPhaseGeneration({
@@ -143,7 +134,6 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
         interactive: options.interactive !== false,
       });
     } else {
-
       displayProgress();
 
       const result = await generateModuleStructure({
@@ -273,7 +263,6 @@ const handleTwoPhaseGeneration = async ({
       //   appendMode: true, // Don't overwrite existing config
       // });
       // testConfigFiles = [...testSetup.configFiles, ...testSetup.additionalFiles];
-
       // if (testSetup.packageJsonUpdated) {
       //   console.log('📦 Updated package.json with test scripts and dependencies');
       // }
@@ -438,7 +427,9 @@ const handleInteractiveFlow = async (
         if (saveResult.success && saveResult.data) {
           try {
             await setFramework({ framework: selectedFramework });
-            console.log(`✅ Saved ${selectedFramework} as default framework in node-apis.config.json\n`);
+            console.log(
+              `✅ Saved ${selectedFramework} as default framework in node-apis.config.json\n`
+            );
           } catch (error: any) {
             console.warn(`⚠️  Could not save framework to config: ${error.message}\n`);
           }

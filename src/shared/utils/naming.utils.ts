@@ -79,7 +79,7 @@ export interface ModuleNaming {
  */
 export const getModuleNaming = (moduleName: string): ModuleNaming => {
   const cleaned = moduleName.trim();
-  
+
   return {
     original: cleaned,
     directory: toKebabCase(cleaned),
@@ -96,18 +96,18 @@ export const getModuleNaming = (moduleName: string): ModuleNaming => {
  */
 export const isValidIdentifierBase = (str: string): boolean => {
   if (!str || typeof str !== 'string') return false;
-  
+
   const cleaned = str.trim();
   if (cleaned.length === 0) return false;
-  
+
   // Check if it contains only valid characters for transformation
   const validChars = /^[a-zA-Z0-9_\-\s]+$/;
   if (!validChars.test(cleaned)) return false;
-  
+
   // Check if it starts with a valid character (letter, underscore, or number that will be prefixed)
   const startsValid = /^[a-zA-Z_]/.test(cleaned) || /^[0-9]/.test(cleaned);
   if (!startsValid) return false;
-  
+
   return true;
 };
 

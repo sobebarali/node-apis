@@ -1,5 +1,3 @@
-
-
 import { ApiType } from '../types/common.types';
 import {
   ParsedTypePayload,
@@ -7,7 +5,6 @@ import {
   generateFieldObject,
 } from '../services/type-parser.service';
 import { getModuleNaming } from '../shared/utils/naming.utils';
-
 
 export const generateTypedRepositoryContent = ({
   moduleName,
@@ -65,7 +62,7 @@ ${createFieldDestructuring}
 }: CreatePayload) {
   try {
     const ${variableName} = {
-      id: \`mock-id-\${Date.now()}\`,
+      ${variableName}Id: \`mock-id-\${Date.now()}\`,
 ${createFieldObject}
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -80,21 +77,21 @@ ${createFieldObject}
 /**
  * Finds a ${moduleName} by ID
  */
-export function findById(id: string) {
+export function findById(${variableName}Id: string) {
   try {
     // TODO: Replace with your database implementation
     // Example with Prisma:
-    // const ${variableName} = await db.${variableName}.findUnique({ where: { id } });
-    // if (!${variableName}) throw new Error(\`${capitalizedModule} not found: \${id}\`);
+    // const ${variableName} = await db.${variableName}.findUnique({ where: { ${variableName}Id } });
+    // if (!${variableName}) throw new Error(\`${capitalizedModule} not found: \${${variableName}Id}\`);
     // return ${variableName};
 
     // Mock implementation - replace with actual database call
-    if (id === 'not-found') {
-      throw new Error(\`${capitalizedModule} not found: \${id}\`);
+    if (${variableName}Id === 'not-found') {
+      throw new Error(\`${capitalizedModule} not found: \${${variableName}Id}\`);
     }
 
     const ${variableName} = {
-      id,
+      ${variableName}Id,
       // TODO: Add your ${variableName} fields here based on your database schema
       // Mock data - replace with actual database result
       created_at: new Date().toISOString(),
@@ -133,7 +130,7 @@ ${listFieldDestructuring}
 
     const items = [
       {
-        id: 'mock-id-1',
+        ${variableName}Id: 'mock-id-1',
         // TODO: Add your ${moduleName} fields here based on your database schema
         // Mock data - replace with actual database results
         created_at: new Date().toISOString(),
@@ -163,28 +160,28 @@ ${listFieldDestructuring}
 /**
  * Updates a ${moduleName}
  */
-export function update(id: string, {
+export function update(${variableName}Id: string, {
 ${updateFieldDestructuring}
-}: Omit<UpdatePayload, 'id'>) {
+}: Omit<UpdatePayload, '${variableName}Id'>) {
   try {
     // TODO: Replace with your database implementation
     // Example with Prisma:
     // const ${variableName} = await db.${variableName}.update({
-    //   where: { id },
+    //   where: { ${variableName}Id },
     //   data: { ${updateType.fields
-      .filter(f => f.name !== 'id')
+      .filter(f => f.name !== '${variableName}Id')
       .map(f => f.name)
       .join(', ')}, updated_at: new Date().toISOString() }
     // });
     // return ${variableName};
 
     // Mock implementation - replace with actual database call
-    if (id === 'not-found') {
-      throw new Error(\`${capitalizedModule} not found: \${id}\`);
+    if (${variableName}Id === 'not-found') {
+      throw new Error(\`${capitalizedModule} not found: \${${variableName}Id}\`);
     }
 
     const ${variableName} = {
-      id,
+      ${variableName}Id,
 ${updateFieldObject}
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -200,25 +197,23 @@ ${updateFieldObject}
 /**
  * Deletes a ${moduleName}
  */
-export function remove(id: string, permanent: boolean = false) {
+export function remove(${variableName}Id: string, permanent: boolean = false) {
   try {
     // TODO: Replace with your database implementation
     // Example with Prisma:
     // if (permanent) {
-    //   await db.${moduleName}.delete({ where: { id } });
+    //   await db.${moduleName}.delete({ where: { ${variableName}Id } });
     // } else {
-    //   await db.${moduleName}.update({ where: { id }, data: { deleted_at: new Date() } });
+    //   await db.${moduleName}.update({ where: { ${variableName}Id }, data: { deleted_at: new Date() } });
     // }
 
     // Mock implementation - replace with actual database call
-    if (id === 'not-found') {
-      throw new Error(\`${capitalizedModule} not found: \${id}\`);
+    if (${variableName}Id === 'not-found') {
+      throw new Error(\`${capitalizedModule} not found: \${${variableName}Id}\`);
     }
 
     return {
-      deleted_id: id,
       deleted_at: new Date().toISOString(),
-      permanent
     };
   } catch (error) {
     if (error instanceof Error && error.message.includes('not found')) throw error;

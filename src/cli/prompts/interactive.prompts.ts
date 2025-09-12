@@ -87,7 +87,9 @@ export const promptApiType = async (): Promise<PromptResult<'crud' | 'custom' | 
 /**
  * Fallback numbered API type selection
  */
-export const promptApiTypeNumbered = async (): Promise<PromptResult<'crud' | 'custom' | 'services'>> => {
+export const promptApiTypeNumbered = async (): Promise<
+  PromptResult<'crud' | 'custom' | 'services'>
+> => {
   try {
     console.log('\n📋 API Type Options:');
     console.log('  1. 🗃️  CRUD operations (Create, Read, Update, Delete)');
@@ -113,7 +115,7 @@ export const promptApiTypeNumbered = async (): Promise<PromptResult<'crud' | 'cu
     const typeMap: Record<string, 'crud' | 'custom' | 'services'> = {
       '1': 'crud',
       '2': 'custom',
-      '3': 'services'
+      '3': 'services',
     };
 
     return { success: true, data: typeMap[answer.apiTypeNumber] };
@@ -129,7 +131,10 @@ const validateOperationNames = (input: string): string | true => {
   const trimmed = input.trim();
   if (!trimmed) return 'Please enter at least one operation name';
 
-  const names = trimmed.split(',').map(name => name.trim()).filter(name => name.length > 0);
+  const names = trimmed
+    .split(',')
+    .map(name => name.trim())
+    .filter(name => name.length > 0);
 
   if (names.length === 0) return 'Please enter at least one operation name';
 
@@ -245,7 +250,11 @@ export const promptFrameworkSelection = async (): Promise<PromptResult<Supported
 /**
  * Prompts user to save framework choice to config
  */
-export const promptSaveFrameworkToConfig = async ({ framework }: { framework: SupportedFramework }): Promise<PromptResult<boolean>> => {
+export const promptSaveFrameworkToConfig = async ({
+  framework,
+}: {
+  framework: SupportedFramework;
+}): Promise<PromptResult<boolean>> => {
   try {
     const answer = (await inquirer.prompt([
       {
@@ -265,7 +274,9 @@ export const promptSaveFrameworkToConfig = async ({ framework }: { framework: Su
 /**
  * Prompts user for config management actions
  */
-export const promptConfigManagement = async (): Promise<PromptResult<'view' | 'update' | 'reset' | 'cancel'>> => {
+export const promptConfigManagement = async (): Promise<
+  PromptResult<'view' | 'update' | 'reset' | 'cancel'>
+> => {
   try {
     const answer = (await inquirer.prompt([
       {
@@ -276,22 +287,22 @@ export const promptConfigManagement = async (): Promise<PromptResult<'view' | 'u
           {
             name: '👀 View current configuration',
             value: 'view',
-            short: 'View'
+            short: 'View',
           },
           {
             name: '✏️  Update framework preference',
             value: 'update',
-            short: 'Update'
+            short: 'Update',
           },
           {
             name: '🔄 Reset to default configuration',
             value: 'reset',
-            short: 'Reset'
+            short: 'Reset',
           },
           {
             name: '❌ Cancel',
             value: 'cancel',
-            short: 'Cancel'
+            short: 'Cancel',
           },
         ],
         pageSize: 4,
@@ -314,7 +325,8 @@ export const promptConfigReset = async (): Promise<PromptResult<boolean>> => {
       {
         type: 'confirm',
         name: 'confirmReset',
-        message: '⚠️  Are you sure you want to reset configuration to defaults? This cannot be undone.',
+        message:
+          '⚠️  Are you sure you want to reset configuration to defaults? This cannot be undone.',
         default: false,
       },
     ])) as InquirerAnswers;
@@ -341,17 +353,17 @@ export const promptExistingModuleAction = async (
           {
             name: '🔄 Overwrite existing module (replace all files)',
             value: 'overwrite',
-            short: 'Overwrite'
+            short: 'Overwrite',
           },
           {
             name: '➕ Add operations to existing module',
             value: 'append',
-            short: 'Append'
+            short: 'Append',
           },
           {
             name: '❌ Cancel generation',
             value: 'cancel',
-            short: 'Cancel'
+            short: 'Cancel',
           },
         ],
         pageSize: 3,

@@ -71,7 +71,7 @@ export const generateModuleStructure = async ({
     const message = formatSuccessMessage({
       moduleName: normalizedName,
       modulePath,
-      ...(apiType && { apiType })
+      ...(apiType && { apiType }),
     });
 
     return {

@@ -3,7 +3,11 @@
  */
 
 import { ValidationResult, ModuleNameInput } from '../types/common.types';
-import { getModuleNaming, isValidIdentifierBase, ensureValidStart } from '../shared/utils/naming.utils';
+import {
+  getModuleNaming,
+  isValidIdentifierBase,
+  ensureValidStart,
+} from '../shared/utils/naming.utils';
 
 /**
  * Enhanced validation result with naming transformations
@@ -43,7 +47,8 @@ export const validateModuleName = ({ name }: ModuleNameInput): EnhancedValidatio
   if (!isValidIdentifierBase(trimmedName)) {
     return {
       isValid: false,
-      error: 'Module name contains invalid characters. Use only letters, numbers, hyphens, underscores, and spaces.',
+      error:
+        'Module name contains invalid characters. Use only letters, numbers, hyphens, underscores, and spaces.',
     };
   }
 

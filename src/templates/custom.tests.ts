@@ -5,11 +5,7 @@
 /**
  * Gets custom test file names for a module
  */
-export const getCustomTestFileNames = ({
-  customNames,
-}: {
-  customNames: string[];
-}): string[] => {
+export const getCustomTestFileNames = ({ customNames }: { customNames: string[] }): string[] => {
   const testTypes = ['validation.test.ts', 'success.test.ts', 'errors.test.ts'];
   const testFiles: string[] = [];
 

@@ -57,14 +57,20 @@ const generateCreateContent = (
   moduleName: string
 ): string => {
   return `export type typePayload = {
-  // Add your ${moduleName} creation fields here
+  name: string;
+  description?: string;
+  status?: string;
+  // Add more ${moduleName} creation fields here
 };
 
 export type typeResultData = {
-  id: string;
+  ${moduleName}Id: string;
+  name: string;
+  description: string | null;
+  status: string | null;
   created_at: string;
   updated_at: string;
-  // Add your ${moduleName} specific fields here
+  // Add more ${moduleName} specific fields here
 };
 
 export type typeResultError = {
@@ -90,14 +96,17 @@ const generateGetContent = (
   moduleName: string
 ): string => {
   return `export type typePayload = {
-  id: string; // ${capitalizedModule} ID to retrieve
+  ${moduleName}Id: string; // ${capitalizedModule} ID to retrieve
 };
 
 export type typeResultData = {
-  id: string;
+  ${moduleName}Id: string;
+  name: string;
+  description: string | null;
+  status: string | null;
   created_at: string;
   updated_at: string;
-  // Add your ${moduleName} specific fields here
+  // Add more ${moduleName} specific fields here
 };
 
 export type typeResultError = {
@@ -127,15 +136,19 @@ const generateListContent = (
   sort_by?: string;
   sort_order?: 'asc' | 'desc';
   search?: string;
-  // Add your ${moduleName} specific filters here
+  status?: string;
+  // Add more ${moduleName} specific filters here
 };
 
 export type typeResultData = {
   items: {
-    id: string;
+    ${moduleName}Id: string;
+    name: string;
+    description: string | null;
+    status: string | null;
     created_at: string;
     updated_at: string;
-    // Add your ${moduleName} specific fields here
+    // Add more ${moduleName} specific fields here
   }[];
   _metadata: {
     page: number;
@@ -170,15 +183,21 @@ const generateUpdateContent = (
   moduleName: string
 ): string => {
   return `export type typePayload = {
-  id: string;
-  // Fields that can be updated
+  ${moduleName}Id: string;
+  name?: string;
+  description?: string;
+  status?: string;
+  // Add more ${moduleName} update fields here
 };
 
 export type typeResultData = {
-  id: string;
+  ${moduleName}Id: string;
+  name: string;
+  description: string | null;
+  status: string | null;
   created_at: string;
   updated_at: string;
-  // Add your ${moduleName} specific fields here
+  // Add more ${moduleName} specific fields here
 };
 
 export type typeResultError = {
@@ -201,17 +220,14 @@ export type typeResult = {
 const generateDeleteContent = (
   _capitalizedModule: string,
   _capitalizedOperation: string,
-  _moduleName: string
+  moduleName: string
 ): string => {
   return `export type typePayload = {
-  id: string;
-  permanent?: boolean;
+  ${moduleName}Id: string;
 };
 
 export type typeResultData = {
-  deleted_id: string;
   deleted_at: string;
-  permanent: boolean;
 };
 
 export type typeResultError = {

@@ -7,12 +7,12 @@ import { getModuleNaming } from '../shared/utils/naming.utils';
 /**
  * Gets the list of service operation file names for a module
  */
-export const getServiceFileNames = ({ 
-  moduleName, 
-  serviceNames 
-}: { 
-  moduleName: string; 
-  serviceNames: string[]; 
+export const getServiceFileNames = ({
+  moduleName,
+  serviceNames,
+}: {
+  moduleName: string;
+  serviceNames: string[];
 }): string[] => {
   const naming = getModuleNaming(moduleName);
   return serviceNames.map(serviceName => `${serviceName}.${naming.file}.ts`);

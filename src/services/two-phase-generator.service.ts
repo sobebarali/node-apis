@@ -1,18 +1,20 @@
-
-
 import * as path from 'path';
 import { ApiType, GeneratedFile } from '../types/common.types';
 import { fileExists, writeFile } from '../filesystem/file.operations';
 import { getCrudFileNames, generateCrudFileContent } from '../templates/crud.templates';
 import { getCustomFileNames, generateCustomFileContent } from '../templates/custom.templates';
-import { getServiceFileNames, generateServiceTypeContent, generateServiceContent } from '../templates/services.templates';
+import {
+  getServiceFileNames,
+  generateServiceTypeContent,
+  generateServiceContent,
+} from '../templates/services.templates';
 import { parseModuleTypes } from './type-parser.service';
 
 import { generateTypedRepositoryContent } from '../templates/typed-repository.templates';
 import {
   getCrudValidatorFileNames,
   generateCrudValidatorContent,
-} from '../templates/crud.validators';
+} from '../templates/typed-crud.validators';
 import {
   getCustomValidatorFileNames,
   generateCustomValidatorContent,
@@ -32,7 +34,6 @@ import {
 
 import { generateRouteContent } from '../templates/routes.templates';
 import { formatGeneratedFiles } from './formatter.service';
-
 
 export const generateTypeFilesOnly = async ({
   moduleName,
@@ -105,7 +106,6 @@ export const generateTypeFilesOnly = async ({
   return generatedFiles;
 };
 
-
 export const generateCodeWithParsedTypes = async ({
   moduleName,
   modulePath,
@@ -151,7 +151,11 @@ export const generateCodeWithParsedTypes = async ({
       // Generate validator file
       const validatorFilePath = path.join(validatorsDir, validatorFileName);
       if (!appendMode || !(await fileExists({ filePath: validatorFilePath }))) {
-        const validatorContent = generateCrudValidatorContent({ operation, moduleName });
+        const validatorContent = generateCrudValidatorContent({
+          operation,
+          moduleName,
+          parsedType,
+        });
         await writeFile({ filePath: validatorFilePath, content: validatorContent });
         generatedFiles.push({
           fileName: validatorFileName,
@@ -163,7 +167,11 @@ export const generateCodeWithParsedTypes = async ({
       // Generate controller file
       const controllerFilePath = path.join(controllersDir, controllerFileName);
       if (!appendMode || !(await fileExists({ filePath: controllerFilePath }))) {
-        const controllerContent = generateCrudControllerContent({ operation, moduleName, framework });
+        const controllerContent = generateCrudControllerContent({
+          operation,
+          moduleName,
+          framework,
+        });
         await writeFile({ filePath: controllerFilePath, content: controllerContent });
         generatedFiles.push({
           fileName: controllerFileName,
@@ -233,7 +241,11 @@ export const generateCodeWithParsedTypes = async ({
       // Generate controller file
       const controllerFilePath = path.join(controllersDir, controllerFileName);
       if (!appendMode || !(await fileExists({ filePath: controllerFilePath }))) {
-        const controllerContent = generateCustomControllerContent({ customName, moduleName, framework });
+        const controllerContent = generateCustomControllerContent({
+          customName,
+          moduleName,
+          framework,
+        });
         await writeFile({ filePath: controllerFilePath, content: controllerContent });
         generatedFiles.push({
           fileName: controllerFileName,

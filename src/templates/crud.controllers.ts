@@ -14,7 +14,6 @@ export const getCrudControllerFileNames = ({ moduleName }: { moduleName: string 
   ];
 };
 
-
 export const generateCrudControllerContent = ({
   operation,
   moduleName,
@@ -26,7 +25,6 @@ export const generateCrudControllerContent = ({
 }): string => {
   const naming = getModuleNaming(moduleName);
   const capitalizedOperation = operation.charAt(0).toUpperCase() + operation.slice(1);
-
 
   switch (operation) {
     case 'create':
@@ -44,15 +42,13 @@ export const generateCrudControllerContent = ({
   }
 };
 
-
 const generateCreateControllerContent = (
   naming: ModuleNaming,
   _capitalizedOperation: string,
   framework: string = 'express'
 ): string => {
-
   if (framework === 'hono') {
-    return `import { Context } from 'hono';
+    return `import type { Context } from 'hono';
 import { validatePayload } from '../validators/create.${naming.file}';
 import create${naming.class}Handler from '../handlers/create.${naming.file}';
 
@@ -76,7 +72,7 @@ export default async function create${naming.class}Controller(c: Context): Promi
       }, 400);
     }
 
-    const result = await create${naming.class}Handler(validation.data, requestId);
+    const result = await create${naming.class}Handler({ ...validation.data, requestId });
 
     const statusCode = result.error ? result.error.statusCode : 201;
     return c.json(result, statusCode);
@@ -94,8 +90,7 @@ export default async function create${naming.class}Controller(c: Context): Promi
 `;
   }
 
-
-  return `import { Request, Response } from 'express';
+  return `import type { Request, Response } from 'express';
 import { validatePayload } from '../validators/create.${naming.file}';
 import create${naming.class}Handler from '../handlers/create.${naming.file}';
 
@@ -117,7 +112,7 @@ export default async function create${naming.class}Controller(req: Request, res:
     return;
   }
 
-  const result = await create${naming.class}Handler(validation.data, requestId);
+  const result = await create${naming.class}Handler({ ...validation.data, requestId });
 
   const statusCode = result.error ? result.error.statusCode : 201;
   res.status(statusCode).json(result);
@@ -134,7 +129,7 @@ const generateGetControllerContent = (
   framework: string = 'express'
 ): string => {
   if (framework === 'hono') {
-    return `import { Context } from 'hono';
+    return `import type { Context } from 'hono';
 import { validatePayload } from '../validators/get.${naming.file}';
 import get${naming.class}Handler from '../handlers/get.${naming.file}';
 
@@ -157,7 +152,7 @@ export default async function get${naming.class}Controller(c: Context): Promise<
       }, 400);
     }
 
-    const result = await get${naming.class}Handler(validation.data, requestId);
+    const result = await get${naming.class}Handler({ ...validation.data, requestId });
 
     const statusCode = result.error ? result.error.statusCode : 200;
     return c.json(result, statusCode);
@@ -175,7 +170,7 @@ export default async function get${naming.class}Controller(c: Context): Promise<
 `;
   }
 
-  return `import { Request, Response } from 'express';
+  return `import type { Request, Response } from 'express';
 import { validatePayload } from '../validators/get.${naming.file}';
 import get${naming.class}Handler from '../handlers/get.${naming.file}';
 
@@ -197,7 +192,7 @@ export default async function get${naming.class}Controller(req: Request, res: Re
     return;
   }
 
-  const result = await get${naming.class}Handler(validation.data, requestId);
+  const result = await get${naming.class}Handler({ ...validation.data, requestId });
 
   const statusCode = result.error ? result.error.statusCode : 200;
   res.status(statusCode).json(result);
@@ -214,7 +209,7 @@ const generateListControllerContent = (
   framework: string = 'express'
 ): string => {
   if (framework === 'hono') {
-    return `import { Context } from 'hono';
+    return `import type { Context } from 'hono';
 import { validatePayload } from '../validators/list.${naming.file}';
 import list${naming.class}sHandler from '../handlers/list.${naming.file}';
 
@@ -237,7 +232,7 @@ export default async function list${naming.class}sController(c: Context): Promis
       }, 400);
     }
 
-    const result = await list${naming.class}sHandler(validation.data, requestId);
+    const result = await list${naming.class}sHandler({ ...validation.data, requestId });
 
     const statusCode = result.error ? result.error.statusCode : 200;
     return c.json(result, statusCode);
@@ -255,7 +250,7 @@ export default async function list${naming.class}sController(c: Context): Promis
 `;
   }
 
-  return `import { Request, Response } from 'express';
+  return `import type { Request, Response } from 'express';
 import { validatePayload } from '../validators/list.${naming.file}';
 import list${naming.class}sHandler from '../handlers/list.${naming.file}';
 
@@ -277,7 +272,7 @@ export default async function list${naming.class}sController(req: Request, res: 
     return;
   }
 
-  const result = await list${naming.class}sHandler(validation.data, requestId);
+  const result = await list${naming.class}sHandler({ ...validation.data, requestId });
 
   const statusCode = result.error ? result.error.statusCode : 200;
   res.status(statusCode).json(result);
@@ -320,7 +315,7 @@ export default async function update${naming.class}Controller(c: Context): Promi
       }, 400);
     }
 
-    const result = await update${naming.class}Handler(validation.data, requestId);
+    const result = await update${naming.class}Handler({ ...validation.data, requestId });
 
     const statusCode = result.error ? result.error.statusCode : 200;
     return c.json(result, statusCode);
@@ -360,7 +355,7 @@ export default async function update${naming.class}Controller(req: Request, res:
     return;
   }
 
-  const result = await update${naming.class}Handler(validation.data, requestId);
+  const result = await update${naming.class}Handler({ ...validation.data, requestId });
 
   const statusCode = result.error ? result.error.statusCode : 200;
   res.status(statusCode).json(result);
@@ -377,7 +372,7 @@ const generateDeleteControllerContent = (
   framework: string = 'express'
 ): string => {
   if (framework === 'hono') {
-    return `import { Context } from 'hono';
+    return `import type { Context } from 'hono';
 import { validatePayload } from '../validators/delete.${naming.file}';
 import delete${naming.class}Handler from '../handlers/delete.${naming.file}';
 
@@ -403,7 +398,7 @@ export default async function delete${naming.class}Controller(c: Context): Promi
       }, 400);
     }
 
-    const result = await delete${naming.class}Handler(validation.data, requestId);
+    const result = await delete${naming.class}Handler({ ...validation.data, requestId });
 
     const statusCode = result.error ? result.error.statusCode : 200;
     return c.json(result, statusCode);
@@ -421,7 +416,7 @@ export default async function delete${naming.class}Controller(c: Context): Promi
 `;
   }
 
-  return `import { Request, Response } from 'express';
+  return `import type { Request, Response } from 'express';
 import { validatePayload } from '../validators/delete.${naming.file}';
 import delete${naming.class}Handler from '../handlers/delete.${naming.file}';
 
@@ -443,7 +438,7 @@ export default async function delete${naming.class}Controller(req: Request, res:
     return;
   }
 
-  const result = await delete${naming.class}Handler(validation.data, requestId);
+  const result = await delete${naming.class}Handler({ ...validation.data, requestId });
 
   const statusCode = result.error ? result.error.statusCode : 200;
   res.status(statusCode).json(result);
@@ -461,7 +456,7 @@ const generateGenericControllerContent = (
   framework: string = 'express'
 ): string => {
   if (framework === 'hono') {
-    return `import { Context } from 'hono';
+    return `import type { Context } from 'hono';
 import { typeResult } from '../types/${operation}.${naming.file}';
 import { validatePayload } from '../validators/${operation}.${naming.file}';
 
@@ -508,7 +503,7 @@ export const ${operation}${naming.class} = async (c: Context): Promise<Response>
 `;
   }
 
-  return `import { Request, Response } from 'express';
+  return `import type { Request, Response } from 'express';
 import { typeResult } from '../types/${operation}.${naming.file}';
 import { validatePayload } from '../validators/${operation}.${naming.file}';
 

@@ -4,6 +4,9 @@
 
 ## ✨ Why Choose Node APIs Generator?
 
+- **🚀 Object Destructuring** - Modern TypeScript patterns with clean parameter handling
+- **🧠 Intelligent Validation** - Automatic Zod schema generation with pattern recognition
+- **📋 Named Fields** - Production-ready default fields instead of empty placeholders
 - **🏗️ Clean Architecture** - Controller → Handler → Repository pattern
 - **🌐 Multi-Framework** - Support for Express.js and Hono frameworks
 - **🎨 Smart Naming** - Accepts any naming format, generates consistent professional code
@@ -25,25 +28,29 @@
 
 Unlike other generators that create static boilerplate, this tool:
 
-1. **Parses your TypeScript types** and generates intelligent code
-2. **Includes performance monitoring** and request correlation out of the box
-3. **Follows modern clean architecture** patterns
-4. **Generates working, formatted code** that's ready for production
-5. **Creates comprehensive test suites** with integration tests
-6. **Supports iterative development** with smart type-driven regeneration
+1. **Uses modern TypeScript patterns** with object destructuring and intelligent type inference
+2. **Generates smart validation** with automatic Zod schema creation and pattern recognition
+3. **Provides production-ready templates** with realistic named fields instead of empty placeholders
+4. **Parses your TypeScript types** and generates intelligent code
+5. **Includes performance monitoring** and request correlation out of the box
+6. **Follows modern clean architecture** patterns
+7. **Generates working, formatted code** that's ready for production
+8. **Creates comprehensive test suites** with integration tests
+9. **Supports iterative development** with smart type-driven regeneration
 
 ## 🎨 Smart Naming System
 
 The generator accepts **any naming format** and automatically converts it to professional, consistent naming conventions:
 
-| Input Format | Directory | Files | Classes | Variables | Constants |
-|--------------|-----------|-------|---------|-----------|-----------|
-| `user-profile` | `user-profile/` | `create.userProfile.ts` | `CreateUserProfile` | `userProfile` | `USER_PROFILE` |
-| `blog_post` | `blog-post/` | `create.blogPost.ts` | `CreateBlogPost` | `blogPost` | `BLOG_POST` |
+| Input Format      | Directory           | Files                       | Classes                 | Variables         | Constants          |
+| ----------------- | ------------------- | --------------------------- | ----------------------- | ----------------- | ------------------ |
+| `user-profile`    | `user-profile/`     | `create.userProfile.ts`     | `CreateUserProfile`     | `userProfile`     | `USER_PROFILE`     |
+| `blog_post`       | `blog-post/`        | `create.blogPost.ts`        | `CreateBlogPost`        | `blogPost`        | `BLOG_POST`        |
 | `productCategory` | `product-category/` | `create.productCategory.ts` | `CreateProductCategory` | `productCategory` | `PRODUCT_CATEGORY` |
-| `OrderHistory` | `order-history/` | `create.orderHistory.ts` | `CreateOrderHistory` | `orderHistory` | `ORDER_HISTORY` |
+| `OrderHistory`    | `order-history/`    | `create.orderHistory.ts`    | `CreateOrderHistory`    | `orderHistory`    | `ORDER_HISTORY`    |
 
 **Benefits:**
+
 - ✅ **Flexible Input** - Use any naming style you prefer
 - ✅ **Valid JavaScript** - All generated identifiers are syntactically correct
 - ✅ **Professional Output** - Follows industry-standard naming conventions
@@ -76,11 +83,13 @@ node-apis --set-framework hono  # or express
 #### 🚨 Monorepo Users - Important Note
 
 If you're working in a **monorepo** (pnpm workspaces, Yarn workspaces, npm workspaces) and encounter this error:
+
 ```
 npm error Unsupported URL Type "workspace:": workspace:*
 ```
 
 **Solution**: Use global installation to avoid workspace conflicts:
+
 ```bash
 # ✅ Recommended: Install globally
 npm install -g node-apis
@@ -118,26 +127,105 @@ node-apis --name book --crud --framework hono     # Lightweight alternative
 The generator supports three distinct API types with optimized folder structures:
 
 ### 1. **CRUD APIs** (`--crud`)
+
 Full-stack database operations with HTTP endpoints:
+
 - **Use for**: User management, product catalogs, blog posts
 - **Generates**: Controllers, handlers, repository, validators, routes, tests
 - **Pattern**: HTTP → Controller → Handler → Repository → Database
 - **Folders**: `controllers/`, `handlers/`, `repository/`, `services/`, `types/`, `validators/`, `routes`
 
 ### 2. **Custom APIs** (`--custom`)
+
 Business logic operations with HTTP endpoints:
+
 - **Use for**: Authentication, notifications, file uploads
 - **Generates**: Controllers, services, validators, routes, tests
 - **Pattern**: HTTP → Controller → Service → External APIs/Logic
 - **Folders**: `controllers/`, `handlers/`, `repository/`, `services/`, `types/`, `validators/`, `routes`
 
 ### 3. **Internal Services** (`--services`) ⭐ **Optimized Structure**
+
 Third-party integrations for internal use (no HTTP layer):
+
 - **Use for**: Payment processing, email services, cloud APIs
 - **Generates**: Pure service functions, types, comprehensive tests
 - **Pattern**: Direct function calls → External APIs
 - **Folders**: Only `services/` and `types/` (clean & minimal)
 - **Import**: Use in other modules via `import { serviceFunction } from '../module/services/...'`
+
+## 🚀 New in v3.5.0: Intelligent Code Generation
+
+### 🧠 Smart Object Destructuring
+
+Handlers now use modern TypeScript patterns with clean parameter destructuring:
+
+```typescript
+// ✨ Generated handler with object destructuring
+export default async function createProductHandler({
+  name,
+  description,
+  status,
+  requestId,
+}: {
+  name: string;
+  description: string;
+  status: string;
+  requestId: string;
+}): Promise<typeResult> {
+  const product = await create({ name, description, status });
+  // ...
+}
+```
+
+### 🎯 Automatic Validation Generation
+
+Smart Zod schema generation with pattern recognition:
+
+```typescript
+// ✨ Generated validator with intelligent patterns
+export const payloadSchema = z.object({
+  name: z.string(),
+  userEmail: z.string().email().optional(), // 🎯 Auto-detected email
+  userId: z.string().uuid(), // 🎯 Auto-detected UUID
+  phoneNumber: z.string().min(10), // 🎯 Auto-detected phone
+  profileUrl: z.string().url().optional(), // 🎯 Auto-detected URL
+  description: z.string().optional(),
+});
+```
+
+### 📋 Production-Ready Named Fields
+
+No more empty placeholders - every module generates with realistic, useful fields:
+
+```typescript
+// ✨ Generated types with meaningful fields
+export type typePayload = {
+  name: string; // Universal title/label field
+  description?: string; // Common descriptive field
+  status?: string; // Useful for state management
+  // Add more fields here
+};
+
+// ✨ Module-specific IDs
+export type typeResultData = {
+  productId: string; // Smart ID naming
+  name: string;
+  description: string | null;
+  status: string | null;
+  created_at: string;
+  updated_at: string;
+};
+```
+
+### 🔍 Type-Driven Intelligence
+
+The generator analyzes your TypeScript types and generates intelligent code:
+
+- **Smart ID Detection**: Automatically uses `todoId`, `userId`, `productId` instead of generic `id`
+- **Optional Field Handling**: Proper handling in UPDATE operations (partial updates)
+- **Pattern Recognition**: Field names trigger appropriate validation (email, URL, phone, UUID)
+- **Framework Adaptation**: Same intelligent patterns work for both Express.js and Hono
 
 ## ⚙️ Configuration
 
@@ -238,12 +326,14 @@ node-apis --name book --crud
 ```
 
 **What happens:**
+
 - Creates main module directory and `types/` subdirectory only
 - Generates TypeScript type files with placeholder interfaces
 - Shows detailed instructions for each operation type
 - Prompts you to review and customize the `typePayload` interfaces
 
 **Example type file generated:**
+
 ```typescript
 export type typePayload = {
   // Add your specific fields here
@@ -262,6 +352,7 @@ export type typePayload = {
 ```
 
 **What happens:**
+
 - Creates remaining directories based on API type:
   - **Services**: Only `services/` (no HTTP layer)
   - **CRUD/Custom**: All folders (controllers, handlers, repository, validators, routes)
@@ -288,7 +379,10 @@ export type typePayload = {
 import { validatePayload } from '../validators/create.userProfile';
 import createUserProfileHandler from '../handlers/create.userProfile';
 
-export default async function createUserProfileController(req: Request, res: Response): Promise<void> {
+export default async function createUserProfileController(
+  req: Request,
+  res: Response
+): Promise<void> {
   const requestId = (req.headers['x-request-id'] as string) || generateRequestId();
 
   // Professional naming: USER_PROFILE (CONSTANT_CASE)
@@ -318,7 +412,12 @@ export default async function createUserProfileController(req: Request, res: Res
 
 ```typescript
 // TypeScript best practice: import type for type-only imports
-import type { typePayload, typeResult, typeResultData, typeResultError } from '../types/create.userProfile';
+import type {
+  typePayload,
+  typeResult,
+  typeResultData,
+  typeResultError,
+} from '../types/create.userProfile';
 import create from '../repository/user-profile.repository';
 
 export default async function createUserProfileHandler(
@@ -337,7 +436,9 @@ export default async function createUserProfileHandler(
     data = userProfile;
 
     const duration = Date.now() - startTime;
-    console.info(`${requestId} [USER_PROFILE] - CREATE handler completed successfully in ${duration}ms`);
+    console.info(
+      `${requestId} [USER_PROFILE] - CREATE handler completed successfully in ${duration}ms`
+    );
   } catch (err) {
     // TypeScript strict mode compatible error handling
     const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
@@ -514,6 +615,7 @@ node-apis --name sendgrid --services "sendEmail,sendBulkEmail"
 ```
 
 **Generated Structure for Services:**
+
 ```
 src/apis/stripe/
 ├── services/
@@ -559,6 +661,7 @@ node-apis
 ```
 
 #### 🎯 **Interactive Mode Benefits**
+
 - **Terminal Compatible**: Numbered selection works everywhere
 - **Smart Validation**: Helpful examples and error messages
 - **Existing Module Handling**: Never accidentally overwrite work
@@ -601,17 +704,17 @@ npm run test:watch
 
 ## 📋 Command Line Options
 
-| Option                  | Alias | Description                                                  |
-| ----------------------- | ----- | ------------------------------------------------------------ |
-| `--name <name>`         | `-n`  | Module name (skips interactive prompt)                       |
-| `--crud`                |       | Generate CRUD operations (create, get, list, update, delete) |
-| `--custom <names>`      |       | Generate custom operations (comma-separated)                 |
-| `--services <names>`    |       | Generate internal service operations (comma-separated)       |
-| `--framework <framework>` |     | Web framework to use (express\|hono), defaults to express    |
-| `--force`               | `-f`  | Overwrite existing files                                     |
-| `--no-interactive`      |       | Skip interactive prompts                                     |
-| `--version`             | `-V`  | Show version number                                          |
-| `--help`                | `-h`  | Show help information                                        |
+| Option                    | Alias | Description                                                  |
+| ------------------------- | ----- | ------------------------------------------------------------ |
+| `--name <name>`           | `-n`  | Module name (skips interactive prompt)                       |
+| `--crud`                  |       | Generate CRUD operations (create, get, list, update, delete) |
+| `--custom <names>`        |       | Generate custom operations (comma-separated)                 |
+| `--services <names>`      |       | Generate internal service operations (comma-separated)       |
+| `--framework <framework>` |       | Web framework to use (express\|hono), defaults to express    |
+| `--force`                 | `-f`  | Overwrite existing files                                     |
+| `--no-interactive`        |       | Skip interactive prompts                                     |
+| `--version`               | `-V`  | Show version number                                          |
+| `--help`                  | `-h`  | Show help information                                        |
 
 ## 🎨 What Makes the Generated Code Special?
 
@@ -699,10 +802,13 @@ req-1703123456789-abc123 [CONTROLLER] - CREATE BOOK payload: {
 ### Common Issues and Solutions
 
 #### 🚨 Workspace Protocol Error (Monorepo Users)
+
 ```
 npm error Unsupported URL Type "workspace:": workspace:*
 ```
+
 **Solution**: Install globally to avoid workspace conflicts:
+
 ```bash
 npm install -g node-apis  # ✅ Recommended
 # or
@@ -710,10 +816,13 @@ npx node-apis            # ✅ No installation needed
 ```
 
 #### 🚨 Permission Denied (macOS/Linux)
+
 ```
 Error: EACCES: permission denied
 ```
+
 **Solution**: Use sudo or fix npm permissions:
+
 ```bash
 sudo npm install -g node-apis  # Quick fix
 # or
@@ -721,10 +830,13 @@ npm config set prefix ~/.npm-global  # Better long-term solution
 ```
 
 #### 🚨 Command Not Found After Global Install
+
 ```
 bash: node-apis: command not found
 ```
+
 **Solution**: Check your PATH or use npx:
+
 ```bash
 npx node-apis  # Always works
 # or
@@ -732,7 +844,9 @@ echo $PATH     # Check if npm global bin is in PATH
 ```
 
 #### 🚨 TypeScript Compilation Errors in Generated Code
+
 **Solution**: Ensure you have TypeScript installed and compatible version:
+
 ```bash
 npm install -g typescript  # Global TypeScript
 # or in your project
@@ -740,17 +854,21 @@ npm install --save-dev typescript
 ```
 
 **Note**: Generated code is compatible with TypeScript strict mode and follows best practices:
+
 - Uses `import type` for type-only imports
 - Proper error handling with `instanceof Error` checks
 - Valid JavaScript identifiers for all variable names
 
 #### 🚨 Tests Failing After Generation
+
 **Solution**: Install test dependencies:
+
 ```bash
 npm install --save-dev vitest supertest @types/supertest
 ```
 
 ### 💡 Pro Tips
+
 - **Always use global installation** for CLI tools like `node-apis`
 - **Use npx** if you prefer not to install globally
 - **Check the generated files** - they include helpful TODO comments
@@ -774,12 +892,14 @@ We welcome contributions! Here's how:
 ### v3.1.6 - TypeScript & Build Fixes 🔧
 
 **🔧 Critical Fixes:**
+
 - ✅ **TypeScript Strict Mode**: Fixed `'error' is of type 'unknown'` compilation errors
 - ✅ **Variable Naming**: Fixed invalid JavaScript identifiers in generated repository code
 - ✅ **Build Stability**: All generated code now passes strict TypeScript compilation
 - ✅ **Error Handling**: Improved error handling patterns for better type safety
 
 **🎨 Code Quality Improvements:**
+
 - ✅ **Import Type**: All templates now use `import type` for type-only imports (TypeScript best practice)
 - ✅ **Dependency-Free**: Removed shared errors dependency from generated repositories
 - ✅ **Smart Variables**: Variable names now use camelCase regardless of input format
@@ -787,6 +907,7 @@ We welcome contributions! Here's how:
 ### v3.1.5 - Critical Bug Fix 🐛
 
 **🔧 Critical Fix:**
+
 - ✅ **Module Import Error**: Fixed `Cannot find module 'test-config-generator.service'` error
 - ✅ **Package Stability**: Temporarily disabled test config generation to ensure package works
 - ✅ **Global Installation**: Package now works correctly when installed globally
@@ -794,24 +915,28 @@ We welcome contributions! Here's how:
 ### v3.1.4 - Bug Fix Release 🐛
 
 **🔧 Critical Fix:**
+
 - ✅ **Missing Module Fix**: Fixed missing `test-config-generator.service` in published package
 - ✅ **Import Resolution**: Resolved module import errors when using the npm package globally
 
 ### v3.1.3 - Smart Naming System 🎨
 
 **🎉 Major Enhancement: Smart Naming Transformation**
+
 - ✅ **Flexible Input**: Accept any naming format (`kebab-case`, `snake_case`, `camelCase`, `PascalCase`)
 - ✅ **Professional Output**: Generate consistent, industry-standard naming conventions
 - ✅ **Import Safety**: Eliminate path mismatches and file not found errors
 - ✅ **Framework Consistency**: Works seamlessly with both Express and Hono
 
 **🔧 Technical Improvements:**
+
 - ✅ **Template System**: Updated all templates for consistent naming
 - ✅ **Path Resolution**: Fixed CLI path generation bugs
 - ✅ **Code Quality**: Professional naming throughout generated code
 - ✅ **Error Prevention**: No more invalid JavaScript identifiers
 
 **📝 Examples:**
+
 ```bash
 # All of these work perfectly now!
 node-apis --name user-profile --crud      # → user-profile/ directory

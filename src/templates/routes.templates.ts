@@ -1,8 +1,5 @@
-
-
 import { ApiType } from '../types/common.types';
 import { getModuleNaming, ModuleNaming } from '../shared/utils/naming.utils';
-
 
 export const generateRouteContent = ({
   moduleName,
@@ -23,7 +20,6 @@ export const generateRouteContent = ({
 
   return generateGenericRouteContent(naming, framework);
 };
-
 
 const generateCrudRouteContent = (naming: ModuleNaming, framework: string = 'express'): string => {
   if (framework === 'hono') {
@@ -131,7 +127,10 @@ export default router;
 /**
  * Generates generic route content
  */
-const generateGenericRouteContent = (naming: ModuleNaming, framework: string = 'express'): string => {
+const generateGenericRouteContent = (
+  naming: ModuleNaming,
+  framework: string = 'express'
+): string => {
   if (framework === 'hono') {
     return `import { Hono } from 'hono';
 

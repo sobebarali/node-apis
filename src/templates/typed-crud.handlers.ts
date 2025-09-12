@@ -1,9 +1,25 @@
-
-
 import { ParsedTypePayload } from '../services/type-parser.service';
 
-
 import { getModuleNaming, ModuleNaming } from '../shared/utils/naming.utils';
+
+/**
+ * Finds the ID field in the parsed type (either 'id' or '${moduleName}Id')
+ */
+const findIdField = (parsedType: ParsedTypePayload, moduleName: string): string | null => {
+  const moduleIdField = `${moduleName}Id`;
+
+  // Prefer module-specific ID field if it exists
+  if (parsedType.fields.some(f => f.name === moduleIdField)) {
+    return moduleIdField;
+  }
+
+  // Fallback to generic 'id' field
+  if (parsedType.fields.some(f => f.name === 'id')) {
+    return 'id';
+  }
+
+  return null;
+};
 
 export const getCrudHandlerFileNames = ({ moduleName }: { moduleName: string }): string[] => {
   const naming = getModuleNaming(moduleName);
@@ -15,7 +31,6 @@ export const getCrudHandlerFileNames = ({ moduleName }: { moduleName: string }):
     `update.${naming.file}.ts`,
   ];
 };
-
 
 export const generateCrudHandlerContent = ({
   operation,
@@ -32,42 +47,17 @@ export const generateCrudHandlerContent = ({
   // Generate operation-specific handler content
   switch (operation) {
     case 'create':
-      return generateTypedCreateHandlerContent(
-        naming,
-        capitalizedOperation,
-        parsedType
-      );
+      return generateTypedCreateHandlerContent(naming, capitalizedOperation, parsedType);
     case 'get':
-      return generateTypedGetHandlerContent(
-        naming,
-        capitalizedOperation,
-        parsedType
-      );
+      return generateTypedGetHandlerContent(naming, capitalizedOperation, parsedType);
     case 'list':
-      return generateTypedListHandlerContent(
-        naming,
-        capitalizedOperation,
-        parsedType
-      );
+      return generateTypedListHandlerContent(naming, capitalizedOperation, parsedType);
     case 'update':
-      return generateTypedUpdateHandlerContent(
-        naming,
-        capitalizedOperation,
-        parsedType
-      );
+      return generateTypedUpdateHandlerContent(naming, capitalizedOperation, parsedType);
     case 'delete':
-      return generateTypedDeleteHandlerContent(
-        naming,
-        capitalizedOperation,
-        parsedType
-      );
+      return generateTypedDeleteHandlerContent(naming, capitalizedOperation, parsedType);
     default:
-      return generateGenericHandlerContent(
-        naming,
-        capitalizedOperation,
-        operation,
-        parsedType
-      );
+      return generateGenericHandlerContent(naming, capitalizedOperation, operation, parsedType);
   }
 };
 
@@ -77,15 +67,33 @@ export const generateCrudHandlerContent = ({
 const generateTypedCreateHandlerContent = (
   naming: ModuleNaming,
   _capitalizedOperation: string,
-  _parsedType: ParsedTypePayload
+  parsedType: ParsedTypePayload
 ): string => {
+  const fieldDestructuring =
+    parsedType.fields.length > 0
+      ? parsedType.fields.map(field => field.name).join(',\n  ')
+      : '// No fields defined in typePayload';
+
+  const fieldTypes =
+    parsedType.fields.length > 0
+      ? parsedType.fields.map(field => `  ${field.name}: ${field.type};`).join('\n')
+      : '  // No fields defined in typePayload';
+
+  const payloadObject =
+    parsedType.fields.length > 0
+      ? `{ ${parsedType.fields.map(field => field.name).join(', ')} }`
+      : '{}';
+
   return `import type { typePayload, typeResult, typeResultData, typeResultError } from '../types/create.${naming.file}';
 import create from '../repository/${naming.directory}.repository';
 
-export default async function create${naming.class}Handler(
-  payload: typePayload,
-  requestId: string
-): Promise<typeResult> {
+export default async function create${naming.class}Handler({
+  ${fieldDestructuring},
+  requestId,
+}: {
+${fieldTypes}
+  requestId: string;
+}): Promise<typeResult> {
   let data: typeResultData | null = null;
   let error: typeResultError | null = null;
 
@@ -94,7 +102,7 @@ export default async function create${naming.class}Handler(
     console.info(\`\${requestId} [${naming.constant}] - CREATE handler started\`);
 
     // Business logic here - direct repository call
-    const ${naming.variable} = await create(payload);
+    const ${naming.variable} = await create(${payloadObject});
 
     data = ${naming.variable};
 
@@ -123,15 +131,32 @@ export default async function create${naming.class}Handler(
 const generateTypedGetHandlerContent = (
   naming: ModuleNaming,
   _capitalizedOperation: string,
-  _parsedType: ParsedTypePayload
+  parsedType: ParsedTypePayload
 ): string => {
+  const fieldDestructuring =
+    parsedType.fields.length > 0
+      ? parsedType.fields.map(field => field.name).join(',\n  ')
+      : '// No fields defined in typePayload';
+
+  const fieldTypes =
+    parsedType.fields.length > 0
+      ? parsedType.fields.map(field => `  ${field.name}: ${field.type};`).join('\n')
+      : '  // No fields defined in typePayload';
+
+  // GET typically uses the ID field from the payload
+  const idField = findIdField(parsedType, naming.variable);
+  const idAccess = idField || 'id';
+
   return `import type { typePayload, typeResult, typeResultData, typeResultError } from '../types/get.${naming.file}';
 import { findById } from '../repository/${naming.directory}.repository';
 
-export default async function get${naming.class}Handler(
-  payload: typePayload,
-  requestId: string
-): Promise<typeResult> {
+export default async function get${naming.class}Handler({
+  ${fieldDestructuring},
+  requestId,
+}: {
+${fieldTypes}
+  requestId: string;
+}): Promise<typeResult> {
   let data: typeResultData | null = null;
   let error: typeResultError | null = null;
 
@@ -140,7 +165,7 @@ export default async function get${naming.class}Handler(
     console.info(\`\${requestId} [${naming.constant}] - GET handler started\`);
 
     // Business logic here - direct repository call
-    const ${naming.variable} = await findById(payload.id);
+    const ${naming.variable} = await findById(${idAccess});
 
     data = ${naming.variable};
 
@@ -179,15 +204,62 @@ const generateGenericHandlerContent = (
   naming: ModuleNaming,
   _capitalizedOperation: string,
   operation: string,
-  _parsedType: ParsedTypePayload
+  parsedType: ParsedTypePayload
 ): string => {
+  const fieldDestructuring =
+    parsedType.fields.length > 0
+      ? parsedType.fields.map(field => field.name).join(',\n  ')
+      : '// No fields defined in typePayload';
+
+  const fieldTypes =
+    parsedType.fields.length > 0
+      ? parsedType.fields.map(field => `  ${field.name}: ${field.type};`).join('\n')
+      : '  // No fields defined in typePayload';
+
+  // Generate the appropriate repository call based on operation
+  const getRepositoryCall = () => {
+    if (operation === 'delete') {
+      const idField = findIdField(parsedType, naming.variable);
+      const idAccess = idField || 'id';
+      const permanentAccess = parsedType.fields.find(f => f.name === 'permanent')
+        ? 'permanent'
+        : 'false';
+      return `await remove(${idAccess}, ${permanentAccess} || false);
+    data = {
+      deleted_id: ${idAccess},
+      deleted_at: new Date().toISOString(),
+      permanent: ${permanentAccess} || false
+    };`;
+    } else if (operation === 'list') {
+      const payloadObject =
+        parsedType.fields.length > 0
+          ? `{ ${parsedType.fields.map(field => field.name).join(', ')} }`
+          : '{}';
+      return `const result = await findMany(${payloadObject});
+    data = result;`;
+    } else if (operation === 'update') {
+      const idField = findIdField(parsedType, naming.variable);
+      const idAccess = idField || 'id';
+      const nonIdFields = parsedType.fields.filter(f => f.name !== idField).map(f => f.name);
+      const updateObject = nonIdFields.length > 0 ? `{ ${nonIdFields.join(', ')} }` : '{}';
+      return `const result = await update(${idAccess}, ${updateObject});
+    data = result;`;
+    } else {
+      return `// TODO: Implement ${operation} logic
+    data = null;`;
+    }
+  };
+
   return `import type { typePayload, typeResult, typeResultData, typeResultError } from '../types/${operation}.${naming.file}';
 import { ${operation === 'delete' ? 'remove' : operation === 'list' ? 'findMany' : operation} } from '../repository/${naming.directory}.repository';
 
-export default async function ${operation}${naming.class}Handler(
-  payload: typePayload,
-  requestId: string
-): Promise<typeResult> {
+export default async function ${operation}${naming.class}Handler({
+  ${fieldDestructuring},
+  requestId,
+}: {
+${fieldTypes}
+  requestId: string;
+}): Promise<typeResult> {
   let data: typeResultData | null = null;
   let error: typeResultError | null = null;
 
@@ -196,24 +268,7 @@ export default async function ${operation}${naming.class}Handler(
     console.info(\`\${requestId} [${naming.constant}] - ${operation.toUpperCase()} handler started\`);
 
     // Business logic here - direct repository call
-    ${
-      operation === 'delete'
-        ? `await remove(payload.id, payload.permanent || false);
-    data = {
-      deleted_id: payload.id,
-      deleted_at: new Date().toISOString(),
-      permanent: payload.permanent || false
-    };`
-        : operation === 'list'
-          ? `const result = await findMany(payload);
-    data = result;`
-          : operation === 'update'
-            ? `const { id, ...updateData } = payload;
-    const result = await update(id, updateData);
-    data = result;`
-            : `// TODO: Implement ${operation} logic
-    data = null;`
-    }
+    ${getRepositoryCall()}
 
     const duration = Date.now() - startTime;
     console.info(\`\${requestId} [${naming.constant}] - ${operation.toUpperCase()} handler completed successfully in \${duration}ms\`);
@@ -251,34 +306,16 @@ const generateTypedListHandlerContent = (
   naming: ModuleNaming,
   capitalizedOperation: string,
   parsedType: ParsedTypePayload
-): string =>
-  generateGenericHandlerContent(
-    naming,
-    capitalizedOperation,
-    'list',
-    parsedType
-  );
+): string => generateGenericHandlerContent(naming, capitalizedOperation, 'list', parsedType);
 
 const generateTypedUpdateHandlerContent = (
   naming: ModuleNaming,
   capitalizedOperation: string,
   parsedType: ParsedTypePayload
-): string =>
-  generateGenericHandlerContent(
-    naming,
-    capitalizedOperation,
-    'update',
-    parsedType
-  );
+): string => generateGenericHandlerContent(naming, capitalizedOperation, 'update', parsedType);
 
 const generateTypedDeleteHandlerContent = (
   naming: ModuleNaming,
   capitalizedOperation: string,
   parsedType: ParsedTypePayload
-): string =>
-  generateGenericHandlerContent(
-    naming,
-    capitalizedOperation,
-    'delete',
-    parsedType
-  );
+): string => generateGenericHandlerContent(naming, capitalizedOperation, 'delete', parsedType);

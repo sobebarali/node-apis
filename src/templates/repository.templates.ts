@@ -192,10 +192,7 @@ export default {
 /**
  * Generates custom repository content
  */
-const generateCustomRepositoryContent = (
-  naming: ModuleNaming,
-  customNames: string[]
-): string => {
+const generateCustomRepositoryContent = (naming: ModuleNaming, customNames: string[]): string => {
   const customMethods = customNames
     .map(
       customName => `
@@ -234,9 +231,7 @@ ${customNames.map(name => `  ${name},`).join('\n')}
 /**
  * Generates generic repository content
  */
-const generateGenericRepositoryContent = (
-  naming: ModuleNaming
-): string => {
+const generateGenericRepositoryContent = (naming: ModuleNaming): string => {
   return `// Repository layer - Pure domain logic
 // This layer is reusable and independent of API concerns
 

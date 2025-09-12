@@ -324,11 +324,22 @@ export const generateTestFiles = async ({
     let helpersContent: string;
 
     if (apiType.type === 'crud') {
-      helpersContent = generateCrudTestContent({ operation: 'create', moduleName, testType: 'helpers' });
+      helpersContent = generateCrudTestContent({
+        operation: 'create',
+        moduleName,
+        testType: 'helpers',
+      });
     } else if (apiType.type === 'custom') {
-      helpersContent = generateCustomTestContent({ customName: 'default', moduleName, testType: 'helpers' });
+      helpersContent = generateCustomTestContent({
+        customName: 'default',
+        moduleName,
+        testType: 'helpers',
+      });
     } else if (apiType.type === 'services' && apiType.serviceNames) {
-      helpersContent = generateServiceTestHelpersContent({ moduleName, serviceNames: apiType.serviceNames });
+      helpersContent = generateServiceTestHelpersContent({
+        moduleName,
+        serviceNames: apiType.serviceNames,
+      });
     } else {
       helpersContent = '// No helpers generated for this API type';
     }

@@ -3,14 +3,13 @@ import chalk from 'chalk';
 import { CommandOptions } from './types/cli.types';
 import { handleGenerateCommand } from './cli/commands/generate.command';
 
-
 export const main = async (): Promise<void> => {
   const program = new Command();
 
   program
     .name('node-apis')
     .description('Generate boilerplate folder structures for Node.js API modules')
-    .version('3.4.0')
+    .version('3.5.0')
     .option('-n, --name <name>', 'module name (skips interactive prompt)')
     .option('-f, --force', 'overwrite existing directories')
     .option('--no-interactive', 'disable interactive mode')
@@ -28,7 +27,6 @@ export const main = async (): Promise<void> => {
   await handleGenerateCommand(options);
 };
 
-
 process.on('SIGINT', () => {
   console.log(chalk.yellow('\n\n⏹️  Generation cancelled by user'));
   process.exit(0);
@@ -36,7 +34,7 @@ process.on('SIGINT', () => {
 
 // Run the CLI
 if (require.main === module) {
-  main().catch((error) => {
+  main().catch(error => {
     console.error('CLI Error:', error);
     process.exit(1);
   });

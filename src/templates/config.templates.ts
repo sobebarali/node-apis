@@ -7,7 +7,9 @@ import { Config, SupportedFramework } from '../types/config.types';
 /**
  * Generates default configuration
  */
-export const generateDefaultConfig = ({ framework = 'express' }: { framework?: SupportedFramework } = {}): Config => {
+export const generateDefaultConfig = ({
+  framework = 'express',
+}: { framework?: SupportedFramework } = {}): Config => {
   return {
     version: '1.0.0',
     framework,
@@ -49,14 +51,14 @@ export const generateConfigWithDatabase = ({
   databaseType?: 'postgresql' | 'mysql' | 'sqlite';
 } = {}): Config => {
   const config = generateDefaultConfig({ framework });
-  
+
   if (orm || databaseType) {
     config.database = {
       ...(orm && { orm }),
       ...(databaseType && { type: databaseType }),
     };
   }
-  
+
   return config;
 };
 
@@ -83,6 +85,8 @@ export const CONFIG_TEMPLATES = {
 /**
  * Gets a configuration template by name
  */
-export const getConfigTemplate = (templateName: keyof typeof CONFIG_TEMPLATES): typeof CONFIG_TEMPLATES[keyof typeof CONFIG_TEMPLATES] => {
+export const getConfigTemplate = (
+  templateName: keyof typeof CONFIG_TEMPLATES
+): (typeof CONFIG_TEMPLATES)[keyof typeof CONFIG_TEMPLATES] => {
   return CONFIG_TEMPLATES[templateName];
 };
