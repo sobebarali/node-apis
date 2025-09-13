@@ -30,8 +30,11 @@
 # Install globally and start building amazing APIs
 npm install -g node-apis
 
-# Generate your first API in seconds
-node-apis --name blog --crud --trpc-style
+# Generate REST APIs
+node-apis --name blog --crud --api-style rest --framework express
+
+# Generate tRPC APIs  
+node-apis --name user --crud --api-style trpc --framework hono
 
 # Run the comprehensive tests
 npm test
@@ -70,6 +73,31 @@ The generator accepts **any naming format** and automatically converts it to pro
 - ✅ **Valid JavaScript** - All generated identifiers are syntactically correct
 - ✅ **Professional Output** - Follows industry-standard naming conventions
 - ✅ **Import Safety** - No path mismatches or file not found errors
+
+## 🎨 Choose Your API Style
+
+The generator supports **two distinct API paradigms**, each optimized for different use cases:
+
+### 🌐 **REST APIs** (Traditional HTTP)
+- **Best for**: Public APIs, microservices, traditional web applications
+- **Generates**: Controllers, routes, HTTP endpoints with Express/Hono
+- **Benefits**: Standard HTTP patterns, widely adopted, framework agnostic
+
+### 🚀 **tRPC APIs** (Type-safe RPC)  
+- **Best for**: Full-stack TypeScript applications, internal APIs, type-safe client-server communication
+- **Generates**: Procedures, routers, end-to-end type safety
+- **Benefits**: Auto-completion, compile-time safety, seamless TypeScript integration
+
+**Interactive Flow:**
+```
+🚀 Which API style would you like to generate?
+  🌐 REST APIs (traditional HTTP endpoints)
+  🚀 tRPC (type-safe RPC procedures)
+
+🛠️  Which web framework would you like to use?
+  Express.js (Traditional, widely adopted)  
+  Hono (Modern, lightweight, fast)
+```
 
 ## 🚀 Quick Start
 
@@ -250,12 +278,12 @@ Set your preferences once and skip repetitive prompts:
 # Initialize configuration (interactive)
 node-apis --init-config
 
-# Set default framework
+# Set default framework and API style
 node-apis --set-framework express
-node-apis --set-framework hono
+node-apis --set-api-style trpc
 
-# Now generate without specifying framework
-node-apis --name user --crud  # Uses your configured framework
+# Now generate without specifying preferences
+node-apis --name user --crud  # Uses your configured framework and API style
 ```
 
 The config file (`node-apis.config.json`) stores your preferences and is extensible for future features like database ORM selection.
@@ -263,22 +291,24 @@ The config file (`node-apis.config.json`) stores your preferences and is extensi
 ### Configuration Workflow Example
 
 ```bash
-# First time setup - choose your preferred framework
+# First time setup - choose your preferences interactively
 node-apis --init-config
 # ✅ Configuration file created successfully!
-# 🚀 Default framework: express (or hono if you chose it interactively)
+# 🚀 Default framework: express, API style: rest
 
-# Change framework preference anytime
+# Change preferences anytime
 node-apis --set-framework hono
+node-apis --set-api-style trpc
 # ✅ Framework set to: hono
+# ✅ API style set to: tRPC procedures
 
-# Now generate APIs without specifying framework
+# Now generate APIs without specifying preferences
 node-apis --name user --crud
-# Uses Hono framework from config
+# Uses Hono + tRPC from config
 
 # Override config for specific generation
-node-apis --name admin --crud --framework express
-# Uses Express despite Hono being configured
+node-apis --name admin --crud --api-style rest --framework express
+# Uses Express + REST despite Hono + tRPC being configured
 ```
 
 ## 🏢 Monorepo Support
@@ -733,13 +763,14 @@ node-apis
 #    2. ⚡ Custom API operations (Business logic endpoints)
 #    3. 🔧 Internal service operations (Third-party integrations)
 # 4. 📋 Enter operation names with smart validation
-# 5. ⚙️  Framework selection (saved to config)
-# 6. 🚨 Handle existing modules:
+# 5. 🚀 Choose API style (REST or tRPC) - NEW!
+# 6. ⚙️  Framework selection (Express or Hono)
+# 7. 🚨 Handle existing modules:
 #    • 🔄 Overwrite existing module (replace all files)
 #    • ➕ Add operations to existing module
 #    • ❌ Cancel generation
-# 7. ✨ Two-phase generation with type review
-# 8. 🧪 Comprehensive test suite generation
+# 8. ✨ Two-phase generation with type review
+# 9. 🧪 Comprehensive test suite generation
 ```
 
 #### 🎯 **Interactive Mode Benefits**
@@ -1011,7 +1042,10 @@ node-apis --name public-api --crud --framework express  # Uses REST despite tRPC
 Generate a complete blog API with tRPC:
 
 ```bash
-# Generate blog API with tRPC style
+# Generate blog API with tRPC style (new syntax)
+node-apis --name blog --crud --api-style trpc --framework express
+
+# Or using deprecated syntax (shows warning)
 node-apis --name blog --crud --trpc-style
 
 # What you get:
@@ -1043,20 +1077,24 @@ This is a **complete, production-ready tRPC API** generated in seconds! 🎉
 
 ## 📋 Command Line Options
 
-| Option                    | Alias | Description                                                       |
-| ------------------------- | ----- | ----------------------------------------------------------------- |
-| `--name <name>`           | `-n`  | Module name (skips interactive prompt)                            |
-| `--crud`                  |       | Generate CRUD operations (create, get, list, update, delete)      |
-| `--custom <names>`        |       | Generate custom operations (comma-separated)                      |
-| `--services <names>`      |       | Generate internal service operations (comma-separated)            |
-| `--framework <framework>` |       | Web framework to use (express\|hono), defaults to express         |
-| `--target-dir <dir>`      |       | Target directory for generated files (default: current directory) |
-| `--trpc-style`            |       | Generate tRPC procedures instead of REST controllers             |
-| `--set-trpc-style <bool>` |       | Set default tRPC style preference in config (true\|false)        |
-| `--force`                 | `-f`  | Overwrite existing files                                          |
-| `--no-interactive`        |       | Skip interactive prompts                                          |
-| `--version`               | `-V`  | Show version number                                               |
-| `--help`                  | `-h`  | Show help information                                             |
+| Option                      | Alias | Description                                                       |
+| --------------------------- | ----- | ----------------------------------------------------------------- |
+| `--name <name>`             | `-n`  | Module name (skips interactive prompt)                            |
+| `--crud`                    |       | Generate CRUD operations (create, get, list, update, delete)      |
+| `--custom <names>`          |       | Generate custom operations (comma-separated)                      |
+| `--services <names>`        |       | Generate internal service operations (comma-separated)            |
+| `--api-style <style>`       |       | API style to generate (rest\|trpc), defaults to rest 🆕           |
+| `--framework <framework>`   |       | Web framework to use (express\|hono), defaults to express         |
+| `--target-dir <dir>`        |       | Target directory for generated files (default: current directory) |
+| `--set-api-style <style>`   |       | Set default API style in config (rest\|trpc) 🆕                   |
+| `--set-framework <framework>` |     | Set default framework in config (express\|hono)                   |
+| `--trpc-style`              |       | ⚠️ **Deprecated**: Use `--api-style trpc` instead                |
+| `--set-trpc-style <bool>`   |       | ⚠️ **Deprecated**: Use `--set-api-style` instead                 |
+| `--force`                   | `-f`  | Overwrite existing files                                          |
+| `--no-interactive`          |       | Skip interactive prompts                                          |
+| `--init-config`             |       | Initialize configuration file                                      |
+| `--version`                 | `-V`  | Show version number                                               |
+| `--help`                    | `-h`  | Show help information                                             |
 
 ## 🎨 What Makes the Generated Code Special?
 

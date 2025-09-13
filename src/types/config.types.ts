@@ -4,6 +4,8 @@
 
 export type SupportedFramework = 'express' | 'hono';
 
+export type SupportedApiStyle = 'rest' | 'trpc';
+
 export type SupportedORM = 'prisma' | 'typeorm' | 'drizzle';
 
 export type SupportedDatabase = 'postgresql' | 'mysql' | 'sqlite';
@@ -21,9 +23,10 @@ export interface PreferencesConfig {
 
 export interface Config {
   framework?: SupportedFramework;
+  apiStyle?: SupportedApiStyle;
   database?: DatabaseConfig;
   preferences?: PreferencesConfig;
-  trpcStyle?: boolean;
+  trpcStyle?: boolean; // Deprecated, use apiStyle instead
   version?: string;
 }
 

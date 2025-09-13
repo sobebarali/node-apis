@@ -7,6 +7,7 @@ import * as fs from 'fs-extra';
 import {
   Config,
   SupportedFramework,
+  SupportedApiStyle,
   DatabaseConfig,
   ConfigValidationResult,
   InitConfigOptions,
@@ -126,6 +127,16 @@ export const getFramework = async ({
 };
 
 /**
+ * Gets the configured API style
+ */
+export const getApiStyle = async ({
+  configPath,
+}: { configPath?: string } = {}): Promise<SupportedApiStyle | null> => {
+  const config = await loadConfig(configPath ? { configPath } : {});
+  return config?.apiStyle || null;
+};
+
+/**
  * Sets the framework in config
  */
 export const setFramework = async ({
@@ -155,7 +166,41 @@ export const setFramework = async ({
 };
 
 /**
- * Sets the default tRPC style preference in config
+ * Sets the API style in config
+ */
+export const setApiStyle = async ({
+  apiStyle,
+  configPath,
+}: {
+  apiStyle: SupportedApiStyle;
+  configPath?: string;
+}): Promise<void> => {
+  // Check if config exists, if not create a default one first
+  const exists = await configExists(configPath ? { configPath } : {});
+
+  if (!exists) {
+    // Create default config with the specified API style
+    await initializeConfig({
+      ...(configPath && { configPath }),
+    });
+    // Then update with API style
+    await saveConfig({
+      config: { apiStyle },
+      ...(configPath && { configPath }),
+      options: { merge: true, validate: true },
+    });
+  } else {
+    // Update existing config
+    await saveConfig({
+      config: { apiStyle },
+      ...(configPath && { configPath }),
+      options: { merge: true, validate: true },
+    });
+  }
+};
+
+/**
+ * Sets the default tRPC style preference in config (deprecated - use setApiStyle)
  */
 export const setTrpcStyle = async ({
   trpcStyle,
@@ -164,28 +209,12 @@ export const setTrpcStyle = async ({
   trpcStyle: boolean;
   configPath?: string;
 }): Promise<void> => {
-  // Check if config exists, if not create a default one first
-  const exists = await configExists(configPath ? { configPath } : {});
-
-  if (!exists) {
-    // Create default config with the specified tRPC style
-    await initializeConfig({
-      ...(configPath && { configPath }),
-    });
-    // Then update with tRPC style
-    await saveConfig({
-      config: { trpcStyle },
-      ...(configPath && { configPath }),
-      options: { merge: true, validate: true },
-    });
-  } else {
-    // Update existing config
-    await saveConfig({
-      config: { trpcStyle },
-      ...(configPath && { configPath }),
-      options: { merge: true, validate: true },
-    });
-  }
+  // Deprecated: Convert to new API style format
+  const apiStyle: SupportedApiStyle = trpcStyle ? 'trpc' : 'rest';
+  await setApiStyle({ 
+    apiStyle, 
+    ...(configPath && { configPath }) 
+  });
 };
 
 /**
@@ -265,6 +294,11 @@ export const validateConfig = ({ config }: { config: any }): ConfigValidationRes
     errors.push(`Invalid framework: ${config.framework}. Must be 'express' or 'hono'`);
   }
 
+  // Validate API style
+  if (config.apiStyle && !['rest', 'trpc'].includes(config.apiStyle)) {
+    errors.push(`Invalid API style: ${config.apiStyle}. Must be 'rest' or 'trpc'`);
+  }
+
   // Validate database config
   if (config.database && typeof config.database === 'object') {
     if (config.database.orm && !['prisma', 'typeorm', 'drizzle'].includes(config.database.orm)) {
@@ -329,4 +363,29 @@ export const getEffectiveFramework = async ({
 
   // Default to express
   return 'express';
+};
+
+/**
+ * Gets the effective API style (from config, CLI option, or default)
+ */
+export const getEffectiveApiStyle = async ({
+  cliApiStyle,
+  configPath,
+}: {
+  cliApiStyle?: string;
+  configPath?: string;
+} = {}): Promise<SupportedApiStyle> => {
+  // CLI option takes precedence
+  if (cliApiStyle && ['rest', 'trpc'].includes(cliApiStyle)) {
+    return cliApiStyle as SupportedApiStyle;
+  }
+
+  // Then check config file
+  const configApiStyle = await getApiStyle(configPath ? { configPath } : {});
+  if (configApiStyle) {
+    return configApiStyle;
+  }
+
+  // Default to rest
+  return 'rest';
 };

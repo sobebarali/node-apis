@@ -9,7 +9,7 @@ export const main = async (): Promise<void> => {
   program
     .name('node-apis')
     .description('Generate boilerplate folder structures for Node.js API modules')
-    .version('3.5.0')
+    .version('3.6.0')
     .option('-n, --name <name>', 'module name (skips interactive prompt)')
     .option('-f, --force', 'overwrite existing directories')
     .option('--no-interactive', 'disable interactive mode')
@@ -17,14 +17,16 @@ export const main = async (): Promise<void> => {
     .option('--custom <names>', 'generate custom API operations (comma-separated names)')
     .option('--services <names>', 'generate internal service operations (comma-separated names)')
     .option('--framework <framework>', 'web framework to use (express|hono)')
+    .option('--api-style <style>', 'API style to generate (rest|trpc)')
     .option('--init-config', 'initialize configuration file')
     .option('--set-framework <framework>', 'set default framework in config (express|hono)')
+    .option('--set-api-style <style>', 'set default API style in config (rest|trpc)')
     .option(
       '--target-dir <dir>',
       'target directory for generated files (default: current directory)'
     )
-    .option('--trpc-style', 'generate tRPC procedures instead of REST controllers')
-    .option('--set-trpc-style <boolean>', 'set default tRPC style preference in config (true|false)')
+    .option('--trpc-style', 'generate tRPC procedures instead of REST controllers (deprecated, use --api-style trpc)')
+    .option('--set-trpc-style <boolean>', 'set default tRPC style preference in config (deprecated, use --set-api-style)')
     .parse();
 
   const options = program.opts() as CommandOptions;

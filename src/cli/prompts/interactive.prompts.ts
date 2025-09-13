@@ -4,7 +4,7 @@
 
 import inquirer from 'inquirer';
 import { InquirerAnswers, PromptResult } from '../../types/cli.types';
-import { SupportedFramework } from '../../types/config.types';
+import { SupportedFramework, SupportedApiStyle } from '../../types/config.types';
 import { validateModuleName } from '../../validators/module-name.validator';
 
 /**
@@ -224,6 +224,30 @@ export const promptServiceOperations = async (): Promise<PromptResult<string[]>>
 };
 
 /**
+ * Prompts user for API style selection
+ */
+export const promptApiStyleSelection = async (): Promise<PromptResult<SupportedApiStyle>> => {
+  try {
+    const answer = (await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'apiStyle',
+        message: '🚀 Which API style would you like to generate?',
+        choices: [
+          { name: '🌐 REST APIs (traditional HTTP endpoints)', value: 'rest' },
+          { name: '🚀 tRPC (type-safe RPC procedures)', value: 'trpc' },
+        ],
+        default: 'rest',
+      },
+    ])) as InquirerAnswers;
+
+    return { success: true, data: answer.apiStyle };
+  } catch (error) {
+    return { success: false, cancelled: true };
+  }
+};
+
+/**
  * Prompts user for framework selection
  */
 export const promptFrameworkSelection = async (): Promise<PromptResult<SupportedFramework>> => {
@@ -242,6 +266,31 @@ export const promptFrameworkSelection = async (): Promise<PromptResult<Supported
     ])) as InquirerAnswers;
 
     return { success: true, data: answer.framework };
+  } catch (error) {
+    return { success: false, cancelled: true };
+  }
+};
+
+/**
+ * Prompts user to save API style choice to config
+ */
+export const promptSaveApiStyleToConfig = async ({
+  apiStyle,
+}: {
+  apiStyle: SupportedApiStyle;
+}): Promise<PromptResult<boolean>> => {
+  try {
+    const styleText = apiStyle === 'trpc' ? 'tRPC procedures' : 'REST controllers';
+    const answer = (await inquirer.prompt([
+      {
+        type: 'confirm',
+        name: 'saveToConfig',
+        message: `💾 Save "${styleText}" as your default API style? (This will create/update node-apis.config.json)`,
+        default: true,
+      },
+    ])) as InquirerAnswers;
+
+    return { success: true, data: answer.saveToConfig };
   } catch (error) {
     return { success: false, cancelled: true };
   }

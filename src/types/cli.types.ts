@@ -10,11 +10,13 @@ export interface CommandOptions {
   custom?: string;
   services?: string;
   framework?: string;
+  apiStyle?: string;
   initConfig?: boolean;
   setFramework?: string;
+  setApiStyle?: string;
   targetDir?: string;
-  trpcStyle?: boolean;
-  setTrpcStyle?: string;
+  trpcStyle?: boolean; // Deprecated, use apiStyle instead
+  setTrpcStyle?: string; // Deprecated, use setApiStyle instead
 }
 
 export interface InquirerAnswers {
@@ -28,6 +30,7 @@ export interface InquirerAnswers {
   existingModule: string;
   operationMode: 'replace' | 'append';
   framework: 'express' | 'hono';
+  apiStyle: 'rest' | 'trpc';
   saveToConfig: boolean;
   action: 'overwrite' | 'append' | 'cancel' | 'view' | 'update' | 'reset';
   configAction: 'view' | 'update' | 'reset' | 'cancel';

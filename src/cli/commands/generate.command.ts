@@ -21,12 +21,13 @@ import {
 import { getExistingModules, detectExistingModule } from '../../services/module-detection.service';
 import {
   getEffectiveFramework,
+  getEffectiveApiStyle,
   initializeConfig,
   setFramework,
-  setTrpcStyle,
+  setApiStyle,
   configExists,
 } from '../../services/config.service';
-import { SupportedFramework } from '../../types/config.types';
+import { SupportedFramework, SupportedApiStyle } from '../../types/config.types';
 import {
   displayWelcomeMessage,
   displayExistingModules,
@@ -46,6 +47,8 @@ import {
   promptCustomOperations,
   promptServiceOperations,
   promptConfirmation,
+  promptApiStyleSelection,
+  promptSaveApiStyleToConfig,
   promptFrameworkSelection,
   promptSaveFrameworkToConfig,
 } from '../prompts/interactive.prompts';
@@ -60,6 +63,11 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
 
     if (options.setFramework) {
       await handleSetFramework(options);
+      return;
+    }
+
+    if (options.setApiStyle) {
+      await handleSetApiStyle(options);
       return;
     }
 
@@ -128,10 +136,25 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
     }
 
     if (apiType) {
-      // Get effective framework from config, CLI option, or prompt user
+      // Handle backward compatibility: --trpc-style maps to --api-style trpc
+      let effectiveApiStyle: SupportedApiStyle | undefined = options.apiStyle as SupportedApiStyle;
+      
+      if (options.trpcStyle && !effectiveApiStyle) {
+        console.log('⚠️  Warning: --trpc-style is deprecated, use --api-style trpc instead');
+        effectiveApiStyle = 'trpc';
+      }
+
+      // Get effective framework and API style from config, CLI option, or prompt user
       const framework = await getEffectiveFramework({
         ...(options.framework && { cliFramework: options.framework }),
       });
+
+      const apiStyle = await getEffectiveApiStyle({
+        ...(effectiveApiStyle && { cliApiStyle: effectiveApiStyle }),
+      });
+
+      // Convert API style to trpcStyle for current generation logic
+      const trpcStyle = apiStyle === 'trpc';
 
       await handleTwoPhaseGeneration({
         moduleName,
@@ -141,7 +164,7 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
           force: options.force || false,
           appendMode,
           ...(options.targetDir && { targetDir: options.targetDir }),
-          trpcStyle: options.trpcStyle || false,
+          trpcStyle,
         },
         interactive: options.interactive !== false,
       });
@@ -421,6 +444,38 @@ const handleInteractiveFlow = async (
     }
   }
 
+  // Handle API style selection if not provided via CLI and not in config
+  if (apiType) {
+    const configApiStyle = await getEffectiveApiStyle();
+
+    // If no API style in config (defaults to rest), prompt user and offer to save
+    if (configApiStyle === 'rest') {
+      const hasConfig = await configExists();
+
+      if (!hasConfig) {
+        const apiStyleResult = await promptApiStyleSelection();
+        if (!apiStyleResult.success) {
+          return { success: false, appendMode: false, forceOverwrite: false };
+        }
+
+        const selectedApiStyle = apiStyleResult.data!;
+
+        // Ask if user wants to save this choice
+        const saveResult = await promptSaveApiStyleToConfig({ apiStyle: selectedApiStyle });
+        if (saveResult.success && saveResult.data) {
+          try {
+            await setApiStyle({ apiStyle: selectedApiStyle });
+            console.log(
+              `✅ Saved ${selectedApiStyle === 'trpc' ? 'tRPC procedures' : 'REST controllers'} as default API style in node-apis.config.json\n`
+            );
+          } catch (error: any) {
+            console.warn(`⚠️  Could not save API style to config: ${error.message}\n`);
+          }
+        }
+      }
+    }
+  }
+
   // Handle framework selection if not provided via CLI and not in config
   if (!cliFramework && apiType) {
     const configFramework = await getEffectiveFramework();
@@ -538,10 +593,34 @@ const handleSetFramework = async (options: CommandOptions): Promise<void> => {
 };
 
 /**
- * Handles --set-trpc-style command
+ * Handles --set-api-style command
+ */
+const handleSetApiStyle = async (options: CommandOptions): Promise<void> => {
+  try {
+    const apiStyle = options.setApiStyle as SupportedApiStyle;
+
+    if (!['rest', 'trpc'].includes(apiStyle)) {
+      displayError(`Invalid API style: ${apiStyle}. Must be 'rest' or 'trpc'`);
+      process.exit(1);
+    }
+
+    await setApiStyle({ apiStyle });
+
+    console.log(`✅ API style set to: ${apiStyle === 'trpc' ? 'tRPC procedures' : 'REST controllers'}`);
+    console.log('📁 Updated: node-apis.config.json');
+  } catch (error: any) {
+    displayError(`Failed to set API style: ${error.message}`);
+    process.exit(1);
+  }
+};
+
+/**
+ * Handles --set-trpc-style command (deprecated)
  */
 const handleSetTrpcStyle = async (options: CommandOptions): Promise<void> => {
   try {
+    console.log('⚠️  Warning: --set-trpc-style is deprecated, use --set-api-style instead');
+    
     const trpcStyleValue = options.setTrpcStyle;
 
     if (!trpcStyleValue || !['true', 'false'].includes(trpcStyleValue.toLowerCase())) {
@@ -550,13 +629,14 @@ const handleSetTrpcStyle = async (options: CommandOptions): Promise<void> => {
     }
 
     const trpcStyle = trpcStyleValue.toLowerCase() === 'true';
+    const apiStyle: SupportedApiStyle = trpcStyle ? 'trpc' : 'rest';
 
-    await setTrpcStyle({ trpcStyle });
+    await setApiStyle({ apiStyle });
 
-    console.log(`✅ tRPC style set to: ${trpcStyle}`);
+    console.log(`✅ API style set to: ${apiStyle === 'trpc' ? 'tRPC procedures' : 'REST controllers'}`);
     console.log('📁 Updated: node-apis.config.json');
   } catch (error: any) {
-    displayError(`Failed to set tRPC style: ${error.message}`);
+    displayError(`Failed to set API style: ${error.message}`);
     process.exit(1);
   }
 };

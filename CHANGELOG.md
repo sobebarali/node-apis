@@ -5,6 +5,81 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.6.0] - 2025-01-13
+
+### 🎨 Major Interactive CLI Enhancement - API Style Selection
+
+This release introduces a **fundamental improvement** to the CLI workflow with the addition of **API Style Selection**, giving developers clear choice between REST and tRPC paradigms while maintaining full backward compatibility.
+
+#### 🚀 New API Style Selection
+
+- **🎨 Clear API Style Choice**: New interactive step to choose between REST and tRPC
+  ```
+  🚀 Which API style would you like to generate?
+    🌐 REST APIs (traditional HTTP endpoints)
+    🚀 tRPC (type-safe RPC procedures)
+  ```
+- **🧩 Separate Framework Choice**: Framework selection (Express/Hono) is now independent of API style
+- **⚙️ Enhanced Configuration**: Save both API style and framework preferences independently
+
+#### 🛠️ New CLI Commands
+
+- **Primary Commands**:
+  - `--api-style <style>` - Choose between `rest` or `trpc` (NEW)
+  - `--set-api-style <style>` - Save API style preference to config (NEW)
+  
+- **Enhanced Interactive Flow**:
+  1. Module name → API type → **API style** → Framework → Generation
+  2. Smart prompting only when no preferences are saved
+  3. Independent preference management for style and framework
+
+#### 📋 Command Examples
+
+```bash
+# New syntax (recommended)
+node-apis --name user --crud --api-style trpc --framework express
+node-apis --name blog --crud --api-style rest --framework hono
+
+# Configuration management
+node-apis --set-api-style trpc
+node-apis --set-framework express
+
+# Interactive mode with enhanced flow
+node-apis  # Now includes API style selection step
+```
+
+#### 🔄 Backward Compatibility
+
+- **⚠️ Deprecated but Working**: `--trpc-style` flag still works with deprecation warnings
+- **🔧 Automatic Migration**: Old configs with `trpcStyle: true` automatically convert to `apiStyle: 'trpc'`
+- **📋 Graceful Transition**: All existing commands continue to work without breaking changes
+
+#### 🎯 User Experience Improvements
+
+- **🧠 Better Mental Model**: Clear separation between "what kind of API" (REST/tRPC) and "what framework" (Express/Hono)
+- **💾 Smart Configuration**: Only prompts for missing preferences, saves choices independently
+- **🔍 Enhanced Discoverability**: tRPC is prominently featured as an equal option to REST
+
+#### 🏗️ Technical Implementation
+
+- **📦 Type System Updates**: New `SupportedApiStyle` type alongside existing `SupportedFramework`
+- **🔧 Service Functions**: New `getEffectiveApiStyle()`, `setApiStyle()`, and related prompt functions
+- **✅ Validation Enhancement**: Config validation now includes API style checking
+- **🔄 Template Integration**: Seamless integration with existing template system
+
+### 🐛 Bug Fixes
+
+- **🏢 Monorepo Support**: Enhanced `--target-dir` handling with better TypeScript strict mode compatibility
+- **⚙️ Config Management**: Improved error handling and validation for configuration files
+
+### 📚 Documentation
+
+- **📖 Updated README**: Comprehensive documentation of new API style feature
+- **🎯 Enhanced Examples**: Updated all examples to showcase new CLI syntax
+- **📋 Command Reference**: Complete CLI options table with new commands and deprecation notices
+
+---
+
 ## [3.5.0] - 2025-01-03
 
 ### 🎉 Major Code Generation Revolution
