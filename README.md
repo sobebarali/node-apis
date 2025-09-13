@@ -24,6 +24,21 @@
 - **⚙️ Smart Configuration** - Set preferences once, skip repetitive prompts
 - **📦 Zero Config** - Works out of the box with sensible defaults
 
+## 🚀 Try It Now!
+
+```bash
+# Install globally and start building amazing APIs
+npm install -g node-apis
+
+# Generate your first API in seconds
+node-apis --name blog --crud --trpc-style
+
+# Run the comprehensive tests
+npm test
+```
+
+**⭐ Love this tool?** [Star it on GitHub](https://github.com/sobebarali/nodejs-api) and follow [@sobebarali](https://github.com/sobebarali) for more developer tools!
+
 ## 🎯 What Makes This Different?
 
 Unlike other generators that create static boilerplate, this tool:
@@ -1417,4 +1432,49 @@ node-apis --name book --crud
 npm test  # Run your generated tests!
 ```
 
+---
+
+## 👨‍💻 About the Author
+
+Hi! I'm **Sobebar Ali**, a passionate Backend Developer and Founding AI Engineer at **Capri AI**. I built this tool to solve the repetitive task of creating production-ready API modules with proper architecture, comprehensive testing, and modern TypeScript patterns.
+
+### 🎯 Why I Built This Tool
+
+After years of building APIs professionally, I noticed developers spending too much time on boilerplate code instead of business logic. This generator bridges that gap by providing:
+
+- **Production-ready code** that follows industry best practices
+- **Comprehensive testing** that actually tests your APIs
+- **Type-safe patterns** that prevent runtime errors
+- **Clean architecture** that scales with your project
+
+### 🌟 Connect with Me
+
+- **🔗 LinkedIn**: [linkedin.com/in/sobebarali](https://www.linkedin.com/in/sobebarali/)
+- **💻 GitHub**: [github.com/sobebarali](https://github.com/sobebarali)
+- **🌐 Website**: [sobebar.online](https://sobebar.online/)
+- **📧 Email**: sobebar.ali17@gmail.com
+
+### 💝 Support This Project
+
+If this tool saves you development time and helps your team build better APIs:
+
+- ⭐ **Star this repository** on [GitHub](https://github.com/sobebarali/nodejs-api)
+- 📦 **Share it** with your development team
+- 🐛 **Report issues** or suggest features
+- 💖 **Follow me** for more developer tools and insights
+
+### 🤝 Contributing
+
+I welcome contributions! Whether it's:
+- 🐛 Bug fixes
+- ✨ New features (like tRPC support!)
+- 📚 Documentation improvements
+- 🧪 Test enhancements
+
+Check out the [contribution guidelines](https://github.com/sobebarali/nodejs-api) to get started.
+
+---
+
 **Happy coding and testing!** ✨
+
+> _"Building this tool has been a journey of solving real developer problems. I hope it saves you as much time as it has saved me and my team!"_ - **Sobebar Ali**

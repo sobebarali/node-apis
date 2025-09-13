@@ -1,6 +1,6 @@
 {
   "name": "node-apis",
-  "version": "3.5.2",
+  "version": "3.5.3",
   "description": "🚀 Advanced TypeScript API generator with clean architecture, comprehensive testing, and automatic formatting. Generate production-ready Node.js APIs with complete integration test suites.",
   "main": "dist/index.js",
   "bin": {
@@ -51,9 +51,21 @@
     "supertest",
     "test-generation",
     "tdd",
-    "test-driven-development"
+    "test-driven-development",
+    "trpc",
+    "type-safety",
+    "end-to-end",
+    "rpc",
+    "procedures",
+    "monorepo",
+    "destructuring",
+    "smart-validation"
   ],
-  "author": "Sobe Barali <sobebarali@gmail.com>",
+  "author": {
+    "name": "Sobebar Ali",
+    "email": "sobebar.ali17@gmail.com",
+    "url": "https://sobebar.online"
+  },
   "license": "MIT",
   "dependencies": {
     "chalk": "^4.1.2",
