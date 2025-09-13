@@ -5,6 +5,80 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.6.1] - 2025-01-13
+
+### 🛡️ Enhanced Error Handling & Type Safety
+
+This release strengthens the generated code with consistent error handling patterns and improved type safety across all API entry points.
+
+#### 🔧 tRPC Procedures Improvements
+
+- **✅ Consistent Error Handling**: Added try-catch blocks to all tRPC procedure templates
+  - Create, Get, List, Update, Delete, and Generic procedures now handle errors consistently
+  - All procedures return standardized error format: `{ data: null, error: { code, message, statusCode, requestId } }`
+  - Error handling now matches the pattern used in Express/Hono controllers
+
+- **🎯 Enhanced Type Safety**: Improved `typePayload` usage in tRPC procedures
+  - All procedures now explicitly type the input parameter: `async ({ input }: { input: typePayload })`
+  - Better TypeScript intellisense and compile-time error checking
+  - Consistent type imports across all procedure templates
+
+#### 🏗️ Defense in Depth Error Handling
+
+**Complete Error Handling Coverage:**
+- **Controllers** ✅ - Handle validation and framework-level errors
+- **tRPC Procedures** ✅ - Handle procedure-level errors (NEW)
+- **Handlers** ✅ - Handle business logic errors
+- **Repository** ✅ - Handle data access errors
+
+#### 🎯 Benefits
+
+- **🔄 Consistency**: All API entry points return the same `{ data, error }` format
+- **🔍 Traceability**: Request IDs included in all error responses
+- **🛡️ Reliability**: Prevents unhandled promise rejections from crashing the app
+- **🎯 Framework Agnostic**: Same error handling regardless of Express/tRPC
+- **📊 Monitoring**: Consistent error format for logging and monitoring systems
+
+#### 📋 Updated Error Patterns
+
+```typescript
+// tRPC Procedure with Enhanced Error Handling
+export const createUserProcedure = publicProcedure
+  .input(payloadSchema)
+  .mutation(async ({ input }: { input: typePayload }) => {
+    const requestId = randomBytes(16).toString('hex');
+    
+    try {
+      return await createUserHandler({
+        ...input,
+        requestId,
+      });
+    } catch (error) {
+      return {
+        data: null,
+        error: {
+          code: 'INTERNAL_ERROR',
+          message: error instanceof Error ? error.message : 'Something went wrong',
+          statusCode: 500,
+          requestId
+        }
+      };
+    }
+  });
+```
+
+### 🔄 Breaking Changes
+
+None - this is a backward-compatible enhancement to existing templates.
+
+### 📚 Documentation
+
+- Updated README with error handling strategy discussion
+- Added comprehensive error handling examples
+- Documented the defense-in-depth approach
+
+---
+
 ## [3.6.0] - 2025-01-13
 
 ### 🎨 Major Interactive CLI Enhancement - API Style Selection

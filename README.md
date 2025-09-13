@@ -817,7 +817,7 @@ npm run test:watch
 
 ## 🔥 tRPC Support - Type-Safe APIs Made Easy
 
-**New in v3.5.1**: Generate tRPC procedures instead of REST controllers for maximum type safety!
+**New in v3.6.1**: Enhanced tRPC procedures with consistent error handling and improved type safety!
 
 ### 🎯 What is tRPC Style?
 
@@ -853,16 +853,29 @@ node-apis --name user --crud  # Uses tRPC style
 import { publicProcedure } from '../../../trpc';
 import { payloadSchema } from '../validators/create.blog';
 import createBlogHandler from '../handlers/create.blog';
+import type { typePayload } from '../types/create.blog';
 
 export const createBlogProcedure = publicProcedure
   .input(payloadSchema)                    // 🎯 Automatic validation
-  .mutation(async ({ input }) => {         // 🎯 Type-safe input
+  .mutation(async ({ input }: { input: typePayload }) => {  // 🎯 Enhanced type safety
     const requestId = generateRequestId();
     
-    return await createBlogHandler({       // 🎯 Same business logic
-      ...input,
-      requestId,
-    });
+    try {
+      return await createBlogHandler({     // 🎯 Same business logic
+        ...input,
+        requestId,
+      });
+    } catch (error) {                      // 🛡️ Consistent error handling
+      return {
+        data: null,
+        error: {
+          code: 'INTERNAL_ERROR',
+          message: error instanceof Error ? error.message : 'Something went wrong',
+          statusCode: 500,
+          requestId
+        }
+      };
+    }
   });
 ```
 
@@ -986,6 +999,19 @@ const blog = await trpc.blog.create.mutate({
 // Automatic return type inference
 blog.data?.blogId;        // ✅ string
 blog.data?.created_at;    // ✅ string
+```
+
+#### ✅ **Enhanced Error Handling** (New in v3.6.1)
+```typescript
+// Consistent error format across all procedures
+const result = await trpc.blog.create.mutate({ name: "Test" });
+
+if (result.error) {
+  console.log(result.error.code);        // ✅ 'INTERNAL_ERROR'
+  console.log(result.error.message);     // ✅ Descriptive error message
+  console.log(result.error.statusCode);  // ✅ HTTP status code
+  console.log(result.error.requestId);   // ✅ Request tracing ID
+}
 ```
 
 #### ✅ **Same Business Logic**
@@ -1134,6 +1160,72 @@ req-1703123456789-abc123 [CONTROLLER] - CREATE BOOK payload: {
 - Repositories match your data structure
 - Validators enforce your business rules
 
+## 🛡️ Production-Ready Error Handling
+
+### Defense in Depth Architecture (New in v3.6.1)
+
+The generator now implements **comprehensive error handling** across all API layers, ensuring your applications are resilient and production-ready:
+
+#### **Complete Coverage Across All Layers**
+
+```
+🌐 API Entry Points
+├── 🛡️ Controllers (Express/Hono) - Framework & validation errors
+├── 🛡️ tRPC Procedures - Procedure-level errors (NEW!)
+├── 🛡️ Handlers - Business logic errors  
+└── 🛡️ Repository - Data access errors
+```
+
+#### **Consistent Error Format**
+
+All layers return the same standardized error structure:
+
+```typescript
+{
+  data: null,
+  error: {
+    code: 'VALIDATION_ERROR' | 'NOT_FOUND' | 'INTERNAL_ERROR',
+    message: 'Descriptive error message',
+    statusCode: 400 | 404 | 500,
+    requestId: 'req-abc123...' // For request tracing
+  }
+}
+```
+
+#### **Enhanced tRPC Error Handling**
+
+```typescript
+// Every tRPC procedure now includes robust error handling
+export const createUserProcedure = publicProcedure
+  .input(payloadSchema)
+  .mutation(async ({ input }: { input: typePayload }) => {
+    const requestId = randomBytes(16).toString('hex');
+    
+    try {
+      return await createUserHandler({ ...input, requestId });
+    } catch (error) {
+      // Consistent error format with request tracing
+      return {
+        data: null,
+        error: {
+          code: 'INTERNAL_ERROR',
+          message: error instanceof Error ? error.message : 'Something went wrong',
+          statusCode: 500,
+          requestId // Essential for debugging
+        }
+      };
+    }
+  });
+```
+
+#### **Benefits of This Approach**
+
+- **🔍 Request Tracing**: Every error includes a `requestId` for debugging
+- **🔄 Consistency**: Same error format across Express, Hono, and tRPC
+- **🛡️ Reliability**: Prevents unhandled promise rejections
+- **📊 Monitoring**: Structured errors perfect for logging systems
+- **🎯 Production Ready**: Built for real-world application requirements
+
 ## 🚀 Advanced Features
 
 ### Smart Type-Driven Generation
@@ -1268,6 +1360,17 @@ We welcome contributions! Here's how:
 5. **Open** a Pull Request
 
 ## 📋 Changelog
+
+### v3.6.1 - Enhanced Error Handling & Type Safety 🛡️
+
+**🔥 Major Enhancement: Consistent Error Handling**
+
+- ✅ **Enhanced tRPC Procedures**: Added try-catch blocks to all tRPC procedure templates
+- ✅ **Type Safety Improvements**: Explicit `typePayload` typing in all procedures
+- ✅ **Consistent Error Format**: All procedures return standardized error structure
+- ✅ **Defense in Depth**: Complete error handling coverage across all API layers
+- ✅ **Request Tracing**: Request IDs included in all error responses for debugging
+- ✅ **Production Ready**: Prevents unhandled promise rejections and crashes
 
 ### v3.5.1 - tRPC Integration & Monorepo Support 🚀
 
