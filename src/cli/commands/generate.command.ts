@@ -290,6 +290,7 @@ const handleTwoPhaseGeneration = async ({
       testPath,
       apiType,
       appendMode,
+      trpcStyle,
     });
 
     // Generate test configuration (only once per project)

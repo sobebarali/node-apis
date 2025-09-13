@@ -40,12 +40,16 @@ const generateTypedGenericCustomServiceContent = (
 ): string => {
   const fieldDestructuring = generateFieldDestructuring(parsedType.fields);
 
-  return `import type { typePayload, typeResult } from '../types/${customName}.${moduleName}';
+  return `import type { typeResult } from '../types/${customName}.${moduleName}';
 import * as ${moduleName}Repository from '../repository/${moduleName}.repository';
 
 export const ${customName}${capitalizedModule} = async ({
 ${fieldDestructuring}
-}: typePayload): Promise<typeResult> => {
+  requestId,
+}: {
+  ${parsedType.fields.map(field => `${field.name}${field.optional ? '?' : ''}: ${field.type};`).join('\n  ')}
+  requestId: string;
+}): Promise<typeResult> => {
   try {
     // TODO: Add business logic here
     // Example: const result = await ${moduleName}Repository.${customName}({
@@ -66,7 +70,8 @@ ${fieldDestructuring}
         error: {
           code: 'NOT_FOUND',
           message: \`${capitalizedModule} not found\`,
-          statusCode: 404
+          statusCode: 404,
+          requestId
         }
       };
     }
@@ -77,7 +82,8 @@ ${fieldDestructuring}
         error: {
           code: 'VALIDATION_ERROR',
           message: error.message,
-          statusCode: 400
+          statusCode: 400,
+          requestId
         }
       };
     }
@@ -87,7 +93,8 @@ ${fieldDestructuring}
       error: {
         code: 'INTERNAL_ERROR',
         message: error instanceof Error ? error.message : 'Failed to ${customName} ${moduleName}',
-        statusCode: 500
+        statusCode: 500,
+        requestId
       }
     };
   }

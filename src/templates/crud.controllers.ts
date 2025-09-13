@@ -459,8 +459,12 @@ const generateGenericControllerContent = (
     return `import type { Context } from 'hono';
 import { typeResult } from '../types/${operation}.${naming.file}';
 import { validatePayload } from '../validators/${operation}.${naming.file}';
+import { randomBytes } from 'crypto';
+import ${operation}${naming.class}Handler from '../handlers/${operation}.${naming.file}';
 
 export const ${operation}${naming.class} = async (c: Context): Promise<Response> => {
+  const requestId = randomBytes(16).toString('hex');
+  
   try {
     const body = await c.req.json();
     const validation = validatePayload(body);
@@ -470,32 +474,27 @@ export const ${operation}${naming.class} = async (c: Context): Promise<Response>
         error: {
           code: 'VALIDATION_ERROR',
           message: validation.error.message,
-          statusCode: 400
+          statusCode: 400,
+          requestId
         }
       }, 400);
     }
 
     const payload = validation.data;
 
-    // TODO: Implement your business logic here
-    // Example: const result = await ${naming.variable}Service.${operation}(payload);
+    // Call handler with requestId
+    const result = await ${operation}${naming.class}Handler({ ...payload, requestId });
 
-    // Mock response - replace with actual implementation
-    const result: typeResult = {
-      data: {
-        // Add your result data here
-      },
-      error: null
-    };
-
-    return c.json(result, 200);
+    const statusCode = result.error ? result.error.statusCode || 500 : 200;
+    return c.json(result, statusCode);
   } catch (error) {
     return c.json({
       data: null,
       error: {
         code: 'INTERNAL_ERROR',
         message: 'Something went wrong',
-        statusCode: 500
+        statusCode: 500,
+        requestId
       }
     }, 500);
   }
@@ -506,8 +505,12 @@ export const ${operation}${naming.class} = async (c: Context): Promise<Response>
   return `import type { Request, Response } from 'express';
 import { typeResult } from '../types/${operation}.${naming.file}';
 import { validatePayload } from '../validators/${operation}.${naming.file}';
+import { randomBytes } from 'crypto';
+import ${operation}${naming.class}Handler from '../handlers/${operation}.${naming.file}';
 
 export const ${operation}${naming.class} = async (req: Request, res: Response): Promise<void> => {
+  const requestId = randomBytes(16).toString('hex');
+  
   try {
     const validation = validatePayload(req.body);
     if (!validation.success) {
@@ -516,7 +519,8 @@ export const ${operation}${naming.class} = async (req: Request, res: Response): 
         error: {
           code: 'VALIDATION_ERROR',
           message: validation.error.message,
-          statusCode: 400
+          statusCode: 400,
+          requestId
         }
       });
       return;
@@ -524,25 +528,19 @@ export const ${operation}${naming.class} = async (req: Request, res: Response): 
 
     const payload = validation.data;
 
-    // TODO: Implement your business logic here
-    // Example: const result = await ${naming.variable}Service.${operation}(payload);
+    // Call handler with requestId
+    const result = await ${operation}${naming.class}Handler({ ...payload, requestId });
 
-    // Mock response - replace with actual implementation
-    const result: typeResult = {
-      data: {
-        // Add your result data here
-      },
-      error: null
-    };
-
-    res.status(200).json(result);
+    const statusCode = result.error ? result.error.statusCode || 500 : 200;
+    res.status(statusCode).json(result);
   } catch (error) {
     res.status(500).json({
       data: null,
       error: {
         code: 'INTERNAL_ERROR',
         message: 'Something went wrong',
-        statusCode: 500
+        statusCode: 500,
+        requestId
       }
     });
   }

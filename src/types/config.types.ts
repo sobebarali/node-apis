@@ -21,11 +21,17 @@ export interface PreferencesConfig {
   skipConfirmation?: boolean;
 }
 
+export interface PathsConfig {
+  srcDir?: string;              // Default: 'src'
+  fallbackPaths?: string[];     // Fallback paths to check: ['apps/server/src', 'packages/api/src']
+}
+
 export interface Config {
   framework?: SupportedFramework;
   apiStyle?: SupportedApiStyle;
   database?: DatabaseConfig;
   preferences?: PreferencesConfig;
+  paths?: PathsConfig;
   trpcStyle?: boolean; // Deprecated, use apiStyle instead
   version?: string;
 }

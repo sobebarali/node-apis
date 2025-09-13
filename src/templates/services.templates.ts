@@ -44,6 +44,7 @@ export type typeResultError = {
   code: string;
   message: string;
   statusCode: number;
+  requestId: string;
   details?: any;
 };
 
@@ -68,14 +69,18 @@ export const generateServiceContent = ({
   const capitalizedService = serviceName.charAt(0).toUpperCase() + serviceName.slice(1);
   const functionName = `${serviceName}${naming.class}`;
 
-  return `import { typePayload, typeResult } from '../types/${serviceName}.${naming.file}';
+  return `import { typeResult } from '../types/${serviceName}.${naming.file}';
 
 /**
  * ${capitalizedService} service for ${naming.variable}
  */
 export const ${functionName} = async ({
   // Destructure your payload fields here
-}: typePayload): Promise<typeResult> => {
+  requestId,
+}: {
+  // Add your specific fields here
+  requestId: string;
+}): Promise<typeResult> => {
   try {
     // TODO: Replace with your third-party API call
     // Example using fetch:
@@ -98,6 +103,7 @@ export const ${functionName} = async ({
     //       code: error.code || 'API_ERROR',
     //       message: error.message || '${capitalizedService} failed',
     //       statusCode: response.status,
+    //       requestId,
     //       details: error,
     //     },
     //   };
@@ -122,6 +128,7 @@ export const ${functionName} = async ({
         code: 'NETWORK_ERROR',
         message: error.message || 'Failed to connect to external service',
         statusCode: 500,
+        requestId,
         details: error,
       },
     };

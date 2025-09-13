@@ -53,8 +53,11 @@ const generateGenericCustomControllerContent = (
     return `import type { Context } from 'hono';
 import { validatePayload } from '../validators/${customName}.${moduleName}';
 import { ${customName}${capitalizedModule} as ${customName}${capitalizedModule}Service } from '../services/${customName}.${moduleName}';
+import { randomBytes } from 'crypto';
 
 export const ${customName}${capitalizedModule} = async (c: Context): Promise<Response> => {
+  const requestId = randomBytes(16).toString('hex');
+  
   try {
     const body = await c.req.json();
 
@@ -66,13 +69,14 @@ export const ${customName}${capitalizedModule} = async (c: Context): Promise<Res
         error: {
           code: 'VALIDATION_ERROR',
           message: validation.error.message,
-          statusCode: 400
+          statusCode: 400,
+          requestId
         }
       }, 400);
     }
 
-    // Call service layer
-    const result = await ${customName}${capitalizedModule}Service(validation.data);
+    // Call service layer with requestId
+    const result = await ${customName}${capitalizedModule}Service({ ...validation.data, requestId });
 
     // Return service result
     const statusCode = result.error ? result.error.statusCode || 500 : 200;
@@ -83,7 +87,8 @@ export const ${customName}${capitalizedModule} = async (c: Context): Promise<Res
       error: {
         code: 'INTERNAL_ERROR',
         message: 'Failed to process request',
-        statusCode: 500
+        statusCode: 500,
+        requestId
       }
     }, 500);
   }
@@ -94,28 +99,44 @@ export const ${customName}${capitalizedModule} = async (c: Context): Promise<Res
   return `import type { Request, Response } from 'express';
 import { validatePayload } from '../validators/${customName}.${moduleName}';
 import { ${customName}${capitalizedModule} as ${customName}${capitalizedModule}Service } from '../services/${customName}.${moduleName}';
+import { randomBytes } from 'crypto';
 
 export const ${customName}${capitalizedModule} = async (req: Request, res: Response): Promise<void> => {
-  // Validate request payload
-  const validation = validatePayload(req.body);
-  if (!validation.success) {
-    res.status(400).json({
+  const requestId = randomBytes(16).toString('hex');
+  
+  try {
+    // Validate request payload
+    const validation = validatePayload(req.body);
+    if (!validation.success) {
+      res.status(400).json({
+        data: null,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: validation.error.message,
+          statusCode: 400,
+          requestId
+        }
+      });
+      return;
+    }
+
+    // Call service layer with requestId
+    const result = await ${customName}${capitalizedModule}Service({ ...validation.data, requestId });
+
+    // Return service result
+    const statusCode = result.error ? result.error.statusCode || 500 : 200;
+    res.status(statusCode).json(result);
+  } catch (error) {
+    res.status(500).json({
       data: null,
       error: {
-        code: 'VALIDATION_ERROR',
-        message: validation.error.message,
-        statusCode: 400
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to process request',
+        statusCode: 500,
+        requestId
       }
     });
-    return;
   }
-
-  // Call service layer
-  const result = await ${customName}${capitalizedModule}Service(validation.data);
-
-  // Return service result
-  const statusCode = result.error ? result.error.statusCode || 500 : 200;
-  res.status(statusCode).json(result);
 };
 `;
 };

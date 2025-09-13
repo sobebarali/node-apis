@@ -76,15 +76,19 @@ const generateTypedCreateHandlerContent = (
 
   const fieldTypes =
     parsedType.fields.length > 0
-      ? parsedType.fields.map(field => `  ${field.name}: ${field.type};`).join('\n')
+      ? parsedType.fields.map(field => `  ${field.name}${field.optional ? '?' : ''}: ${field.type};`).join('\n')
       : '  // No fields defined in typePayload';
 
   const payloadObject =
     parsedType.fields.length > 0
-      ? `{ ${parsedType.fields.map(field => field.name).join(', ')} }`
+      ? `{ ${parsedType.fields.map(field => 
+          field.optional 
+            ? `...(${field.name} !== undefined && { ${field.name} })`
+            : field.name
+        ).join(', ')} }`
       : '{}';
 
-  return `import type { typePayload, typeResult, typeResultData, typeResultError } from '../types/create.${naming.file}';
+  return `import type { typeResult, typeResultData, typeResultError } from '../types/create.${naming.file}';
 import create from '../repository/${naming.directory}.repository';
 
 export default async function create${naming.class}Handler({
@@ -117,6 +121,7 @@ ${fieldTypes}
       code: customError.errorCode ?? 'INTERNAL_ERROR',
       message: customError.message ?? 'An unexpected error occurred',
       statusCode: customError.statusCode ?? 500,
+      requestId,
     };
   }
 
@@ -140,14 +145,14 @@ const generateTypedGetHandlerContent = (
 
   const fieldTypes =
     parsedType.fields.length > 0
-      ? parsedType.fields.map(field => `  ${field.name}: ${field.type};`).join('\n')
+      ? parsedType.fields.map(field => `  ${field.name}${field.optional ? '?' : ''}: ${field.type};`).join('\n')
       : '  // No fields defined in typePayload';
 
   // GET typically uses the ID field from the payload
   const idField = findIdField(parsedType, naming.variable);
   const idAccess = idField || 'id';
 
-  return `import type { typePayload, typeResult, typeResultData, typeResultError } from '../types/get.${naming.file}';
+  return `import type { typeResult, typeResultData, typeResultError } from '../types/get.${naming.file}';
 import { findById } from '../repository/${naming.directory}.repository';
 
 export default async function get${naming.class}Handler({
@@ -182,6 +187,7 @@ ${fieldTypes}
         code: 'NOT_FOUND',
         message: \`${naming.class} not found\`,
         statusCode: 404,
+        requestId,
       };
     } else {
       error = {
@@ -213,7 +219,7 @@ const generateGenericHandlerContent = (
 
   const fieldTypes =
     parsedType.fields.length > 0
-      ? parsedType.fields.map(field => `  ${field.name}: ${field.type};`).join('\n')
+      ? parsedType.fields.map(field => `  ${field.name}${field.optional ? '?' : ''}: ${field.type};`).join('\n')
       : '  // No fields defined in typePayload';
 
   // Generate the appropriate repository call based on operation
@@ -233,15 +239,25 @@ const generateGenericHandlerContent = (
     } else if (operation === 'list') {
       const payloadObject =
         parsedType.fields.length > 0
-          ? `{ ${parsedType.fields.map(field => field.name).join(', ')} }`
+          ? `{ ${parsedType.fields.map(field => 
+              field.optional 
+                ? `...(${field.name} !== undefined && { ${field.name} })`
+                : field.name
+            ).join(', ')} }`
           : '{}';
       return `const result = await findMany(${payloadObject});
     data = result;`;
     } else if (operation === 'update') {
       const idField = findIdField(parsedType, naming.variable);
       const idAccess = idField || 'id';
-      const nonIdFields = parsedType.fields.filter(f => f.name !== idField).map(f => f.name);
-      const updateObject = nonIdFields.length > 0 ? `{ ${nonIdFields.join(', ')} }` : '{}';
+      const nonIdFields = parsedType.fields.filter(f => f.name !== idField);
+      const updateObject = nonIdFields.length > 0 
+        ? `{ ${nonIdFields.map(field => 
+            field.optional 
+              ? `...(${field.name} !== undefined && { ${field.name} })`
+              : field.name
+          ).join(', ')} }` 
+        : '{}';
       return `const result = await update(${idAccess}, ${updateObject});
     data = result;`;
     } else {
@@ -250,7 +266,7 @@ const generateGenericHandlerContent = (
     }
   };
 
-  return `import type { typePayload, typeResult, typeResultData, typeResultError } from '../types/${operation}.${naming.file}';
+  return `import type { typeResult, typeResultData, typeResultError } from '../types/${operation}.${naming.file}';
 import { ${operation === 'delete' ? 'remove' : operation === 'list' ? 'findMany' : operation} } from '../repository/${naming.directory}.repository';
 
 export default async function ${operation}${naming.class}Handler({
@@ -285,6 +301,7 @@ ${fieldTypes}
         code: 'NOT_FOUND',
         message: \`${naming.class} not found\`,
         statusCode: 404,
+        requestId,
       };
     } else {`
     }
@@ -292,6 +309,7 @@ ${fieldTypes}
       code: customError.errorCode ?? 'INTERNAL_ERROR',
       message: customError.message ?? 'An unexpected error occurred',
       statusCode: customError.statusCode ?? 500,
+      requestId,
     };
     ${operation === 'delete' && `}`}
   }

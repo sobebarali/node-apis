@@ -326,6 +326,25 @@ export const validateConfig = ({ config }: { config: any }): ConfigValidationRes
     }
   }
 
+  // Validate paths config
+  if (config.paths && typeof config.paths === 'object') {
+    const paths = config.paths;
+    if (paths.srcDir !== undefined && typeof paths.srcDir !== 'string') {
+      errors.push('paths.srcDir must be a string');
+    }
+    if (paths.fallbackPaths !== undefined) {
+      if (!Array.isArray(paths.fallbackPaths)) {
+        errors.push('paths.fallbackPaths must be an array');
+      } else {
+        for (let i = 0; i < paths.fallbackPaths.length; i++) {
+          if (typeof paths.fallbackPaths[i] !== 'string') {
+            errors.push(`paths.fallbackPaths[${i}] must be a string`);
+          }
+        }
+      }
+    }
+  }
+
   // Version warnings
   if (!config.version) {
     warnings.push('Config version not specified, assuming latest');

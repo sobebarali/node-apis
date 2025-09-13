@@ -36,7 +36,7 @@ export const generateTrpcRouterContent = ({
     })
     .join('\n');
 
-  return `import { router } from '../../trpc';
+  return `import { router } from '@/lib/trpc';
 ${procedureImports}
 
 export const ${naming.variable}Router = router({

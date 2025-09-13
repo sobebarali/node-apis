@@ -45,15 +45,19 @@ const generateGenericCustomServiceContent = (
   _capitalizedCustom: string,
   moduleName: string
 ): string => {
-  return `import type { typePayload, typeResult } from '../types/${customName}.${moduleName}';
+  return `import type { typeResult } from '../types/${customName}.${moduleName}';
 import * as ${moduleName}Repository from '../repository/${moduleName}.repository';
 
 export const ${customName}${capitalizedModule} = async ({
-  // TODO: Add your specific fields here based on your typePayload interface, e.g.:
+  // TODO: Add your specific fields here, e.g.:
   // id,
   // query,
   // filters,
-}: typePayload): Promise<typeResult> => {
+  requestId,
+}: {
+  // Add your parameter types here
+  requestId: string;
+}): Promise<typeResult> => {
   try {
     // TODO: Add business logic here
     // Example: const result = await ${moduleName}Repository.${customName}({
@@ -74,7 +78,8 @@ export const ${customName}${capitalizedModule} = async ({
         error: {
           code: 'NOT_FOUND',
           message: \`${capitalizedModule} not found\`,
-          statusCode: 404
+          statusCode: 404,
+          requestId
         }
       };
     }
@@ -85,7 +90,8 @@ export const ${customName}${capitalizedModule} = async ({
         error: {
           code: 'VALIDATION_ERROR',
           message: error.message,
-          statusCode: 400
+          statusCode: 400,
+          requestId
         }
       };
     }
@@ -95,7 +101,8 @@ export const ${customName}${capitalizedModule} = async ({
       error: {
         code: 'INTERNAL_ERROR',
         message: error instanceof Error ? error.message : 'Failed to ${customName} ${moduleName}',
-        statusCode: 500
+        statusCode: 500,
+        requestId
       }
     };
   }

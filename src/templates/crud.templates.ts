@@ -66,8 +66,8 @@ const generateCreateContent = (
 export type typeResultData = {
   ${moduleName}Id: string;
   name: string;
-  description: string | null;
-  status: string | null;
+  description?: string;
+  status?: string;
   created_at: string;
   updated_at: string;
   // Add more ${moduleName} specific fields here
@@ -77,6 +77,7 @@ export type typeResultError = {
   code: 'VALIDATION_ERROR' | 'DUPLICATE_ENTRY' | 'INTERNAL_ERROR';
   message: string;
   statusCode: 400 | 409 | 500;
+  requestId: string;
   field?: string;
 };
 
@@ -102,8 +103,8 @@ const generateGetContent = (
 export type typeResultData = {
   ${moduleName}Id: string;
   name: string;
-  description: string | null;
-  status: string | null;
+  description?: string;
+  status?: string;
   created_at: string;
   updated_at: string;
   // Add more ${moduleName} specific fields here
@@ -113,6 +114,7 @@ export type typeResultError = {
   code: 'NOT_FOUND' | 'UNAUTHORIZED' | 'INTERNAL_ERROR';
   message: string;
   statusCode: 404 | 401 | 500;
+  requestId: string;
 };
 
 export type typeResult = {
@@ -144,8 +146,8 @@ export type typeResultData = {
   items: {
     ${moduleName}Id: string;
     name: string;
-    description: string | null;
-    status: string | null;
+    description?: string;
+    status?: string;
     created_at: string;
     updated_at: string;
     // Add more ${moduleName} specific fields here
@@ -164,6 +166,7 @@ export type typeResultError = {
   code: 'VALIDATION_ERROR' | 'INTERNAL_ERROR';
   message: string;
   statusCode: 400 | 500;
+  requestId: string;
   field?: string;
 };
 
@@ -193,8 +196,8 @@ const generateUpdateContent = (
 export type typeResultData = {
   ${moduleName}Id: string;
   name: string;
-  description: string | null;
-  status: string | null;
+  description?: string;
+  status?: string;
   created_at: string;
   updated_at: string;
   // Add more ${moduleName} specific fields here
@@ -204,6 +207,7 @@ export type typeResultError = {
   code: 'VALIDATION_ERROR' | 'NOT_FOUND' | 'UNAUTHORIZED' | 'INTERNAL_ERROR';
   message: string;
   statusCode: 400 | 404 | 401 | 500;
+  requestId: string;
   field?: string;
 };
 
@@ -234,6 +238,7 @@ export type typeResultError = {
   code: 'NOT_FOUND' | 'UNAUTHORIZED' | 'INTERNAL_ERROR';
   message: string;
   statusCode: 404 | 401 | 500;
+  requestId: string;
 };
 
 export type typeResult = {
@@ -264,6 +269,7 @@ export type typeResultError = {
   code: 'VALIDATION_ERROR' | 'NOT_FOUND' | 'UNAUTHORIZED' | 'INTERNAL_ERROR';
   message: string;
   statusCode: 400 | 404 | 401 | 500;
+  requestId: string;
   field?: string;
 };
 

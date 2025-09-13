@@ -25,14 +25,12 @@ import {
   generateCustomControllerContent,
 } from '../templates/custom.controllers';
 
-import {
-  getCustomServiceFileNames,
-  generateCustomServiceContent,
-} from '../templates/custom.services';
+// Custom services not generated - business logic is now in handlers
 import { generateRouteContent } from '../templates/routes.templates';
 import { generateRepositoryContent } from '../templates/repository.templates';
 import { generateCrudTestContent } from '../templates/crud.tests';
 import { generateCustomTestContent } from '../templates/custom.tests';
+import { generateTrpcTestContent, getTrpcTestFileNames } from '../templates/trpc.tests';
 import {
   generateServiceValidationTestContent,
   generateServiceSuccessTestContent,
@@ -58,8 +56,10 @@ export const generateApiFiles = async ({
   const typesDir = path.join(modulePath, 'types');
   const validatorsDir = path.join(modulePath, 'validators');
   const controllersDir = path.join(modulePath, 'controllers');
-  const servicesDir = path.join(modulePath, 'services');
   const repositoryDir = path.join(modulePath, 'repository');
+  
+  // Only create services directory for 'services' API type
+  const servicesDir = apiType.type === 'services' ? path.join(modulePath, 'services') : '';
 
   if (apiType.type === 'crud') {
     // Generate type files
@@ -124,16 +124,12 @@ export const generateApiFiles = async ({
       customNames: apiType.customNames,
       moduleName,
     });
-    const customServiceFileNames = getCustomServiceFileNames({
-      customNames: apiType.customNames,
-      moduleName,
-    });
+    // Custom service files not generated - business logic is now in handlers
 
     for (let i = 0; i < customFileNames.length; i++) {
       const fileName = customFileNames[i];
       const validatorFileName = customValidatorFileNames[i];
       const controllerFileName = customControllerFileNames[i];
-      const serviceFileName = customServiceFileNames[i];
       const customName = apiType.customNames[i];
 
       // Generate type file
@@ -168,17 +164,7 @@ export const generateApiFiles = async ({
         });
       }
 
-      // Generate service file
-      const serviceFilePath = path.join(servicesDir, serviceFileName);
-      if (!appendMode || !(await fileExists({ filePath: serviceFilePath }))) {
-        const serviceContent = generateCustomServiceContent({ customName, moduleName });
-        await writeFile({ filePath: serviceFilePath, content: serviceContent });
-        generatedFiles.push({
-          fileName: serviceFileName,
-          filePath: serviceFilePath,
-          content: serviceContent,
-        });
-      }
+      // Skip service generation for custom APIs - business logic is now in handlers
     }
   }
 
@@ -219,41 +205,92 @@ export const generateTestFiles = async ({
   testPath,
   apiType,
   appendMode = false,
+  trpcStyle = false,
 }: {
   moduleName: string;
   testPath: string;
   apiType: ApiType;
   appendMode?: boolean;
+  trpcStyle?: boolean;
 }): Promise<GeneratedFile[]> => {
   const generatedFiles: GeneratedFile[] = [];
   const moduleTestDir = path.join(testPath, moduleName);
 
   if (apiType.type === 'crud') {
     const crudOperations = ['create', 'get', 'list', 'update', 'delete'];
-    const testTypes: ('validation' | 'success' | 'errors')[] = ['validation', 'success', 'errors'];
 
-    for (const operation of crudOperations) {
-      const operationDir = path.join(moduleTestDir, operation);
+    if (trpcStyle) {
+      // Generate tRPC-style tests
+      const testTypes = ['procedure.test.ts', 'validation.test.ts', 'errors.test.ts'];
 
-      // Ensure operation directory exists
-      await ensureDirectory({ dirPath: operationDir });
+      for (const operation of crudOperations) {
+        const operationDir = path.join(moduleTestDir, operation);
 
-      for (const testType of testTypes) {
-        const testFileName = `${testType}.test.ts`;
-        const testFilePath = path.join(operationDir, testFileName);
+        // Ensure operation directory exists
+        await ensureDirectory({ dirPath: operationDir });
 
-        if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
-          const testContent = generateCrudTestContent({ operation, moduleName, testType });
-          await writeFile({ filePath: testFilePath, content: testContent });
-          generatedFiles.push({
-            fileName: testFileName,
-            filePath: testFilePath,
-            content: testContent,
-          });
+        for (const testType of testTypes) {
+          const testFilePath = path.join(operationDir, testType);
+
+          if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
+            const testContent = generateTrpcTestContent({ operation, testType, moduleName });
+            await writeFile({ filePath: testFilePath, content: testContent });
+            generatedFiles.push({
+              fileName: testType,
+              filePath: testFilePath,
+              content: testContent,
+            });
+          }
+        }
+      }
+
+      // Generate shared tRPC helpers
+      const sharedDir = path.join(moduleTestDir, 'shared');
+      await ensureDirectory({ dirPath: sharedDir });
+      
+      const helpersFilePath = path.join(sharedDir, 'trpc-helpers.ts');
+      if (!appendMode || !(await fileExists({ filePath: helpersFilePath }))) {
+        const helpersContent = generateTrpcTestContent({ 
+          operation: '', 
+          testType: 'trpc-helpers.ts', 
+          moduleName 
+        });
+        await writeFile({ filePath: helpersFilePath, content: helpersContent });
+        generatedFiles.push({
+          fileName: 'trpc-helpers.ts',
+          filePath: helpersFilePath,
+          content: helpersContent,
+        });
+      }
+    } else {
+      // Generate REST-style tests
+      const testTypes: ('validation' | 'success' | 'errors')[] = ['validation', 'success', 'errors'];
+
+      for (const operation of crudOperations) {
+        const operationDir = path.join(moduleTestDir, operation);
+
+        // Ensure operation directory exists
+        await ensureDirectory({ dirPath: operationDir });
+
+        for (const testType of testTypes) {
+          const testFileName = `${testType}.test.ts`;
+          const testFilePath = path.join(operationDir, testFileName);
+
+          if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
+            const testContent = generateCrudTestContent({ operation, moduleName, testType });
+            await writeFile({ filePath: testFilePath, content: testContent });
+            generatedFiles.push({
+              fileName: testFileName,
+              filePath: testFilePath,
+              content: testContent,
+            });
+          }
         }
       }
     }
   } else if (apiType.type === 'custom' && apiType.customNames) {
+    // TODO: Add tRPC-specific custom test templates
+    // For now, custom operations use REST-style tests even with tRPC
     const testTypes: ('validation' | 'success' | 'errors')[] = ['validation', 'success', 'errors'];
 
     for (const customName of apiType.customNames) {

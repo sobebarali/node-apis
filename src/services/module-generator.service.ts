@@ -35,7 +35,7 @@ export const generateModuleStructure = async ({
     }
 
     const normalizedName = validation.normalizedName!;
-    const modulePath = getModulePath({
+    const modulePath = await getModulePath({
       moduleName: normalizedName,
       baseDir,
       ...(targetDir && { targetDir }),
@@ -87,7 +87,7 @@ export const generateModuleStructure = async ({
       message,
     };
   } catch (error: any) {
-    return handleGenerationError(error, moduleName, baseDir);
+    return await handleGenerationError(error, moduleName, baseDir);
   }
 };
 
@@ -112,7 +112,7 @@ export const generateModuleStructurePhase1 = async ({
     }
 
     const normalizedName = validation.normalizedName!;
-    const modulePath = getModulePath({
+    const modulePath = await getModulePath({
       moduleName: normalizedName,
       baseDir,
       ...(targetDir && { targetDir }),
@@ -143,7 +143,7 @@ export const generateModuleStructurePhase1 = async ({
       message: `✅ Phase 1: Created module directory and types folder for "${normalizedName}"`,
     };
   } catch (error: any) {
-    return handleGenerationError(error, moduleName, baseDir);
+    return await handleGenerationError(error, moduleName, baseDir);
   }
 };
 
@@ -215,16 +215,16 @@ ${structure}
 /**
  * Handles generation errors with specific error types
  */
-const handleGenerationError = (
+const handleGenerationError = async (
   error: any,
   moduleName: string,
   baseDir: string
-): GenerationResult => {
+): Promise<GenerationResult> => {
   // Handle specific file system errors
   if (error.code === 'EACCES') {
     return {
       success: false,
-      error: `Permission denied. Cannot create directories at: ${getModulePath({ moduleName, baseDir })}`,
+      error: `Permission denied. Cannot create directories at: ${await getModulePath({ moduleName, baseDir })}`,
     };
   }
 

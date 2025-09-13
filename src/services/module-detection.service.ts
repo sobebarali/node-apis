@@ -15,7 +15,7 @@ export const detectExistingModule = async ({
   moduleName,
   baseDir = process.cwd(),
 }: ModuleDetectionInput): Promise<ExistingModule | null> => {
-  const modulePath = getModulePath({ moduleName, baseDir });
+  const modulePath = await getModulePath({ moduleName, baseDir });
   const exists = await directoryExists({ dirPath: modulePath });
 
   if (!exists) {
@@ -49,7 +49,10 @@ export const getExistingModules = async ({
 }: {
   baseDir?: string;
 } = {}): Promise<string[]> => {
-  const apisDir = path.join(baseDir, 'src', 'apis');
+  // Use detected source path instead of hardcoded 'src'
+  const { detectSourcePath } = await import('../filesystem/path.utils');
+  const srcPath = await detectSourcePath(baseDir);
+  const apisDir = path.join(baseDir, srcPath, 'apis');
   const exists = await directoryExists({ dirPath: apisDir });
 
   if (!exists) {
