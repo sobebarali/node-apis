@@ -23,6 +23,7 @@ export interface Config {
   framework?: SupportedFramework;
   database?: DatabaseConfig;
   preferences?: PreferencesConfig;
+  trpcStyle?: boolean;
   version?: string;
 }
 

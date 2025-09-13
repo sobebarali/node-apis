@@ -154,13 +154,15 @@ export const generateModuleStructurePhase1 = async ({
 export const generateModuleStructurePhase2 = async ({
   modulePath,
   apiType,
+  trpcStyle = false,
 }: {
   modulePath: string;
   apiType: ApiType;
+  trpcStyle?: boolean;
 }): Promise<{ success: boolean; createdDirectories: string[]; error?: string }> => {
   try {
-    // Get all subdirectories for this API type
-    const allSubdirectories = getModuleSubdirectories(apiType);
+    // Get all subdirectories for this API type and style
+    const allSubdirectories = getModuleSubdirectories(apiType, trpcStyle);
 
     // Filter out 'types' since it was already created in phase 1
     const remainingSubdirectories = allSubdirectories.filter(dir => dir !== 'types');

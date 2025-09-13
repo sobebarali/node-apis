@@ -6,5 +6,6 @@
     "autoFormat": true,
     "generateTests": true,
     "skipConfirmation": false
-  }
+  },
+  "trpcStyle": false
 }

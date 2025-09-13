@@ -13,6 +13,8 @@ export interface CommandOptions {
   initConfig?: boolean;
   setFramework?: string;
   targetDir?: string;
+  trpcStyle?: boolean;
+  setTrpcStyle?: string;
 }
 
 export interface InquirerAnswers {
@@ -30,6 +32,7 @@ export interface InquirerAnswers {
   action: 'overwrite' | 'append' | 'cancel' | 'view' | 'update' | 'reset';
   configAction: 'view' | 'update' | 'reset' | 'cancel';
   confirmReset: boolean;
+  trpcStyle: boolean;
 }
 
 export interface PromptResult<T = any> {

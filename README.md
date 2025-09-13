@@ -769,6 +769,263 @@ npm run test:coverage
 npm run test:watch
 ```
 
+## 🔥 tRPC Support - Type-Safe APIs Made Easy
+
+**New in v3.5.1**: Generate tRPC procedures instead of REST controllers for maximum type safety!
+
+### 🎯 What is tRPC Style?
+
+tRPC (TypeScript Remote Procedure Call) provides **end-to-end type safety** from your backend to frontend. Instead of traditional REST endpoints, you get type-safe procedure calls with automatic validation.
+
+### 🚀 Quick tRPC Example
+
+```bash
+# Generate tRPC procedures instead of REST controllers
+node-apis --name blog --crud --trpc-style
+
+# Set tRPC as your default style
+node-apis --set-trpc-style true
+node-apis --name user --crud  # Uses tRPC style
+```
+
+### 🏗️ tRPC vs REST Structure Comparison
+
+| **tRPC Style** | **REST Style** |
+|----------------|----------------|
+| ```src/apis/blog/``` | ```src/apis/blog/``` |
+| ```├── procedures/``` | ```├── controllers/``` |
+| ```├── handlers/``` | ```├── handlers/``` |
+| ```├── repository/``` | ```├── repository/``` |
+| ```├── types/``` | ```├── types/``` |
+| ```├── validators/``` | ```├── validators/``` |
+| ```└── blog.router.ts``` | ```└── blog.routes.ts``` |
+
+### 🎯 Generated tRPC Code Examples
+
+#### **tRPC Procedure** (`procedures/create.blog.ts`)
+```typescript
+import { publicProcedure } from '../../../trpc';
+import { payloadSchema } from '../validators/create.blog';
+import createBlogHandler from '../handlers/create.blog';
+
+export const createBlogProcedure = publicProcedure
+  .input(payloadSchema)                    // 🎯 Automatic validation
+  .mutation(async ({ input }) => {         // 🎯 Type-safe input
+    const requestId = generateRequestId();
+    
+    return await createBlogHandler({       // 🎯 Same business logic
+      ...input,
+      requestId,
+    });
+  });
+```
+
+#### **tRPC Router** (`blog.router.ts`)
+```typescript
+import { router } from '../../trpc';
+import { createBlogProcedure } from './procedures/create.blog';
+import { getBlogProcedure } from './procedures/get.blog';
+// ...
+
+export const blogRouter = router({
+  create: createBlogProcedure,             // 🎯 Procedure mapping
+  get: getBlogProcedure,
+  list: listBlogsProcedure,
+  update: updateBlogProcedure,
+  delete: deleteBlogProcedure,
+});
+
+export type BlogRouter = typeof blogRouter; // 🎯 Type export
+```
+
+### 🔧 Required tRPC Setup
+
+To use the generated tRPC code, you'll need to set up tRPC in your project:
+
+#### 1. Install Dependencies
+```bash
+npm install @trpc/server @trpc/client zod
+```
+
+#### 2. Create tRPC Setup (`src/trpc/index.ts`)
+```typescript
+import { initTRPC } from '@trpc/server';
+
+const t = initTRPC.create();
+
+export const router = t.router;
+export const publicProcedure = t.procedure;
+
+// Main app router
+import { blogRouter } from '../apis/blog/blog.router';
+
+export const appRouter = router({
+  blog: blogRouter,
+  // Add more modules here
+});
+
+export type AppRouter = typeof appRouter;
+```
+
+#### 3. Express Integration (`src/server.ts`)
+```typescript
+import express from 'express';
+import { createExpressMiddleware } from '@trpc/server/adapters/express';
+import { appRouter } from './trpc';
+
+const app = express();
+
+app.use(
+  '/trpc',
+  createExpressMiddleware({
+    router: appRouter,
+  })
+);
+
+app.listen(3000);
+```
+
+### 🚀 Client Usage Examples
+
+#### Next.js Client
+```typescript
+import { createTRPCNext } from '@trpc/next';
+import type { AppRouter } from '../server/trpc';
+
+export const trpc = createTRPCNext<AppRouter>({
+  config() {
+    return { url: '/api/trpc' };
+  },
+});
+
+// In a React component
+function BlogManager() {
+  const createBlog = trpc.blog.create.useMutation();
+  const { data: blogs } = trpc.blog.list.useQuery({ page: 1 });
+
+  const handleCreate = async () => {
+    const result = await createBlog.mutateAsync({
+      name: 'My Blog Post',       // ✅ Type-safe
+      description: 'Great post!', // ✅ Auto-complete
+      status: 'published',        // ✅ Validated
+    });
+    
+    if (result.data) {
+      console.log('Created:', result.data.blogId); // ✅ Type inference
+    }
+  };
+
+  return (
+    <div>
+      <button onClick={handleCreate}>Create Blog</button>
+      {blogs?.data?.items.map(blog => (
+        <div key={blog.blogId}>{blog.name}</div>
+      ))}
+    </div>
+  );
+}
+```
+
+### 🎯 Key Benefits of tRPC Style
+
+#### ✅ **End-to-End Type Safety**
+```typescript
+// Full TypeScript inference
+const blog = await trpc.blog.create.mutate({
+  name: "Post Title",     // ✅ Type-safe
+  description: "Content", // ✅ Optional field
+  // status: 123          // ❌ TypeScript error!
+});
+
+// Automatic return type inference
+blog.data?.blogId;        // ✅ string
+blog.data?.created_at;    // ✅ string
+```
+
+#### ✅ **Same Business Logic**
+The handlers, repository, and types are **identical** to REST - only the transport layer changes!
+
+#### ✅ **Smart Validation**
+```typescript
+// Automatic Zod validation
+trpc.blog.create.mutate({
+  name: "",               // ❌ Validation error
+  description: null,      // ❌ Type error
+});
+```
+
+#### ✅ **Performance Benefits**
+- Direct procedure calls (no HTTP overhead)
+- Built-in caching with React Query
+- Automatic request deduplication
+- Optimistic updates support
+
+### 🎯 When to Use Each Style
+
+#### **Use tRPC Style When:**
+- ✅ Full-stack TypeScript projects
+- ✅ Team values type safety
+- ✅ Modern development workflow
+- ✅ React/Next.js frontend
+- ✅ API consumed primarily by your own frontend
+
+#### **Use REST Style When:**
+- ✅ Public APIs for third parties
+- ✅ Multiple different client technologies
+- ✅ Traditional HTTP/JSON APIs
+- ✅ OpenAPI/Swagger documentation needed
+
+### 📋 tRPC Configuration
+
+Set tRPC as your default style:
+
+```bash
+# Set tRPC style preference
+node-apis --set-trpc-style true
+
+# Now all generations use tRPC style by default
+node-apis --name user --crud     # Uses tRPC procedures
+node-apis --name auth --custom "login,logout"  # Uses tRPC procedures
+
+# Override for specific generation
+node-apis --name public-api --crud --framework express  # Uses REST despite tRPC config
+```
+
+### 🔥 Complete tRPC Example
+
+Generate a complete blog API with tRPC:
+
+```bash
+# Generate blog API with tRPC style
+node-apis --name blog --crud --trpc-style
+
+# What you get:
+# ✅ 5 tRPC procedures (create, get, list, update, delete)
+# ✅ Type-safe validation with Zod schemas
+# ✅ Business logic handlers with object destructuring
+# ✅ Repository functions for data access
+# ✅ TypeScript types for requests/responses
+# ✅ Complete test suite for all operations
+# ✅ tRPC router combining all procedures
+# ✅ Production-ready code with error handling
+```
+
+**Generated structure:**
+```
+src/apis/blog/
+├── procedures/           # 🆕 tRPC procedures
+│   ├── create.blog.ts
+│   ├── get.blog.ts
+│   └── ...
+├── handlers/             # ✅ Same business logic
+├── repository/           # ✅ Same data access
+├── types/               # ✅ Same TypeScript types
+├── validators/          # ✅ Same Zod schemas (perfect for tRPC!)
+└── blog.router.ts       # 🆕 tRPC router
+```
+
+This is a **complete, production-ready tRPC API** generated in seconds! 🎉
+
 ## 📋 Command Line Options
 
 | Option                    | Alias | Description                                                       |
@@ -779,6 +1036,8 @@ npm run test:watch
 | `--services <names>`      |       | Generate internal service operations (comma-separated)            |
 | `--framework <framework>` |       | Web framework to use (express\|hono), defaults to express         |
 | `--target-dir <dir>`      |       | Target directory for generated files (default: current directory) |
+| `--trpc-style`            |       | Generate tRPC procedures instead of REST controllers             |
+| `--set-trpc-style <bool>` |       | Set default tRPC style preference in config (true\|false)        |
 | `--force`                 | `-f`  | Overwrite existing files                                          |
 | `--no-interactive`        |       | Skip interactive prompts                                          |
 | `--version`               | `-V`  | Show version number                                               |
@@ -957,6 +1216,61 @@ We welcome contributions! Here's how:
 
 ## 📋 Changelog
 
+### v3.5.1 - tRPC Integration & Monorepo Support 🚀
+
+**🔥 Major Feature: tRPC Support**
+
+- ✅ **tRPC Style Generation**: Generate tRPC procedures instead of REST controllers
+- ✅ **Type-Safe APIs**: Full end-to-end type safety from backend to frontend
+- ✅ **CLI Integration**: `--trpc-style` flag and `--set-trpc-style` configuration
+- ✅ **Smart Templates**: New tRPC procedure, router, and test templates
+- ✅ **Same Business Logic**: Reuses existing handlers, repository, types, and validators
+- ✅ **Conditional Generation**: Switch between tRPC and REST styles seamlessly
+
+**🏢 Monorepo Support**
+
+- ✅ **Target Directory**: `--target-dir` flag for generating in specific directories
+- ✅ **Flexible Paths**: Support for absolute and relative target paths
+- ✅ **Root Generation**: Generate APIs from monorepo root without cd commands
+- ✅ **Global Installation**: Improved compatibility with workspace protocols
+
+**🎯 Enhanced Developer Experience**
+
+- ✅ **Interactive tRPC Setup**: Prompts for setting tRPC style preference
+- ✅ **Configuration Management**: Persistent tRPC style settings in config file
+- ✅ **Comprehensive Documentation**: Complete tRPC setup and usage examples
+- ✅ **Performance Benefits**: Direct procedure calls with built-in validation
+
+### v3.5.0 - Major Code Generation Revolution 🎉
+
+**🧠 Handler Destructuring Revolution**
+
+- ✅ **Modern TypeScript Patterns**: All handlers now use object destructuring
+- ✅ **Clean Parameter Handling**: `({ name, email, requestId }: HandlerParams) => {}`
+- ✅ **Type-Safe Function Signatures**: Full TypeScript inference and validation
+- ✅ **Repository Consistency**: Matching destructuring patterns across all layers
+
+**🔍 Intelligent Validation & Auto-Population**
+
+- ✅ **Smart Pattern Recognition**: Email, URL, phone, UUID auto-detection
+- ✅ **Realistic Default Fields**: `name`, `description`, `status` in every module
+- ✅ **Module-Specific IDs**: `todoId`, `userId`, `productId` instead of generic `id`
+- ✅ **Enhanced Type System**: Better optional field handling in UPDATE operations
+
+**🏗️ Framework & Architecture Improvements**
+
+- ✅ **Hono Compatibility**: Full support for Hono framework with destructuring
+- ✅ **Express Enhancement**: Improved Express.js templates with modern patterns
+- ✅ **Clean Architecture**: Refined handler → repository pattern
+- ✅ **Type-First Development**: Types drive intelligent code generation
+
+**✨ Developer Experience & Quality**
+
+- ✅ **Production-Ready Code**: Realistic fields and professional patterns
+- ✅ **Zero Configuration Issues**: All generated code passes strict TypeScript
+- ✅ **Smart Naming**: Consistent professional naming across all generated files
+- ✅ **Enhanced Testing**: Tests automatically use exact type definitions
+
 ### v3.1.6 - TypeScript & Build Fixes 🔧
 
 **🔧 Critical Fixes:**
@@ -1060,6 +1374,7 @@ The `node-apis.config.json` file stores your preferences:
 {
   "version": "1.0.0",
   "framework": "express",
+  "trpcStyle": false,
   "database": {
     "orm": "prisma",
     "type": "postgresql"
@@ -1075,6 +1390,7 @@ The `node-apis.config.json` file stores your preferences:
 ### Configuration Options
 
 - **`framework`**: Web framework (`express` | `hono`)
+- **`trpcStyle`**: Generate tRPC procedures instead of REST controllers (`true` | `false`)
 - **`database`**: Database settings (future feature)
   - `orm`: ORM preference (`prisma` | `typeorm` | `drizzle`)
   - `type`: Database type (`postgresql` | `mysql` | `sqlite`)

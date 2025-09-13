@@ -272,6 +272,55 @@ export const promptSaveFrameworkToConfig = async ({
 };
 
 /**
+ * Prompts user to save tRPC style choice to config
+ */
+export const promptSaveTrpcStyleToConfig = async ({
+  trpcStyle,
+}: {
+  trpcStyle: boolean;
+}): Promise<PromptResult<boolean>> => {
+  try {
+    const styleText = trpcStyle ? 'tRPC procedures' : 'REST controllers';
+    const answer = (await inquirer.prompt([
+      {
+        type: 'confirm',
+        name: 'saveToConfig',
+        message: `💾 Save "${styleText}" as your default style? (This will create/update node-apis.config.json)`,
+        default: true,
+      },
+    ])) as InquirerAnswers;
+
+    return { success: true, data: answer.saveToConfig };
+  } catch (error) {
+    return { success: false, cancelled: true };
+  }
+};
+
+/**
+ * Prompts user for tRPC style preference
+ */
+export const promptTrpcStylePreference = async (): Promise<PromptResult<boolean>> => {
+  try {
+    const answer = (await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'trpcStyle',
+        message: '🚀 Which API style would you like to generate?',
+        choices: [
+          { name: '🌐 REST controllers (traditional HTTP endpoints)', value: false },
+          { name: '🚀 tRPC procedures (type-safe RPC calls)', value: true },
+        ],
+        default: false,
+      },
+    ])) as InquirerAnswers;
+
+    return { success: true, data: answer.trpcStyle };
+  } catch (error) {
+    return { success: false, cancelled: true };
+  }
+};
+
+/**
  * Prompts user for config management actions
  */
 export const promptConfigManagement = async (): Promise<

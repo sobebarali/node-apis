@@ -23,6 +23,8 @@ export const main = async (): Promise<void> => {
       '--target-dir <dir>',
       'target directory for generated files (default: current directory)'
     )
+    .option('--trpc-style', 'generate tRPC procedures instead of REST controllers')
+    .option('--set-trpc-style <boolean>', 'set default tRPC style preference in config (true|false)')
     .parse();
 
   const options = program.opts() as CommandOptions;

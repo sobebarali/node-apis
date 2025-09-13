@@ -23,6 +23,7 @@ import {
   getEffectiveFramework,
   initializeConfig,
   setFramework,
+  setTrpcStyle,
   configExists,
 } from '../../services/config.service';
 import { SupportedFramework } from '../../types/config.types';
@@ -59,6 +60,11 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
 
     if (options.setFramework) {
       await handleSetFramework(options);
+      return;
+    }
+
+    if (options.setTrpcStyle) {
+      await handleSetTrpcStyle(options);
       return;
     }
 
@@ -135,6 +141,7 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
           force: options.force || false,
           appendMode,
           ...(options.targetDir && { targetDir: options.targetDir }),
+          trpcStyle: options.trpcStyle || false,
         },
         interactive: options.interactive !== false,
       });
@@ -178,10 +185,10 @@ const handleTwoPhaseGeneration = async ({
   moduleName: string;
   apiType: ApiType;
   framework: string;
-  options: { force: boolean; appendMode: boolean; targetDir?: string };
+  options: { force: boolean; appendMode: boolean; targetDir?: string; trpcStyle?: boolean };
   interactive: boolean;
 }) => {
-  const { force = false, appendMode = false, targetDir } = options;
+  const { force = false, appendMode = false, targetDir, trpcStyle = false } = options;
 
   try {
     // Phase 1: Generate only main directory, types subdirectory, and type files
@@ -234,6 +241,7 @@ const handleTwoPhaseGeneration = async ({
     const phase2Result = await generateModuleStructurePhase2({
       modulePath,
       apiType,
+      trpcStyle,
     });
 
     if (!phase2Result.success) {
@@ -247,6 +255,7 @@ const handleTwoPhaseGeneration = async ({
       apiType,
       framework, // Pass framework to generation
       appendMode,
+      trpcStyle, // Pass tRPC style to generation
     });
 
     // Phase 3: Generate test files
@@ -524,6 +533,30 @@ const handleSetFramework = async (options: CommandOptions): Promise<void> => {
     console.log('📁 Updated: node-apis.config.json');
   } catch (error: any) {
     displayError(`Failed to set framework: ${error.message}`);
+    process.exit(1);
+  }
+};
+
+/**
+ * Handles --set-trpc-style command
+ */
+const handleSetTrpcStyle = async (options: CommandOptions): Promise<void> => {
+  try {
+    const trpcStyleValue = options.setTrpcStyle;
+
+    if (!trpcStyleValue || !['true', 'false'].includes(trpcStyleValue.toLowerCase())) {
+      displayError(`Invalid tRPC style value: ${trpcStyleValue}. Must be 'true' or 'false'`);
+      process.exit(1);
+    }
+
+    const trpcStyle = trpcStyleValue.toLowerCase() === 'true';
+
+    await setTrpcStyle({ trpcStyle });
+
+    console.log(`✅ tRPC style set to: ${trpcStyle}`);
+    console.log('📁 Updated: node-apis.config.json');
+  } catch (error: any) {
+    displayError(`Failed to set tRPC style: ${error.message}`);
     process.exit(1);
   }
 };

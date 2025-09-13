@@ -29,12 +29,21 @@ export const getModulePath = ({
 /**
  * Gets the list of subdirectories to create for an API module based on type
  */
-export const getModuleSubdirectories = (apiType?: ApiType): string[] => {
+export const getModuleSubdirectories = (apiType?: ApiType, trpcStyle?: boolean): string[] => {
   if (apiType?.type === 'services') {
-    // Services only need services/ and types/ folders
+    if (trpcStyle) {
+      // tRPC services need procedures/ and types/ folders
+      return ['procedures', 'types'];
+    }
+    // REST services only need services/ and types/ folders
     return ['services', 'types'];
   }
 
-  // CRUD and custom APIs need all folders
+  if (trpcStyle) {
+    // tRPC APIs need procedures/ instead of controllers/
+    return ['procedures', 'handlers', 'repository', 'services', 'types', 'validators'];
+  }
+
+  // REST CRUD and custom APIs need all folders
   return ['controllers', 'handlers', 'repository', 'services', 'types', 'validators'];
 };

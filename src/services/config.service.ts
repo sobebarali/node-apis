@@ -155,6 +155,40 @@ export const setFramework = async ({
 };
 
 /**
+ * Sets the default tRPC style preference in config
+ */
+export const setTrpcStyle = async ({
+  trpcStyle,
+  configPath,
+}: {
+  trpcStyle: boolean;
+  configPath?: string;
+}): Promise<void> => {
+  // Check if config exists, if not create a default one first
+  const exists = await configExists(configPath ? { configPath } : {});
+
+  if (!exists) {
+    // Create default config with the specified tRPC style
+    await initializeConfig({
+      ...(configPath && { configPath }),
+    });
+    // Then update with tRPC style
+    await saveConfig({
+      config: { trpcStyle },
+      ...(configPath && { configPath }),
+      options: { merge: true, validate: true },
+    });
+  } else {
+    // Update existing config
+    await saveConfig({
+      config: { trpcStyle },
+      ...(configPath && { configPath }),
+      options: { merge: true, validate: true },
+    });
+  }
+};
+
+/**
  * Gets database configuration
  */
 export const getDatabaseConfig = async ({

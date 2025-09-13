@@ -28,6 +28,15 @@ import {
   generateCustomControllerContent,
 } from '../templates/custom.controllers';
 import {
+  getTrpcProcedureFileNames,
+  generateTrpcProcedureContent,
+} from '../templates/trpc.procedures';
+import {
+  generateTrpcRouterContent,
+  generateCustomTrpcRouterContent,
+  generateServicesTrpcRouterContent,
+} from '../templates/trpc.router';
+import {
   getCrudHandlerFileNames,
   generateCrudHandlerContent,
 } from '../templates/typed-crud.handlers';
@@ -112,16 +121,19 @@ export const generateCodeWithParsedTypes = async ({
   apiType,
   framework = 'express',
   appendMode = false,
+  trpcStyle = false,
 }: {
   moduleName: string;
   modulePath: string;
   apiType: ApiType;
   framework?: string;
   appendMode?: boolean;
+  trpcStyle?: boolean;
 }): Promise<GeneratedFile[]> => {
   const generatedFiles: GeneratedFile[] = [];
   const validatorsDir = path.join(modulePath, 'validators');
   const controllersDir = path.join(modulePath, 'controllers');
+  const proceduresDir = path.join(modulePath, 'procedures');
   const handlersDir = path.join(modulePath, 'handlers');
 
   const repositoryDir = path.join(modulePath, 'repository');
@@ -132,6 +144,7 @@ export const generateCodeWithParsedTypes = async ({
   if (apiType.type === 'crud') {
     const crudValidatorFileNames = getCrudValidatorFileNames({ moduleName });
     const crudControllerFileNames = getCrudControllerFileNames({ moduleName });
+    const crudProcedureFileNames = getTrpcProcedureFileNames({ moduleName });
     const crudHandlerFileNames = getCrudHandlerFileNames({ moduleName });
     // const crudServiceFileNames = getCrudServiceFileNames({ moduleName }); // Removed - no longer using service layer
     const crudOperations = ['create', 'get', 'list', 'delete', 'update'];
@@ -139,6 +152,7 @@ export const generateCodeWithParsedTypes = async ({
     for (let i = 0; i < crudOperations.length; i++) {
       const validatorFileName = crudValidatorFileNames[i];
       const controllerFileName = crudControllerFileNames[i];
+      const procedureFileName = crudProcedureFileNames[i];
       const handlerFileName = crudHandlerFileNames[i];
       // const serviceFileName = crudServiceFileNames[i]; // Removed - no longer using service layer
       const operation = crudOperations[i];
@@ -164,20 +178,38 @@ export const generateCodeWithParsedTypes = async ({
         });
       }
 
-      // Generate controller file
-      const controllerFilePath = path.join(controllersDir, controllerFileName);
-      if (!appendMode || !(await fileExists({ filePath: controllerFilePath }))) {
-        const controllerContent = generateCrudControllerContent({
-          operation,
-          moduleName,
-          framework,
-        });
-        await writeFile({ filePath: controllerFilePath, content: controllerContent });
-        generatedFiles.push({
-          fileName: controllerFileName,
-          filePath: controllerFilePath,
-          content: controllerContent,
-        });
+      // Generate controller or procedure file based on style
+      if (trpcStyle) {
+        // Generate tRPC procedure file
+        const procedureFilePath = path.join(proceduresDir, procedureFileName);
+        if (!appendMode || !(await fileExists({ filePath: procedureFilePath }))) {
+          const procedureContent = generateTrpcProcedureContent({
+            operation,
+            moduleName,
+          });
+          await writeFile({ filePath: procedureFilePath, content: procedureContent });
+          generatedFiles.push({
+            fileName: procedureFileName,
+            filePath: procedureFilePath,
+            content: procedureContent,
+          });
+        }
+      } else {
+        // Generate REST controller file
+        const controllerFilePath = path.join(controllersDir, controllerFileName);
+        if (!appendMode || !(await fileExists({ filePath: controllerFilePath }))) {
+          const controllerContent = generateCrudControllerContent({
+            operation,
+            moduleName,
+            framework,
+          });
+          await writeFile({ filePath: controllerFilePath, content: controllerContent });
+          generatedFiles.push({
+            fileName: controllerFileName,
+            filePath: controllerFilePath,
+            content: controllerContent,
+          });
+        }
       }
 
       // Generate handler file with parsed types (contains business logic)
@@ -305,17 +337,53 @@ export const generateCodeWithParsedTypes = async ({
     return generatedFiles;
   }
 
-  // Generate routes file
-  const routesFileName = `${moduleName}.routes.ts`;
-  const routesFilePath = path.join(modulePath, routesFileName);
-  if (!appendMode || !(await fileExists({ filePath: routesFilePath }))) {
-    const routesContent = generateRouteContent({ moduleName, apiType, framework });
-    await writeFile({ filePath: routesFilePath, content: routesContent });
-    generatedFiles.push({
-      fileName: routesFileName,
-      filePath: routesFilePath,
-      content: routesContent,
-    });
+  // Generate routes or router file based on style
+  if (trpcStyle) {
+    // Generate tRPC router file
+    const routerFileName = `${moduleName}.router.ts`;
+    const routerFilePath = path.join(modulePath, routerFileName);
+    if (!appendMode || !(await fileExists({ filePath: routerFilePath }))) {
+      let routerContent: string;
+      
+      if (apiType.type === 'crud') {
+        routerContent = generateTrpcRouterContent({ 
+          moduleName, 
+          operations: ['create', 'get', 'list', 'update', 'delete'] 
+        });
+      } else if (apiType.type === 'custom' && apiType.customNames) {
+        routerContent = generateCustomTrpcRouterContent({ 
+          moduleName, 
+          operations: apiType.customNames 
+        });
+      } else if (apiType.type === 'services' && apiType.serviceNames) {
+        routerContent = generateServicesTrpcRouterContent({ 
+          moduleName, 
+          operations: apiType.serviceNames 
+        });
+      } else {
+        routerContent = generateTrpcRouterContent({ moduleName });
+      }
+      
+      await writeFile({ filePath: routerFilePath, content: routerContent });
+      generatedFiles.push({
+        fileName: routerFileName,
+        filePath: routerFilePath,
+        content: routerContent,
+      });
+    }
+  } else {
+    // Generate REST routes file
+    const routesFileName = `${moduleName}.routes.ts`;
+    const routesFilePath = path.join(modulePath, routesFileName);
+    if (!appendMode || !(await fileExists({ filePath: routesFilePath }))) {
+      const routesContent = generateRouteContent({ moduleName, apiType, framework });
+      await writeFile({ filePath: routesFilePath, content: routesContent });
+      generatedFiles.push({
+        fileName: routesFileName,
+        filePath: routesFilePath,
+        content: routesContent,
+      });
+    }
   }
 
   // Format all generated files
