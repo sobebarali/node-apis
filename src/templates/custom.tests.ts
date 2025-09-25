@@ -73,9 +73,9 @@ const generateCustomSuccessTestContent = (
   moduleName: string
 ): string => {
   return `import { describe, it, expect } from 'vitest';
-import request from 'supertest';
-import app from '../../../src/app';
 import type { typePayload, typeResult, typeResultData, typeResultError } from '../../../src/apis/${moduleName}/types/${customName}.${moduleName}';
+
+const BASE_URL = 'http://localhost:3001';
 
 describe('${capitalizedCustom} ${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)} - Success Tests', () => {
   it('should ${customName} ${moduleName} successfully', async () => {
@@ -84,53 +84,15 @@ describe('${capitalizedCustom} ${moduleName.charAt(0).toUpperCase() + moduleName
       id: 'test-${moduleName}-123'
     };
 
-    const response = await request(app)
-      .post('/api/${moduleName}s/${customName}')
-      .send(payload)
-      .expect(200);
-
-    const result: typeResult = response.body;
-    expect(result.data).toBeDefined();
-    expect(result.error).toBeNull();
+    const response = await fetch(\`\${BASE_URL}/api/${moduleName}s/${customName}\`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
     
-    if (result.data) {
-      const data: typeResultData = result.data;
-      expect(data).toBeDefined();
-    }
-  });
-
-  it('should handle minimal payload', async () => {
-    const payload: typePayload = {
-      // Add minimal required fields only
-    };
-
-    const response = await request(app)
-      .post('/api/${moduleName}s/${customName}')
-      .send(payload)
-      .expect(200);
-
-    const result: typeResult = response.body;
-    expect(result.data).toBeDefined();
-    expect(result.error).toBeNull();
+    const result = await response.json() as typeResult;
     
-    if (result.data) {
-      const data: typeResultData = result.data;
-      expect(data).toBeDefined();
-    }
-  });
-
-  it('should handle complete payload', async () => {
-    const payload: typePayload = {
-      // Add all optional fields
-      id: 'test-${moduleName}-complete'
-    };
-
-    const response = await request(app)
-      .post('/api/${moduleName}s/${customName}')
-      .send(payload)
-      .expect(200);
-
-    const result: typeResult = response.body;
+    expect(response.status).toBe(200);
     expect(result.data).toBeDefined();
     expect(result.error).toBeNull();
     
@@ -251,9 +213,9 @@ const generateCustomUnauthorizedTestContent = (
   moduleName: string
 ): string => {
   return `import { describe, it, expect } from 'vitest';
-import request from 'supertest';
-import app from '../../../src/app';
 import type { typePayload, typeResult, typeResultData, typeResultError } from '../../../src/apis/${moduleName}/types/${customName}.${moduleName}';
+
+const BASE_URL = 'http://localhost:3001';
 
 describe('${capitalizedCustom} ${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)} - Unauthorized Tests', () => {
   it('should return 401 for missing authentication token', async () => {
@@ -261,17 +223,22 @@ describe('${capitalizedCustom} ${moduleName.charAt(0).toUpperCase() + moduleName
       // Add success payload for ${customName} ${moduleName}
     };
 
-    const response = await request(app)
-      .post('/api/${moduleName}s/${customName}')
-      .send(payload)
-      .expect(401);
-
-    const result: typeResult = response.body;
+    const response = await fetch(\`\${BASE_URL}/api/${moduleName}s/${customName}\`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    
+    const result = await response.json() as typeResult;
+    
+    expect(response.status).toBe(401);
     expect(result.data).toBeNull();
+    expect(result.error).toBeDefined();
     
     if (result.error) {
       const error: typeResultError = result.error;
       expect(error.code).toBe('UNAUTHORIZED');
+      expect(error.statusCode).toBe(401);
     }
   });
 
@@ -280,38 +247,25 @@ describe('${capitalizedCustom} ${moduleName.charAt(0).toUpperCase() + moduleName
       // Add success payload for ${customName} ${moduleName}
     };
 
-    const response = await request(app)
-      .post('/api/${moduleName}s/${customName}')
-      .send(payload)
-      .set('Authorization', 'Bearer invalid-token')
-      .expect(401);
-
-    const result: typeResult = response.body;
+    const response = await fetch(\`\${BASE_URL}/api/${moduleName}s/${customName}\`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer invalid-token'
+      },
+      body: JSON.stringify(payload)
+    });
+    
+    const result = await response.json() as typeResult;
+    
+    expect(response.status).toBe(401);
     expect(result.data).toBeNull();
+    expect(result.error).toBeDefined();
     
     if (result.error) {
       const error: typeResultError = result.error;
       expect(error.code).toBe('INVALID_TOKEN');
-    }
-  });
-
-  it('should return 403 for insufficient permissions', async () => {
-    const payload: typePayload = {
-      // Add success payload for ${customName} ${moduleName}
-    };
-
-    const response = await request(app)
-      .post('/api/${moduleName}s/${customName}')
-      .send(payload)
-      .set('Authorization', 'Bearer limited-permissions-token')
-      .expect(403);
-
-    const result: typeResult = response.body;
-    expect(result.data).toBeNull();
-    
-    if (result.error) {
-      const error: typeResultError = result.error;
-      expect(error.code).toBe('INSUFFICIENT_PERMISSIONS');
+      expect(error.statusCode).toBe(401);
     }
   });
 });

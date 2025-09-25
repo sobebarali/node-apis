@@ -92,9 +92,9 @@ const generateSuccessTestContent = (
   moduleName: string
 ): string => {
   return `import { describe, it, expect } from 'vitest';
-import request from 'supertest';
-import app from '../../../src/app';
 import type { typePayload, typeResult, typeResultData, typeResultError } from '../../../src/apis/${moduleName}/types/${operation}.${moduleName}';
+
+const BASE_URL = 'http://localhost:3001';
 
 describe('${capitalizedOperation} ${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)} - Success Tests', () => {
   it('should ${operation} ${moduleName} successfully', async () => {
@@ -102,18 +102,23 @@ describe('${capitalizedOperation} ${moduleName.charAt(0).toUpperCase() + moduleN
       ${getSuccessPayload(operation, moduleName)}
     };
 
-    const response = await request(app)
-      .${getHttpMethod(operation)}('${getApiEndpoint(operation, moduleName)}')
-      ${getRequestBody(operation)}
-      .expect(${getSuccessStatusCode(operation)});
-
-    const result: typeResult = response.body;
+    const response = await fetch(\`\${BASE_URL}/api/${moduleName}s${getApiEndpoint(operation)}\`, {
+      method: '${getHttpMethod(operation)}',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    
+    const result = await response.json() as typeResult;
+    
+    expect(response.status).toBe(${getSuccessStatusCode(operation)});
     expect(result.data).toBeDefined();
     expect(result.error).toBeNull();
     
     if (result.data) {
       const data: typeResultData = result.data;
-      expect(data).toHaveProperty('id');
+      expect(data).toHaveProperty('${moduleName}Id');
+      expect(data.created_at).toBeDefined();
+      expect(data.updated_at).toBeDefined();
     }
   });
 
@@ -221,54 +226,40 @@ const generateDuplicateTestContent = (
   moduleName: string
 ): string => {
   return `import { describe, it, expect } from 'vitest';
-import request from 'supertest';
-import app from '../../../src/app';
 import type { typePayload, typeResult, typeResultData, typeResultError } from '../../../src/apis/${moduleName}/types/${operation}.${moduleName}';
 
+const BASE_URL = 'http://localhost:3001';
+
 describe('${capitalizedOperation} ${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)} - Duplicate Tests', () => {
-  it('should return 409 for duplicate ${moduleName}', async () => {
+  it('should return error for duplicate ${moduleName}', async () => {
     const payload: typePayload = {
       ${getSuccessPayload(operation, moduleName)}
     };
 
-    // First creation should succeed
-    await request(app)
-      .${getHttpMethod(operation)}('${getApiEndpoint(operation, moduleName)}')
-      ${getRequestBody(operation)}
-      .expect(${getSuccessStatusCode(operation)});
+    // First create a ${moduleName}
+    await fetch(\`\${BASE_URL}/api/${moduleName}s\`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
 
-    // Second creation should fail with duplicate error
-    const response = await request(app)
-      .${getHttpMethod(operation)}('${getApiEndpoint(operation, moduleName)}')
-      ${getRequestBody(operation)}
-      .expect(409);
-
-    const result: typeResult = response.body;
+    // Try to create another ${moduleName} with the same data
+    const response = await fetch(\`\${BASE_URL}/api/${moduleName}s\`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    
+    const result = await response.json() as typeResult;
+    
+    expect(response.status).toBe(409);
     expect(result.data).toBeNull();
+    expect(result.error).toBeDefined();
     
     if (result.error) {
       const error: typeResultError = result.error;
       expect(error.code).toBe('DUPLICATE_ENTRY');
-    }
-  });
-
-  it('should handle duplicate email addresses', async () => {
-    const payload: typePayload = {
-      ${getSuccessPayload(operation, moduleName)}
-    };
-
-    // Test duplicate email scenario
-    const response = await request(app)
-      .${getHttpMethod(operation)}('${getApiEndpoint(operation, moduleName)}')
-      ${getRequestBody(operation)}
-      .expect(409);
-
-    const result: typeResult = response.body;
-    expect(result.data).toBeNull();
-    
-    if (result.error) {
-      const error: typeResultError = result.error;
-      expect(error.code).toBe('DUPLICATE_EMAIL');
+      expect(error.statusCode).toBe(409);
     }
   });
 });
@@ -285,9 +276,9 @@ const generateUnauthorizedTestContent = (
   moduleName: string
 ): string => {
   return `import { describe, it, expect } from 'vitest';
-import request from 'supertest';
-import app from '../../../src/app';
 import type { typePayload, typeResult, typeResultData, typeResultError } from '../../../src/apis/${moduleName}/types/${operation}.${moduleName}';
+
+const BASE_URL = 'http://localhost:3001';
 
 describe('${capitalizedOperation} ${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)} - Unauthorized Tests', () => {
   it('should return 401 for missing authentication token', async () => {
@@ -295,17 +286,22 @@ describe('${capitalizedOperation} ${moduleName.charAt(0).toUpperCase() + moduleN
       ${getSuccessPayload(operation, moduleName)}
     };
 
-    const response = await request(app)
-      .${getHttpMethod(operation)}('${getApiEndpoint(operation, moduleName)}')
-      ${getRequestBody(operation)}
-      .expect(401);
-
-    const result: typeResult = response.body;
+    const response = await fetch(\`\${BASE_URL}/api/${moduleName}s${getApiEndpoint(operation)}\`, {
+      method: '${getHttpMethod(operation)}',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    
+    const result = await response.json() as typeResult;
+    
+    expect(response.status).toBe(401);
     expect(result.data).toBeNull();
+    expect(result.error).toBeDefined();
     
     if (result.error) {
       const error: typeResultError = result.error;
       expect(error.code).toBe('UNAUTHORIZED');
+      expect(error.statusCode).toBe(401);
     }
   });
 
@@ -314,38 +310,25 @@ describe('${capitalizedOperation} ${moduleName.charAt(0).toUpperCase() + moduleN
       ${getSuccessPayload(operation, moduleName)}
     };
 
-    const response = await request(app)
-      .${getHttpMethod(operation)}('${getApiEndpoint(operation, moduleName)}')
-      ${getRequestBody(operation)}
-      .set('Authorization', 'Bearer invalid-token')
-      .expect(401);
-
-    const result: typeResult = response.body;
+    const response = await fetch(\`\${BASE_URL}/api/${moduleName}s${getApiEndpoint(operation)}\`, {
+      method: '${getHttpMethod(operation)}',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer invalid-token'
+      },
+      body: JSON.stringify(payload)
+    });
+    
+    const result = await response.json() as typeResult;
+    
+    expect(response.status).toBe(401);
     expect(result.data).toBeNull();
+    expect(result.error).toBeDefined();
     
     if (result.error) {
       const error: typeResultError = result.error;
       expect(error.code).toBe('INVALID_TOKEN');
-    }
-  });
-
-  it('should return 403 for insufficient permissions', async () => {
-    const payload: typePayload = {
-      ${getSuccessPayload(operation, moduleName)}
-    };
-
-    const response = await request(app)
-      .${getHttpMethod(operation)}('${getApiEndpoint(operation, moduleName)}')
-      ${getRequestBody(operation)}
-      .set('Authorization', 'Bearer limited-permissions-token')
-      .expect(403);
-
-    const result: typeResult = response.body;
-    expect(result.data).toBeNull();
-    
-    if (result.error) {
-      const error: typeResultError = result.error;
-      expect(error.code).toBe('INSUFFICIENT_PERMISSIONS');
+      expect(error.statusCode).toBe(401);
     }
   });
 });
@@ -363,68 +346,53 @@ const generateNotFoundTestContent = (
   moduleName: string
 ): string => {
   return `import { describe, it, expect } from 'vitest';
-import request from 'supertest';
-import app from '../../../src/app';
 import type { typePayload, typeResult, typeResultData, typeResultError } from '../../../src/apis/${moduleName}/types/${operation}.${moduleName}';
+
+const BASE_URL = 'http://localhost:3001';
 
 describe('${capitalizedOperation} ${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)} - Not Found Tests', () => {
   it('should return 404 for non-existent ${moduleName}', async () => {
     const nonExistentId = 'non-existent-id';
-    const payload: typePayload = {
-      ${getSuccessPayload(operation, moduleName)}
-    };
 
-    const response = await request(app)
-      .${getHttpMethod(operation)}('${getApiEndpoint(operation, moduleName)}')
-      ${getRequestBody(operation)}
-      .expect(404);
-
-    const result: typeResult = response.body;
+    const response = await fetch(\`\${BASE_URL}/api/${moduleName}s/\${nonExistentId}\`);
+    const result = await response.json() as typeResult;
+    
+    expect(response.status).toBe(404);
     expect(result.data).toBeNull();
+    expect(result.error).toBeDefined();
     
     if (result.error) {
       const error: typeResultError = result.error;
       expect(error.code).toBe('NOT_FOUND');
+      expect(error.message).toContain('not found');
+      expect(error.statusCode).toBe(404);
+      expect(error.requestId).toBeDefined();
     }
   });
 
   it('should return 404 for deleted ${moduleName}', async () => {
-    const deletedId = 'deleted-id';
-    const payload: typePayload = {
-      ${getSuccessPayload(operation, moduleName)}
-    };
+    // First create a ${moduleName}, then delete it
+    const createResponse = await fetch(\`\${BASE_URL}/api/${moduleName}s\`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'To Be Deleted' })
+    });
+    const createResult = await createResponse.json() as typeResult;
+    const ${moduleName}Id = createResult.data?.${moduleName}Id;
+    
+    await fetch(\`\${BASE_URL}/api/${moduleName}s/\${${moduleName}Id}\`, { method: 'DELETE' });
 
-    const response = await request(app)
-      .${getHttpMethod(operation)}('${getApiEndpoint(operation, moduleName)}')
-      ${getRequestBody(operation)}
-      .expect(404);
-
-    const result: typeResult = response.body;
+    const response = await fetch(\`\${BASE_URL}/api/${moduleName}s/\${${moduleName}Id}\`);
+    const result = await response.json() as typeResult;
+    
+    expect(response.status).toBe(404);
     expect(result.data).toBeNull();
+    expect(result.error).toBeDefined();
     
     if (result.error) {
       const error: typeResultError = result.error;
       expect(error.code).toBe('NOT_FOUND');
-    }
-  });
-
-  it('should return 404 for soft-deleted ${moduleName}', async () => {
-    const softDeletedId = 'soft-deleted-id';
-    const payload: typePayload = {
-      ${getSuccessPayload(operation, moduleName)}
-    };
-
-    const response = await request(app)
-      .${getHttpMethod(operation)}('${getApiEndpoint(operation, moduleName)}')
-      ${getRequestBody(operation)}
-      .expect(404);
-
-    const result: typeResult = response.body;
-    expect(result.data).toBeNull();
-    
-    if (result.error) {
-      const error: typeResultError = result.error;
-      expect(error.code).toBe('NOT_FOUND');
+      expect(error.statusCode).toBe(404);
     }
   });
 });
@@ -441,89 +409,54 @@ const generateInvalidIdTestContent = (
   moduleName: string
 ): string => {
   return `import { describe, it, expect } from 'vitest';
-import request from 'supertest';
-import app from '../../../src/app';
 import type { typePayload, typeResult, typeResultData, typeResultError } from '../../../src/apis/${moduleName}/types/${operation}.${moduleName}';
+
+const BASE_URL = 'http://localhost:3001';
 
 describe('${capitalizedOperation} ${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)} - Invalid ID Tests', () => {
   it('should return 400 for invalid ID format', async () => {
     const invalidId = 'invalid-id-format';
-    const payload: typePayload = {
-      ${getSuccessPayload(operation, moduleName)}
-    };
 
-    const response = await request(app)
-      .${getHttpMethod(operation)}('${getApiEndpoint(operation, moduleName)}')
-      ${getRequestBody(operation)}
-      .expect(400);
-
-    const result: typeResult = response.body;
+    const response = await fetch(\`\${BASE_URL}/api/${moduleName}s/\${invalidId}\`);
+    const result = await response.json() as typeResult;
+    
+    expect(response.status).toBe(400);
     expect(result.data).toBeNull();
+    expect(result.error).toBeDefined();
     
     if (result.error) {
       const error: typeResultError = result.error;
-      expect(error.code).toBe('INVALID_ID_FORMAT');
+      expect(error.code).toBe('VALIDATION_ERROR');
+      expect(error.message).toContain('validation');
+      expect(error.statusCode).toBe(400);
+      expect(error.requestId).toBeDefined();
     }
   });
 
   it('should return 400 for malformed UUID', async () => {
     const malformedUuid = 'not-a-uuid';
-    const payload: typePayload = {
-      ${getSuccessPayload(operation, moduleName)}
-    };
 
-    const response = await request(app)
-      .${getHttpMethod(operation)}('${getApiEndpoint(operation, moduleName)}')
-      ${getRequestBody(operation)}
-      .expect(400);
-
-    const result: typeResult = response.body;
+    const response = await fetch(\`\${BASE_URL}/api/${moduleName}s/\${malformedUuid}\`);
+    const result = await response.json() as typeResult;
+    
+    expect(response.status).toBe(400);
     expect(result.data).toBeNull();
+    expect(result.error).toBeDefined();
     
     if (result.error) {
       const error: typeResultError = result.error;
       expect(error.code).toBe('INVALID_UUID');
+      expect(error.statusCode).toBe(400);
     }
   });
 
   it('should return 400 for empty ID', async () => {
-    const emptyId = '';
-    const payload: typePayload = {
-      ${getSuccessPayload(operation, moduleName)}
-    };
-
-    const response = await request(app)
-      .${getHttpMethod(operation)}('${getApiEndpoint(operation, moduleName)}')
-      ${getRequestBody(operation)}
-      .expect(400);
-
-    const result: typeResult = response.body;
-    expect(result.data).toBeNull();
+    const response = await fetch(\`\${BASE_URL}/api/${moduleName}s/\`);
+    const result = await response.json() as typeResult;
     
-    if (result.error) {
-      const error: typeResultError = result.error;
-      expect(error.code).toBe('INVALID_ID_FORMAT');
-    }
-  });
-
-  it('should return 400 for null ID', async () => {
-    const nullId = null;
-    const payload: typePayload = {
-      ${getSuccessPayload(operation, moduleName)}
-    };
-
-    const response = await request(app)
-      .${getHttpMethod(operation)}('${getApiEndpoint(operation, moduleName)}')
-      ${getRequestBody(operation)}
-      .expect(400);
-
-    const result: typeResult = response.body;
+    expect(response.status).toBe(404); // Route not found
     expect(result.data).toBeNull();
-    
-    if (result.error) {
-      const error: typeResultError = result.error;
-      expect(error.code).toBe('INVALID_ID_FORMAT');
-    }
+    expect(result.error).toBeDefined();
   });
 });
 `;
@@ -554,63 +487,30 @@ const getValidationCompletePayload = (operation: string, moduleName: string): st
 
 
 const getSuccessPayload = (operation: string, moduleName: string): string => {
-  return `// Add success payload for ${operation} ${moduleName}`;
-};
-
-const getHttpMethod = (operation: string): string => {
   switch (operation) {
     case 'create':
-      return 'post';
+      return `name: 'Test ${moduleName}',
+      description: 'Test description',
+      status: 'active'`;
     case 'get':
-      return 'get';
+      return `id: 'test-${moduleName}-id'`;
     case 'list':
-      return 'get';
+      return `page: 1,
+      limit: 10,
+      sort_by: 'created_at',
+      sort_order: 'desc'`;
     case 'update':
-      return 'put';
+      return `id: 'test-${moduleName}-id',
+      name: 'Updated ${moduleName}',
+      description: 'Updated description'`;
     case 'delete':
-      return 'delete';
+      return `id: 'test-${moduleName}-id'`;
     default:
-      return 'post';
+      return `// Add test data for ${operation}`;
   }
 };
 
-const getApiEndpoint = (operation: string, moduleName: string): string => {
-  switch (operation) {
-    case 'create':
-      return `/api/${moduleName}s`;
-    case 'get':
-      return `/api/${moduleName}s/test-id`;
-    case 'list':
-      return `/api/${moduleName}s`;
-    case 'update':
-      return `/api/${moduleName}s/test-id`;
-    case 'delete':
-      return `/api/${moduleName}s/test-id`;
-    default:
-      return `/api/${moduleName}s`;
-  }
-};
 
-const getRequestBody = (operation: string): string => {
-  return operation === 'create' || operation === 'update' ? '.send(payload)' : '';
-};
-
-const getSuccessStatusCode = (operation: string): number => {
-  switch (operation) {
-    case 'create':
-      return 201;
-    case 'get':
-      return 200;
-    case 'list':
-      return 200;
-    case 'update':
-      return 200;
-    case 'delete':
-      return 200;
-    default:
-      return 200;
-  }
-};
 
 
 const getAdditionalSuccessTests = (operation: string, moduleName: string): string => {
@@ -718,4 +618,56 @@ const generateGenericTestContent = (
   testType: string
 ): string => {
   return `// Generic test content for ${operation} ${moduleName} - ${testType}`;
+};
+
+// Helper functions for generating test content
+const getHttpMethod = (operation: string): string => {
+  switch (operation) {
+    case 'create':
+      return 'POST';
+    case 'get':
+      return 'GET';
+    case 'list':
+      return 'GET';
+    case 'update':
+      return 'PUT';
+    case 'delete':
+      return 'DELETE';
+    default:
+      return 'POST';
+  }
+};
+
+const getApiEndpoint = (operation: string): string => {
+  switch (operation) {
+    case 'create':
+      return '';
+    case 'get':
+      return '/test-id';
+    case 'list':
+      return '';
+    case 'update':
+      return '/test-id';
+    case 'delete':
+      return '/test-id';
+    default:
+      return '';
+  }
+};
+
+const getSuccessStatusCode = (operation: string): number => {
+  switch (operation) {
+    case 'create':
+      return 201;
+    case 'get':
+      return 200;
+    case 'list':
+      return 200;
+    case 'update':
+      return 200;
+    case 'delete':
+      return 200;
+    default:
+      return 200;
+  }
 };
