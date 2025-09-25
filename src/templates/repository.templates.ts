@@ -33,23 +33,29 @@ const generateCrudRepositoryContent = (naming: ModuleNaming): string => {
   return `// Repository layer - Pure domain logic, returns raw data, throws exceptions
 // This layer is reusable and independent of API concerns
 
-import type { typePayload as CreatePayload } from '../types/create.${naming.file}';
-import type { typePayload as UpdatePayload } from '../types/update.${naming.file}';
-import type { typePayload as ListPayload } from '../types/list.${naming.file}';
-
 /**
  * Creates a new ${naming.variable}
  */
-export const create = async (payload: CreatePayload) => {
+export const create = async ({
+  name,
+  description,
+  status,
+}: {
+  name: string;
+  description?: string;
+  status?: string;
+}) => {
   try {
     // TODO: Replace with your database implementation
     // Example with Prisma:
-    // return await db.${naming.variable}.create({ data: payload });
+    // return await db.${naming.variable}.create({ data: { name, description, status } });
 
     // Mock implementation - replace with actual database call
     const ${naming.variable} = {
       id: \`mock-id-\${Date.now()}\`,
-      ...payload,
+      name,
+      description,
+      status,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -93,17 +99,31 @@ export const findById = async (id: string) => {
 /**
  * Finds multiple ${naming.variable}s with pagination and filtering
  */
-export const findMany = async (params: ListPayload) => {
+export const findMany = async ({
+  page,
+  limit,
+  sort_by,
+  sort_order,
+  search,
+  status,
+}: {
+  page: number;
+  limit: number;
+  sort_by: string;
+  sort_order: 'asc' | 'desc';
+  search?: string;
+  status?: string;
+}) => {
   try {
     // TODO: Replace with your database implementation
     // Example with Prisma:
     // const items = await db.${naming.variable}.findMany({
-    //   where: buildWhereClause(params),
-    //   skip: (params.page - 1) * params.limit,
-    //   take: params.limit,
-    //   orderBy: { [params.sortBy]: params.sortOrder }
+    //   where: buildWhereClause({ search, status }),
+    //   skip: (page - 1) * limit,
+    //   take: limit,
+    //   orderBy: { [sort_by]: sort_order }
     // });
-    // const total = await db.${naming.variable}.count({ where: buildWhereClause(params) });
+    // const total = await db.${naming.variable}.count({ where: buildWhereClause({ search, status }) });
 
     // Mock implementation - replace with actual database call
     const items = Array.from({ length: 5 }, (_, index) => ({
@@ -116,8 +136,8 @@ export const findMany = async (params: ListPayload) => {
     return {
       items,
       total: items.length,
-      page: params.page || 1,
-      limit: params.limit || 10,
+      page: page || 1,
+      limit: limit || 10,
     };
   } catch (error) {
     throw new Error(\`Database error: Failed to list ${naming.variable}s: \${error instanceof Error ? error.message : 'Unknown error'}\`);
@@ -127,13 +147,21 @@ export const findMany = async (params: ListPayload) => {
 /**
  * Updates a ${naming.variable}
  */
-export const update = async (id: string, payload: UpdatePayload) => {
+export const update = async (id: string, {
+  name,
+  description,
+  status,
+}: {
+  name?: string;
+  description?: string;
+  status?: string;
+}) => {
   try {
     // TODO: Replace with your database implementation
     // Example with Prisma:
     // const ${naming.variable} = await db.${naming.variable}.update({
     //   where: { id },
-    //   data: payload
+    //   data: { name, description, status }
     // });
     // return ${naming.variable};
 
@@ -144,7 +172,9 @@ export const update = async (id: string, payload: UpdatePayload) => {
 
     const ${naming.variable} = {
       id,
-      ...payload,
+      name,
+      description,
+      status,
       updatedAt: new Date().toISOString(),
     };
 
@@ -199,16 +229,20 @@ const generateCustomRepositoryContent = (naming: ModuleNaming, customNames: stri
 /**
  * Custom ${customName} operation for ${naming.variable}
  */
-export const ${customName} = async (payload: any) => {
+export const ${customName} = async ({
+  // Add your custom parameters here
+}: {
+  // Add your custom parameter types here
+}) => {
   try {
     // TODO: Implement your custom ${customName} logic here
-    // Example: return await db.${naming.variable}.${customName}(payload);
+    // Example: return await db.${naming.variable}.${customName}({ /* parameters */ });
     
     // Mock implementation - replace with actual logic
     return {
       success: true,
       message: '${customName} operation completed successfully',
-      data: payload,
+      // Add your return data here
     };
   } catch (error) {
     throw new Error(\`Database error: Failed to ${customName} ${naming.variable}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
@@ -238,15 +272,19 @@ const generateGenericRepositoryContent = (naming: ModuleNaming): string => {
 /**
  * Generic repository operations for ${naming.variable}
  */
-export const create = async (payload: any) => {
+export const create = async ({
+  // Add your parameters here
+}: {
+  // Add your parameter types here
+}) => {
   try {
     // TODO: Implement your database logic here
-    // Example: return await db.${naming.variable}.create({ data: payload });
+    // Example: return await db.${naming.variable}.create({ data: { /* parameters */ } });
 
     // Mock implementation - replace with actual database call
     return {
       id: \`mock-id-\${Date.now()}\`,
-      ...payload,
+      // Add your return data here
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

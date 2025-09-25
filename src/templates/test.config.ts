@@ -146,11 +146,17 @@ export const generateTestScripts = (): Record<string, string> => {
     'test:watch': 'vitest --watch',
     'test:ui': 'vitest --ui',
     'test:coverage': 'vitest --coverage',
-    'test:unit':
-      'vitest tests/**/success.test.ts tests/**/validation.test.ts tests/**/errors.test.ts',
+    'test:unit': 'vitest tests/**/*.test.ts',
     'test:integration': 'vitest tests/**/integration.test.ts',
     'test:module': 'vitest tests/{module-name}/**/*.test.ts',
-    'test:operation': 'vitest tests/{module-name}/{operation-name}/**/*.test.ts',
+    'test:operation': 'vitest tests/{module-name}/{operation-name}/*.test.ts',
+    'test:success': 'vitest tests/**/success.test.ts',
+    'test:validation': 'vitest tests/**/validation.test.ts',
+    'test:errors': 'vitest tests/**/duplicate.test.ts tests/**/unauthorized.test.ts tests/**/not-found.test.ts tests/**/invalid-id.test.ts',
+    'test:auth': 'vitest tests/**/unauthorized.test.ts',
+    'test:duplicate': 'vitest tests/**/duplicate.test.ts',
+    'test:not-found': 'vitest tests/**/not-found.test.ts',
+    'test:invalid-id': 'vitest tests/**/invalid-id.test.ts',
     'test:ci': 'vitest run --coverage --reporter=junit --outputFile=coverage/junit.xml',
   };
 };

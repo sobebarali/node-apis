@@ -48,18 +48,14 @@ const generateTypedCrudRepositoryContent = (
 
   const createFieldDestructuring = generateFieldDestructuring(createType.fields);
   const createFieldObject = generateFieldObject(createType.fields);
-  const updateFieldDestructuring = generateFieldDestructuring(
-    updateType.fields.filter(f => f.name !== 'id')
-  );
-  const updateFieldObject = generateFieldObject(updateType.fields.filter(f => f.name !== 'id'));
+  const updateFieldObject = generateFieldObject(updateType.fields.filter(f => f.name !== `${variableName}Id`));
   const listFieldDestructuring = generateFieldDestructuring(listType.fields);
 
-  return `import type { typePayload as CreatePayload } from '../types/create.${naming.file}';
-import type { typePayload as UpdatePayload } from '../types/update.${naming.file}';
-import type { typePayload as ListPayload } from '../types/list.${naming.file}';
-export default async function create({
+  return `export default async function create({
 ${createFieldDestructuring}
-}: CreatePayload) {
+}: {
+${createType.fields.map(field => `  ${field.name}${field.optional ? '?' : ''}: ${field.type};`).join('\n')}
+}) {
   try {
     const ${variableName} = {
       ${variableName}Id: \`mock-id-\${Date.now()}\`,
@@ -110,7 +106,9 @@ export function findById(${variableName}Id: string) {
  */
 export function findMany({
 ${listFieldDestructuring}
-}: ListPayload) {
+}: {
+${listType.fields.map(field => `  ${field.name}${field.optional ? '?' : ''}: ${field.type};`).join('\n')}
+}) {
   try {
     // TODO: Replace with your database implementation
     // Example with Prisma:
@@ -161,8 +159,14 @@ ${listFieldDestructuring}
  * Updates a ${moduleName}
  */
 export function update(${variableName}Id: string, {
-${updateFieldDestructuring}
-}: Omit<UpdatePayload, '${variableName}Id'>) {
+${updateType.fields
+  .filter(f => f.name !== `${variableName}Id`)
+  .map(field => `  ${field.name},`).join('\n')}
+}: {
+${updateType.fields
+  .filter(f => f.name !== `${variableName}Id`)
+  .map(field => `  ${field.name}${field.optional ? '?' : ''}: ${field.type};`).join('\n')}
+}) {
   try {
     // TODO: Replace with your database implementation
     // Example with Prisma:
@@ -251,7 +255,9 @@ const generateTypedCustomRepositoryContent = (
  */
 export const ${customName} = async ({
 ${fieldDestructuring}
-}: any): Promise<any> => {
+}: {
+${parsedType.fields.map(field => `  ${field.name}${field.optional ? '?' : ''}: ${field.type};`).join('\n')}
+}): Promise<any> => {
   try {
     // TODO: Implement your ${customName} logic here
     // Example: return await db.${variableName}.${customName}({
