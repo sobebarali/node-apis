@@ -317,26 +317,108 @@ export const generateTestFiles = async ({
       }
     }
   } else if (apiType.type === 'custom' && apiType.customNames) {
-    // Generate multiple specialized test files per custom operation
-    for (const customName of apiType.customNames) {
-      const operationDir = path.join(moduleTestDir, customName);
+    if (trpcStyle || framework === 't3') {
+      // Generate tRPC-style tests for custom operations
+      const testTypes = ['procedure.test.ts', 'validation.test.ts', 'errors.test.ts'];
 
-      // Ensure operation directory exists
-      await ensureDirectory({ dirPath: operationDir });
+      for (const customName of apiType.customNames) {
+        const operationDir = path.join(moduleTestDir, customName);
 
-      // Get test types for custom operations
-      const testTypes = ['success', 'validation', 'unauthorized'];
+        // Ensure operation directory exists
+        await ensureDirectory({ dirPath: operationDir });
 
-      for (const testType of testTypes) {
-        const testFileName = `${testType}.test.ts`;
+        for (const testType of testTypes) {
+          const testFilePath = path.join(operationDir, testType);
+
+          if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
+            // Use T3 test templates for T3 framework, otherwise use regular tRPC templates
+            const testContent = framework === 't3' 
+              ? generateT3TestContent({ operation: customName, testType, moduleName })
+              : generateTrpcTestContent({ operation: customName, testType, moduleName });
+            
+            await writeFile({ filePath: testFilePath, content: testContent });
+            generatedFiles.push({
+              fileName: testType,
+              filePath: testFilePath,
+              content: testContent,
+            });
+          }
+        }
+      }
+    } else {
+      // Generate REST-style tests for custom operations
+      for (const customName of apiType.customNames) {
+        const operationDir = path.join(moduleTestDir, customName);
+
+        // Ensure operation directory exists
+        await ensureDirectory({ dirPath: operationDir });
+
+        // Get test types for custom operations
+        const testTypes = ['success', 'validation', 'unauthorized'];
+
+        for (const testType of testTypes) {
+          const testFileName = `${testType}.test.ts`;
+          const testFilePath = path.join(operationDir, testFileName);
+
+          if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
+            const testContent = generateCustomTestContent({ 
+              customName, 
+              moduleName, 
+              testType: testType as 'success' | 'validation' | 'unauthorized'
+            });
+            await writeFile({ filePath: testFilePath, content: testContent });
+            generatedFiles.push({
+              fileName: testFileName,
+              filePath: testFilePath,
+              content: testContent,
+            });
+          }
+        }
+      }
+    }
+  } else if (apiType.type === 'services' && apiType.serviceNames) {
+    if (trpcStyle || framework === 't3') {
+      // Generate tRPC-style tests for service operations
+      const testTypes = ['procedure.test.ts', 'validation.test.ts', 'errors.test.ts'];
+
+      for (const serviceName of apiType.serviceNames) {
+        const operationDir = path.join(moduleTestDir, serviceName);
+
+        // Ensure operation directory exists
+        await ensureDirectory({ dirPath: operationDir });
+
+        for (const testType of testTypes) {
+          const testFilePath = path.join(operationDir, testType);
+
+          if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
+            // Use T3 test templates for T3 framework, otherwise use regular tRPC templates
+            const testContent = framework === 't3' 
+              ? generateT3TestContent({ operation: serviceName, testType, moduleName })
+              : generateTrpcTestContent({ operation: serviceName, testType, moduleName });
+            
+            await writeFile({ filePath: testFilePath, content: testContent });
+            generatedFiles.push({
+              fileName: testType,
+              filePath: testFilePath,
+              content: testContent,
+            });
+          }
+        }
+      }
+    } else {
+      // Generate REST-style tests for service operations
+      for (const serviceName of apiType.serviceNames) {
+        const operationDir = path.join(moduleTestDir, serviceName);
+
+        // Ensure operation directory exists
+        await ensureDirectory({ dirPath: operationDir });
+
+        const testFileName = `${serviceName}.test.ts`;
         const testFilePath = path.join(operationDir, testFileName);
 
         if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
-          const testContent = generateCustomTestContent({ 
-            customName, 
-            moduleName, 
-            testType: testType as 'success' | 'validation' | 'unauthorized'
-          });
+          // Generate comprehensive test content for services
+          const testContent = generateServiceComprehensiveTestContent({ serviceName, moduleName });
           await writeFile({ filePath: testFilePath, content: testContent });
           generatedFiles.push({
             fileName: testFileName,
@@ -344,28 +426,6 @@ export const generateTestFiles = async ({
             content: testContent,
           });
         }
-      }
-    }
-  } else if (apiType.type === 'services' && apiType.serviceNames) {
-    // Generate single comprehensive test file per service
-    for (const serviceName of apiType.serviceNames) {
-      const operationDir = path.join(moduleTestDir, serviceName);
-
-      // Ensure operation directory exists
-      await ensureDirectory({ dirPath: operationDir });
-
-      const testFileName = `${serviceName}.test.ts`;
-      const testFilePath = path.join(operationDir, testFileName);
-
-      if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
-        // Generate comprehensive test content for services
-        const testContent = generateServiceComprehensiveTestContent({ serviceName, moduleName });
-        await writeFile({ filePath: testFilePath, content: testContent });
-        generatedFiles.push({
-          fileName: testFileName,
-          filePath: testFilePath,
-          content: testContent,
-        });
       }
     }
   }
