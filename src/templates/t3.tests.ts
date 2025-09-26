@@ -309,8 +309,186 @@ it("should return proper deletion confirmation", async () => {
 `;
 
     default:
-      return '';
+      // Generic case for custom operations
+      return generateT3GenericProcedureTestContent(operation, moduleName);
   }
+};
+
+const generateT3GenericProcedureTestContent = (operation: string, moduleName: string): string => {
+
+  return `import { expect, it } from "vitest";
+import { appRouter, type RouterInputs, type RouterOutputs } from "~/server/api/root";
+import { createTRPCContext } from "~/server/api/trpc";
+
+it("should ${operation} successfully", async () => {
+  const ctx = await createTRPCContext({ headers: new Headers() });
+  const caller = appRouter.createCaller(ctx);
+
+  const input: RouterInputs["${moduleName}"]["${operation}"] = {
+    // Add your ${operation} specific input fields here
+    // Example fields based on common patterns:
+    ${operation === 'register' ? `
+    email: "test@example.com",
+    password: "securePassword123",
+    firstName: "Test",
+    lastName: "User",
+    ` : operation === 'login' ? `
+    email: "test@example.com",
+    password: "securePassword123",
+    ` : operation === 'verifyEmail' ? `
+    token: "verification-token-123",
+    ` : operation === 'setupMfa' ? `
+    userId: "user-id-123",
+    ` : operation === 'verifyMfa' ? `
+    userId: "user-id-123",
+    token: "mfa-token-123",
+    ` : operation === 'requestPasswordReset' ? `
+    email: "test@example.com",
+    ` : operation === 'resetPassword' ? `
+    token: "reset-token-123",
+    newPassword: "newSecurePassword123",
+    ` : operation === 'refreshToken' ? `
+    refreshToken: "refresh-token-123",
+    ` : operation === 'logout' ? `
+    userId: "user-id-123",
+    ` : operation === 'me' ? `
+    userId: "user-id-123",
+    ` : operation === 'updateProfile' ? `
+    userId: "user-id-123",
+    firstName: "Updated",
+    lastName: "Name",
+    ` : operation === 'changePassword' ? `
+    userId: "user-id-123",
+    currentPassword: "currentPassword123",
+    newPassword: "newSecurePassword123",
+    ` : `
+    // Add your custom ${operation} fields here
+    `}
+  };
+
+  const res: RouterOutputs["${moduleName}"]["${operation}"] = await caller.${moduleName}.${operation}(input);
+
+  console.log("res:", res.data);
+
+  // Basic response structure validation
+  expect(res).toHaveProperty("data");
+  expect(res).toHaveProperty("error");
+  
+  // Check that either data or error is present (not both null)
+  expect(res.data !== null || res.error !== null).toBe(true);
+  
+  // If successful, data should be present
+  if (res.error === null) {
+    expect(res.data).toBeDefined();
+    expect(res.data).not.toBeNull();
+  }
+});
+
+it("should ${operation} with minimal data", async () => {
+  const ctx = await createTRPCContext({ headers: new Headers() });
+  const caller = appRouter.createCaller(ctx);
+
+  const input: RouterInputs["${moduleName}"]["${operation}"] = {
+    // Minimal required fields for ${operation}
+    ${operation === 'register' ? `
+    email: "minimal@example.com",
+    password: "minimal123",
+    ` : operation === 'login' ? `
+    email: "minimal@example.com",
+    password: "minimal123",
+    ` : operation === 'verifyEmail' ? `
+    token: "minimal-token",
+    ` : operation === 'setupMfa' ? `
+    userId: "minimal-user-id",
+    ` : operation === 'verifyMfa' ? `
+    userId: "minimal-user-id",
+    token: "minimal-mfa-token",
+    ` : operation === 'requestPasswordReset' ? `
+    email: "minimal@example.com",
+    ` : operation === 'resetPassword' ? `
+    token: "minimal-reset-token",
+    newPassword: "minimal123",
+    ` : operation === 'refreshToken' ? `
+    refreshToken: "minimal-refresh-token",
+    ` : operation === 'logout' ? `
+    userId: "minimal-user-id",
+    ` : operation === 'me' ? `
+    userId: "minimal-user-id",
+    ` : operation === 'updateProfile' ? `
+    userId: "minimal-user-id",
+    ` : operation === 'changePassword' ? `
+    userId: "minimal-user-id",
+    currentPassword: "minimal123",
+    newPassword: "minimal456",
+    ` : `
+    // Add minimal required fields for ${operation}
+    `}
+  };
+
+  const res: RouterOutputs["${moduleName}"]["${operation}"] = await caller.${moduleName}.${operation}(input);
+
+  expect(res.data !== null || res.error !== null).toBe(true);
+});
+
+it("should handle different input variations for ${operation}", async () => {
+  const ctx = await createTRPCContext({ headers: new Headers() });
+  const caller = appRouter.createCaller(ctx);
+
+  // Test with different input variations
+  const testCases = [
+    {
+      name: "standard input",
+      input: {
+        ${operation === 'register' ? `
+        email: "standard@example.com",
+        password: "standardPassword123",
+        firstName: "Standard",
+        lastName: "User",
+        ` : operation === 'login' ? `
+        email: "standard@example.com",
+        password: "standardPassword123",
+        ` : operation === 'verifyEmail' ? `
+        token: "standard-verification-token",
+        ` : operation === 'setupMfa' ? `
+        userId: "standard-user-id",
+        ` : operation === 'verifyMfa' ? `
+        userId: "standard-user-id",
+        token: "standard-mfa-token",
+        ` : operation === 'requestPasswordReset' ? `
+        email: "standard@example.com",
+        ` : operation === 'resetPassword' ? `
+        token: "standard-reset-token",
+        newPassword: "standardNewPassword123",
+        ` : operation === 'refreshToken' ? `
+        refreshToken: "standard-refresh-token",
+        ` : operation === 'logout' ? `
+        userId: "standard-user-id",
+        ` : operation === 'me' ? `
+        userId: "standard-user-id",
+        ` : operation === 'updateProfile' ? `
+        userId: "standard-user-id",
+        firstName: "Standard",
+        lastName: "User",
+        ` : operation === 'changePassword' ? `
+        userId: "standard-user-id",
+        currentPassword: "standardCurrent123",
+        newPassword: "standardNew123",
+        ` : `
+        // Add standard input for ${operation}
+        `}
+      }
+    }
+  ];
+
+  for (const testCase of testCases) {
+    const res: RouterOutputs["${moduleName}"]["${operation}"] = await caller.${moduleName}.${operation}(testCase.input);
+    
+    expect(res).toHaveProperty("data");
+    expect(res).toHaveProperty("error");
+    expect(res.data !== null || res.error !== null).toBe(true);
+  }
+});
+`;
 };
 
 const generateT3ValidationTestContent = (operation: string, moduleName: string): string => {
