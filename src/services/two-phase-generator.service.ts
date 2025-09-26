@@ -188,11 +188,11 @@ export const generateCodeWithParsedTypes = async ({
       }
 
       // Generate controller or procedure file based on style
-      if (trpcStyle) {
-        // Generate tRPC procedure file
+      if (framework === 't3') {
+        // Generate T3 procedure file
         const procedureFilePath = path.join(proceduresDir, procedureFileName);
         if (!appendMode || !(await fileExists({ filePath: procedureFilePath }))) {
-          const procedureContent = generateTrpcProcedureContent({
+          const procedureContent = generateT3ProcedureContent({
             operation,
             moduleName,
           });
@@ -203,11 +203,11 @@ export const generateCodeWithParsedTypes = async ({
             content: procedureContent,
           });
         }
-      } else if (framework === 't3') {
-        // Generate T3 procedure file
+      } else if (trpcStyle) {
+        // Generate tRPC procedure file
         const procedureFilePath = path.join(proceduresDir, procedureFileName);
         if (!appendMode || !(await fileExists({ filePath: procedureFilePath }))) {
-          const procedureContent = generateT3ProcedureContent({
+          const procedureContent = generateTrpcProcedureContent({
             operation,
             moduleName,
           });
@@ -362,40 +362,7 @@ export const generateCodeWithParsedTypes = async ({
   }
 
   // Generate routes or router file based on style
-  if (trpcStyle) {
-    // Generate tRPC router file
-    const routerFileName = `${moduleName}.router.ts`;
-    const routerFilePath = path.join(modulePath, routerFileName);
-    if (!appendMode || !(await fileExists({ filePath: routerFilePath }))) {
-      let routerContent: string;
-      
-      if (apiType.type === 'crud') {
-        routerContent = generateTrpcRouterContent({ 
-          moduleName, 
-          operations: ['create', 'get', 'list', 'update', 'delete'] 
-        });
-      } else if (apiType.type === 'custom' && apiType.customNames) {
-        routerContent = generateCustomTrpcRouterContent({ 
-          moduleName, 
-          operations: apiType.customNames 
-        });
-      } else if (apiType.type === 'services' && apiType.serviceNames) {
-        routerContent = generateServicesTrpcRouterContent({ 
-          moduleName, 
-          operations: apiType.serviceNames 
-        });
-      } else {
-        routerContent = generateTrpcRouterContent({ moduleName });
-      }
-      
-      await writeFile({ filePath: routerFilePath, content: routerContent });
-      generatedFiles.push({
-        fileName: routerFileName,
-        filePath: routerFilePath,
-        content: routerContent,
-      });
-    }
-  } else if (framework === 't3') {
+  if (framework === 't3') {
     // Generate T3 router file
     const routerFileName = `${moduleName}.ts`;
     const routersDir = path.join(modulePath, '..', 'routers');
@@ -424,6 +391,39 @@ export const generateCodeWithParsedTypes = async ({
         });
       } else {
         routerContent = generateT3RouterContent({ moduleName });
+      }
+      
+      await writeFile({ filePath: routerFilePath, content: routerContent });
+      generatedFiles.push({
+        fileName: routerFileName,
+        filePath: routerFilePath,
+        content: routerContent,
+      });
+    }
+  } else if (trpcStyle) {
+    // Generate tRPC router file
+    const routerFileName = `${moduleName}.router.ts`;
+    const routerFilePath = path.join(modulePath, routerFileName);
+    if (!appendMode || !(await fileExists({ filePath: routerFilePath }))) {
+      let routerContent: string;
+      
+      if (apiType.type === 'crud') {
+        routerContent = generateTrpcRouterContent({ 
+          moduleName, 
+          operations: ['create', 'get', 'list', 'update', 'delete'] 
+        });
+      } else if (apiType.type === 'custom' && apiType.customNames) {
+        routerContent = generateCustomTrpcRouterContent({ 
+          moduleName, 
+          operations: apiType.customNames 
+        });
+      } else if (apiType.type === 'services' && apiType.serviceNames) {
+        routerContent = generateServicesTrpcRouterContent({ 
+          moduleName, 
+          operations: apiType.serviceNames 
+        });
+      } else {
+        routerContent = generateTrpcRouterContent({ moduleName });
       }
       
       await writeFile({ filePath: routerFilePath, content: routerContent });
