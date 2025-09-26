@@ -149,9 +149,15 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
         ...(options.framework && { cliFramework: options.framework }),
       });
 
-      const apiStyle = await getEffectiveApiStyle({
-        ...(effectiveApiStyle && { cliApiStyle: effectiveApiStyle }),
-      });
+      // For T3 framework, always use tRPC (no need to ask for API style)
+      let apiStyle: SupportedApiStyle;
+      if (framework === 't3') {
+        apiStyle = 'trpc';
+      } else {
+        apiStyle = await getEffectiveApiStyle({
+          ...(effectiveApiStyle && { cliApiStyle: effectiveApiStyle }),
+        });
+      }
 
       // Convert API style to trpcStyle for current generation logic
       const trpcStyle = apiStyle === 'trpc';
@@ -220,6 +226,7 @@ const handleTwoPhaseGeneration = async ({
     const structureResult = await generateModuleStructurePhase1({
       moduleName,
       options: { force, appendMode, ...(targetDir && { targetDir }) },
+      framework,
     });
 
     if (!structureResult.success) {
@@ -265,6 +272,7 @@ const handleTwoPhaseGeneration = async ({
       modulePath,
       apiType,
       trpcStyle,
+      framework,
     });
 
     if (!phase2Result.success) {
@@ -291,6 +299,7 @@ const handleTwoPhaseGeneration = async ({
       apiType,
       appendMode,
       trpcStyle,
+      framework,
     });
 
     // Generate test configuration (only once per project)
@@ -445,65 +454,60 @@ const handleInteractiveFlow = async (
     }
   }
 
-  // Handle API style selection if not provided via CLI and not in config
-  if (apiType) {
-    const configApiStyle = await getEffectiveApiStyle();
+  // Handle framework selection if not provided via CLI and not in config
+  let selectedFramework: string | undefined = cliFramework;
+  if (!cliFramework && apiType) {
+    const hasConfig = await configExists();
 
-    // If no API style in config (defaults to rest), prompt user and offer to save
-    if (configApiStyle === 'rest') {
-      const hasConfig = await configExists();
+    // If no config exists, prompt user for framework
+    if (!hasConfig) {
+      const frameworkResult = await promptFrameworkSelection();
+      if (!frameworkResult.success) {
+        return { success: false, appendMode: false, forceOverwrite: false };
+      }
 
-      if (!hasConfig) {
-        const apiStyleResult = await promptApiStyleSelection();
-        if (!apiStyleResult.success) {
-          return { success: false, appendMode: false, forceOverwrite: false };
-        }
+      selectedFramework = frameworkResult.data!;
 
-        const selectedApiStyle = apiStyleResult.data!;
-
-        // Ask if user wants to save this choice
-        const saveResult = await promptSaveApiStyleToConfig({ apiStyle: selectedApiStyle });
-        if (saveResult.success && saveResult.data) {
-          try {
-            await setApiStyle({ apiStyle: selectedApiStyle });
-            console.log(
-              `✅ Saved ${selectedApiStyle === 'trpc' ? 'tRPC procedures' : 'REST controllers'} as default API style in node-apis.config.json\n`
-            );
-          } catch (error: any) {
-            console.warn(`⚠️  Could not save API style to config: ${error.message}\n`);
-          }
+      // Ask if user wants to save this choice
+      const saveResult = await promptSaveFrameworkToConfig({ framework: selectedFramework as SupportedFramework });
+      if (saveResult.success && saveResult.data) {
+        try {
+          await setFramework({ framework: selectedFramework as SupportedFramework });
+          console.log(
+            `✅ Saved ${selectedFramework} as default framework in node-apis.config.json\n`
+          );
+        } catch (error: any) {
+          console.warn(`⚠️  Could not save framework to config: ${error.message}\n`);
         }
       }
     }
   }
 
-  // Handle framework selection if not provided via CLI and not in config
-  if (!cliFramework && apiType) {
-    const configFramework = await getEffectiveFramework();
+  // Handle API style selection if not provided via CLI and not in config
+  // Only ask for API style if framework is not T3 (T3 always uses tRPC)
+  if (apiType) {
+    const hasConfig = await configExists();
+    const effectiveFramework = selectedFramework || (await getEffectiveFramework());
 
-    // If no framework in config (defaults to express), prompt user and offer to save
-    if (configFramework === 'express') {
-      const hasConfig = await configExists();
+    // If no config exists and framework is not T3, prompt user for API style
+    if (!hasConfig && effectiveFramework !== 't3') {
+      const apiStyleResult = await promptApiStyleSelection();
+      if (!apiStyleResult.success) {
+        return { success: false, appendMode: false, forceOverwrite: false };
+      }
 
-      if (!hasConfig) {
-        const frameworkResult = await promptFrameworkSelection();
-        if (!frameworkResult.success) {
-          return { success: false, appendMode: false, forceOverwrite: false };
-        }
+      const selectedApiStyle = apiStyleResult.data!;
 
-        const selectedFramework = frameworkResult.data!;
-
-        // Ask if user wants to save this choice
-        const saveResult = await promptSaveFrameworkToConfig({ framework: selectedFramework });
-        if (saveResult.success && saveResult.data) {
-          try {
-            await setFramework({ framework: selectedFramework });
-            console.log(
-              `✅ Saved ${selectedFramework} as default framework in node-apis.config.json\n`
-            );
-          } catch (error: any) {
-            console.warn(`⚠️  Could not save framework to config: ${error.message}\n`);
-          }
+      // Ask if user wants to save this choice
+      const saveResult = await promptSaveApiStyleToConfig({ apiStyle: selectedApiStyle });
+      if (saveResult.success && saveResult.data) {
+        try {
+          await setApiStyle({ apiStyle: selectedApiStyle });
+          console.log(
+            `✅ Saved ${selectedApiStyle === 'trpc' ? 'tRPC procedures' : 'REST controllers'} as default API style in node-apis.config.json\n`
+          );
+        } catch (error: any) {
+          console.warn(`⚠️  Could not save API style to config: ${error.message}\n`);
         }
       }
     }

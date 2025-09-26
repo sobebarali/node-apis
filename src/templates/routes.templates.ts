@@ -22,6 +22,11 @@ export const generateRouteContent = ({
 };
 
 const generateCrudRouteContent = (naming: ModuleNaming, framework: string = 'express'): string => {
+  if (framework === 't3') {
+    // For T3, we don't generate routes - we generate routers instead
+    return '';
+  }
+  
   if (framework === 'hono') {
     return `import { Hono } from 'hono';
 import create${naming.class}Controller from './controllers/create.${naming.file}';
@@ -71,6 +76,11 @@ const generateCustomRouteContent = (
   customNames: string[],
   framework: string = 'express'
 ): string => {
+  if (framework === 't3') {
+    // For T3, we don't generate routes - we generate routers instead
+    return '';
+  }
+  
   if (framework === 'hono') {
     const imports = customNames
       .map(
@@ -131,6 +141,11 @@ const generateGenericRouteContent = (
   naming: ModuleNaming,
   framework: string = 'express'
 ): string => {
+  if (framework === 't3') {
+    // For T3, we don't generate routes - we generate routers instead
+    return '';
+  }
+  
   if (framework === 'hono') {
     return `import { Hono } from 'hono';
 

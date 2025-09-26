@@ -31,6 +31,7 @@ import { generateRepositoryContent } from '../templates/repository.templates';
 import { generateCrudTestContent } from '../templates/crud.tests';
 import { generateCustomTestContent } from '../templates/custom.tests';
 import { generateTrpcTestContent } from '../templates/trpc.tests';
+import { generateT3TestContent } from '../templates/t3.tests';
 
 /**
  * Gets the test types for each operation
@@ -220,12 +221,14 @@ export const generateTestFiles = async ({
   apiType,
   appendMode = false,
   trpcStyle = false,
+  framework = 'express',
 }: {
   moduleName: string;
   testPath: string;
   apiType: ApiType;
   appendMode?: boolean;
   trpcStyle?: boolean;
+  framework?: string;
 }): Promise<GeneratedFile[]> => {
   const generatedFiles: GeneratedFile[] = [];
   const moduleTestDir = path.join(testPath, moduleName);
@@ -233,7 +236,7 @@ export const generateTestFiles = async ({
   if (apiType.type === 'crud') {
     const crudOperations = ['create', 'get', 'list', 'update', 'delete'];
 
-    if (trpcStyle) {
+    if (trpcStyle || framework === 't3') {
       // Generate tRPC-style tests
       const testTypes = ['procedure.test.ts', 'validation.test.ts', 'errors.test.ts'];
 
@@ -247,7 +250,11 @@ export const generateTestFiles = async ({
           const testFilePath = path.join(operationDir, testType);
 
           if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
-            const testContent = generateTrpcTestContent({ operation, testType, moduleName });
+            // Use T3 test templates for T3 framework, otherwise use regular tRPC templates
+            const testContent = framework === 't3' 
+              ? generateT3TestContent({ operation, testType, moduleName })
+              : generateTrpcTestContent({ operation, testType, moduleName });
+            
             await writeFile({ filePath: testFilePath, content: testContent });
             generatedFiles.push({
               fileName: testType,
@@ -258,23 +265,25 @@ export const generateTestFiles = async ({
         }
       }
 
-      // Generate shared tRPC helpers
-      const sharedDir = path.join(moduleTestDir, 'shared');
-      await ensureDirectory({ dirPath: sharedDir });
-      
-      const helpersFilePath = path.join(sharedDir, 'trpc-helpers.ts');
-      if (!appendMode || !(await fileExists({ filePath: helpersFilePath }))) {
-        const helpersContent = generateTrpcTestContent({ 
-          operation: '', 
-          testType: 'trpc-helpers.ts', 
-          moduleName 
-        });
-        await writeFile({ filePath: helpersFilePath, content: helpersContent });
-        generatedFiles.push({
-          fileName: 'trpc-helpers.ts',
-          filePath: helpersFilePath,
-          content: helpersContent,
-        });
+      // Generate shared tRPC helpers (only for non-T3 frameworks)
+      if (framework !== 't3') {
+        const sharedDir = path.join(moduleTestDir, 'shared');
+        await ensureDirectory({ dirPath: sharedDir });
+        
+        const helpersFilePath = path.join(sharedDir, 'trpc-helpers.ts');
+        if (!appendMode || !(await fileExists({ filePath: helpersFilePath }))) {
+          const helpersContent = generateTrpcTestContent({ 
+            operation: '', 
+            testType: 'trpc-helpers.ts', 
+            moduleName 
+          });
+          await writeFile({ filePath: helpersFilePath, content: helpersContent });
+          generatedFiles.push({
+            fileName: 'trpc-helpers.ts',
+            filePath: helpersFilePath,
+            content: helpersContent,
+          });
+        }
       }
     } else {
       // Generate REST-style tests - multiple specialized test files per operation

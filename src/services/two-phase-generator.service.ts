@@ -1,6 +1,7 @@
 import * as path from 'path';
 import { ApiType, GeneratedFile } from '../types/common.types';
 import { fileExists, writeFile } from '../filesystem/file.operations';
+import { ensureDirectory } from '../filesystem/directory.operations';
 import { getCrudFileNames, generateCrudFileContent } from '../templates/crud.templates';
 import { getCustomFileNames, generateCustomFileContent } from '../templates/custom.templates';
 import {
@@ -36,6 +37,14 @@ import {
   generateCustomTrpcRouterContent,
   generateServicesTrpcRouterContent,
 } from '../templates/trpc.router';
+import {
+  generateT3ProcedureContent,
+} from '../templates/t3.procedures';
+import {
+  generateT3RouterContent,
+  generateCustomT3RouterContent,
+  generateServicesT3RouterContent,
+} from '../templates/t3.router';
 import {
   getCrudHandlerFileNames,
   generateCrudHandlerContent,
@@ -184,6 +193,21 @@ export const generateCodeWithParsedTypes = async ({
         const procedureFilePath = path.join(proceduresDir, procedureFileName);
         if (!appendMode || !(await fileExists({ filePath: procedureFilePath }))) {
           const procedureContent = generateTrpcProcedureContent({
+            operation,
+            moduleName,
+          });
+          await writeFile({ filePath: procedureFilePath, content: procedureContent });
+          generatedFiles.push({
+            fileName: procedureFileName,
+            filePath: procedureFilePath,
+            content: procedureContent,
+          });
+        }
+      } else if (framework === 't3') {
+        // Generate T3 procedure file
+        const procedureFilePath = path.join(proceduresDir, procedureFileName);
+        if (!appendMode || !(await fileExists({ filePath: procedureFilePath }))) {
+          const procedureContent = generateT3ProcedureContent({
             operation,
             moduleName,
           });
@@ -362,6 +386,44 @@ export const generateCodeWithParsedTypes = async ({
         });
       } else {
         routerContent = generateTrpcRouterContent({ moduleName });
+      }
+      
+      await writeFile({ filePath: routerFilePath, content: routerContent });
+      generatedFiles.push({
+        fileName: routerFileName,
+        filePath: routerFilePath,
+        content: routerContent,
+      });
+    }
+  } else if (framework === 't3') {
+    // Generate T3 router file
+    const routerFileName = `${moduleName}.ts`;
+    const routersDir = path.join(modulePath, '..', 'routers');
+    const routerFilePath = path.join(routersDir, routerFileName);
+    
+    // Ensure routers directory exists
+    await ensureDirectory({ dirPath: routersDir });
+    
+    if (!appendMode || !(await fileExists({ filePath: routerFilePath }))) {
+      let routerContent: string;
+      
+      if (apiType.type === 'crud') {
+        routerContent = generateT3RouterContent({ 
+          moduleName, 
+          operations: ['create', 'get', 'list', 'update', 'delete'] 
+        });
+      } else if (apiType.type === 'custom' && apiType.customNames) {
+        routerContent = generateCustomT3RouterContent({ 
+          moduleName, 
+          operations: apiType.customNames 
+        });
+      } else if (apiType.type === 'services' && apiType.serviceNames) {
+        routerContent = generateServicesT3RouterContent({ 
+          moduleName, 
+          operations: apiType.serviceNames 
+        });
+      } else {
+        routerContent = generateT3RouterContent({ moduleName });
       }
       
       await writeFile({ filePath: routerFilePath, content: routerContent });

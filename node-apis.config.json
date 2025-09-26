@@ -1,11 +1,10 @@
 {
   "version": "1.0.0",
-  "framework": "hono",
+  "framework": "t3",
   "database": {},
   "preferences": {
     "autoFormat": true,
     "generateTests": true,
     "skipConfirmation": false
-  },
-  "trpcStyle": false
+  }
 }

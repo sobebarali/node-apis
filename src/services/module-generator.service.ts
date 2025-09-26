@@ -54,7 +54,7 @@ export const generateModuleStructure = async ({
     await ensureDirectory({ dirPath: modulePath });
 
     // Create all subdirectories based on API type
-    const subdirectories = getModuleSubdirectories(apiType);
+    const subdirectories = getModuleSubdirectories(apiType, false, apiType?.framework);
     const createdDirs = await createDirectories({
       basePath: modulePath,
       subdirectories,
@@ -98,7 +98,8 @@ export const generateModuleStructure = async ({
 export const generateModuleStructurePhase1 = async ({
   moduleName,
   options = {},
-}: Omit<GenerationInput, 'apiType'>): Promise<GenerationResult> => {
+  framework,
+}: Omit<GenerationInput, 'apiType'> & { framework?: string }): Promise<GenerationResult> => {
   const { baseDir = process.cwd(), force = false, appendMode = false, targetDir } = options;
 
   try {
@@ -115,6 +116,7 @@ export const generateModuleStructurePhase1 = async ({
     const modulePath = await getModulePath({
       moduleName: normalizedName,
       baseDir,
+      ...(framework && { framework }),
       ...(targetDir && { targetDir }),
     });
 
@@ -155,14 +157,16 @@ export const generateModuleStructurePhase2 = async ({
   modulePath,
   apiType,
   trpcStyle = false,
+  framework,
 }: {
   modulePath: string;
   apiType: ApiType;
   trpcStyle?: boolean;
+  framework?: string;
 }): Promise<{ success: boolean; createdDirectories: string[]; error?: string }> => {
   try {
     // Get all subdirectories for this API type and style
-    const allSubdirectories = getModuleSubdirectories(apiType, trpcStyle);
+    const allSubdirectories = getModuleSubdirectories(apiType, trpcStyle, framework);
 
     // Filter out 'types' since it was already created in phase 1
     const remainingSubdirectories = allSubdirectories.filter(dir => dir !== 'types');
@@ -198,7 +202,7 @@ const formatSuccessMessage = ({
   modulePath: string;
   apiType?: ApiType;
 }): string => {
-  const subdirs = getModuleSubdirectories(apiType);
+  const subdirs = getModuleSubdirectories(apiType, false, apiType?.framework);
   const structure = subdirs.map(dir => `  ├── ${dir}/`).join('\n');
 
   return `

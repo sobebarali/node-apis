@@ -260,6 +260,7 @@ export const promptFrameworkSelection = async (): Promise<PromptResult<Supported
         choices: [
           { name: 'Express.js (Traditional, widely adopted)', value: 'express' },
           { name: 'Hono (Modern, lightweight, fast)', value: 'hono' },
+          { name: 'T3 Stack (Next.js + tRPC + TypeScript)', value: 't3' },
         ],
         default: 'express',
       },
