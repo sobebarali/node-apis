@@ -18,8 +18,10 @@ import {
 } from '../templates/typed-crud.validators';
 import {
   getCustomValidatorFileNames,
-  generateCustomValidatorContent,
 } from '../templates/custom.validators';
+import {
+  generateTypedCustomValidatorContent,
+} from '../templates/typed-custom.validators';
 import {
   getCrudControllerFileNames,
   generateCrudControllerContent,
@@ -49,6 +51,9 @@ import {
   getCrudHandlerFileNames,
   generateCrudHandlerContent,
 } from '../templates/typed-crud.handlers';
+import {
+  generateTypedCustomHandlerContent,
+} from '../templates/typed-custom.handlers';
 
 import { generateRouteContent } from '../templates/routes.templates';
 import { formatGeneratedFiles } from './formatter.service';
@@ -284,10 +289,15 @@ export const generateCodeWithParsedTypes = async ({
       // Generate procedure file name for custom operations
       const procedureFileName = `${customName}.${moduleName}.ts`;
 
-      // Generate validator file
+      // Generate validator file with parsed types
       const validatorFilePath = path.join(validatorsDir, validatorFileName);
       if (!appendMode || !(await fileExists({ filePath: validatorFilePath }))) {
-        const validatorContent = generateCustomValidatorContent({ customName, moduleName });
+        const parsedType = parsedTypes[customName] || { fields: [], hasId: false, hasPagination: false };
+        const validatorContent = generateTypedCustomValidatorContent({ 
+          customName, 
+          moduleName, 
+          parsedType 
+        });
         await writeFile({ filePath: validatorFilePath, content: validatorContent });
         generatedFiles.push({
           fileName: validatorFileName,
@@ -330,7 +340,23 @@ export const generateCodeWithParsedTypes = async ({
         }
       }
 
-      // Skip service generation - business logic is now in handlers
+      // Generate handler file
+      const handlerFileName = `${customName}.${moduleName}.ts`;
+      const handlerFilePath = path.join(handlersDir, handlerFileName);
+      if (!appendMode || !(await fileExists({ filePath: handlerFilePath }))) {
+        const parsedType = parsedTypes[customName] || { fields: [], hasId: false, hasPagination: false };
+        const handlerContent = generateTypedCustomHandlerContent({
+          customName,
+          moduleName,
+          parsedType,
+        });
+        await writeFile({ filePath: handlerFilePath, content: handlerContent });
+        generatedFiles.push({
+          fileName: handlerFileName,
+          filePath: handlerFilePath,
+          content: handlerContent,
+        });
+      }
     }
 
     // Generate repository file with parsed types
