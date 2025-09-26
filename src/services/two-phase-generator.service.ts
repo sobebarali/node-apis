@@ -276,11 +276,13 @@ export const generateCodeWithParsedTypes = async ({
       customNames: apiType.customNames,
       moduleName,
     });
-
     for (let i = 0; i < apiType.customNames.length; i++) {
       const validatorFileName = customValidatorFileNames[i];
       const controllerFileName = customControllerFileNames[i];
       const customName = apiType.customNames[i];
+      
+      // Generate procedure file name for custom operations
+      const procedureFileName = `${customName}.${moduleName}.ts`;
 
       // Generate validator file
       const validatorFilePath = path.join(validatorsDir, validatorFileName);
@@ -294,20 +296,38 @@ export const generateCodeWithParsedTypes = async ({
         });
       }
 
-      // Generate controller file
-      const controllerFilePath = path.join(controllersDir, controllerFileName);
-      if (!appendMode || !(await fileExists({ filePath: controllerFilePath }))) {
-        const controllerContent = generateCustomControllerContent({
-          customName,
-          moduleName,
-          framework,
-        });
-        await writeFile({ filePath: controllerFilePath, content: controllerContent });
-        generatedFiles.push({
-          fileName: controllerFileName,
-          filePath: controllerFilePath,
-          content: controllerContent,
-        });
+      // Generate controller or procedure file based on framework
+      if (framework === 't3') {
+        // Generate T3 procedure file
+        const procedureFilePath = path.join(proceduresDir, procedureFileName);
+        if (!appendMode || !(await fileExists({ filePath: procedureFilePath }))) {
+          const procedureContent = generateT3ProcedureContent({
+            operation: customName,
+            moduleName,
+          });
+          await writeFile({ filePath: procedureFilePath, content: procedureContent });
+          generatedFiles.push({
+            fileName: procedureFileName,
+            filePath: procedureFilePath,
+            content: procedureContent,
+          });
+        }
+      } else {
+        // Generate REST controller file
+        const controllerFilePath = path.join(controllersDir, controllerFileName);
+        if (!appendMode || !(await fileExists({ filePath: controllerFilePath }))) {
+          const controllerContent = generateCustomControllerContent({
+            customName,
+            moduleName,
+            framework,
+          });
+          await writeFile({ filePath: controllerFilePath, content: controllerContent });
+          generatedFiles.push({
+            fileName: controllerFileName,
+            filePath: controllerFilePath,
+            content: controllerContent,
+          });
+        }
       }
 
       // Skip service generation - business logic is now in handlers
