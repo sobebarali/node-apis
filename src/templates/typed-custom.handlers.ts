@@ -58,7 +58,7 @@ ${fieldTypes}
     const duration = Date.now() - startTime;
     console.info(\`\${requestId} [${naming.constant}] - ${customName.toUpperCase()} handler completed successfully in \${duration}ms\`);
   } catch (err) {
-    const customError = err as any;
+    const customError = err as Error;
     console.error(
       \`\${requestId} [${naming.constant}] - ${customName.toUpperCase()} handler error: \${customError.message}\`
     );
@@ -79,9 +79,9 @@ ${fieldTypes}
       };
     } else {
       error = {
-        code: customError.errorCode ?? 'INTERNAL_ERROR',
+        code: (customError as any).errorCode ?? 'INTERNAL_ERROR',
         message: customError.message ?? 'An unexpected error occurred',
-        statusCode: customError.statusCode ?? 500,
+        statusCode: (customError as any).statusCode ?? 500,
         requestId,
       };
     }

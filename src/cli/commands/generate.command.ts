@@ -91,7 +91,11 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
     apiType = parseCommandLineApiType(options);
 
     if (options.interactive !== false) {
-      const interactiveResult = await handleInteractiveFlow(moduleName, options.framework, apiType);
+      // Get effective framework early for interactive flow
+      const framework = await getEffectiveFramework({
+        ...(options.framework && { cliFramework: options.framework }),
+      });
+      const interactiveResult = await handleInteractiveFlow(moduleName, framework, apiType);
       if (!interactiveResult.success) {
         displayCancellation();
         process.exit(0);
@@ -360,7 +364,7 @@ const parseCommandLineApiType = (options: CommandOptions): ApiType | undefined =
  */
 const handleInteractiveFlow = async (
   initialModuleName?: string,
-  cliFramework?: string,
+  framework?: string,
   initialApiType?: ApiType
 ): Promise<{
   success: boolean;
@@ -375,7 +379,9 @@ const handleInteractiveFlow = async (
   let forceOverwrite = false;
 
   // Check for existing modules and offer smart choices
-  const existingModules = await getExistingModules();
+  const existingModules = await getExistingModules({
+    ...(framework && { framework }),
+  });
 
   if (!moduleName && existingModules.length > 0) {
     displayExistingModules(existingModules);
@@ -395,7 +401,10 @@ const handleInteractiveFlow = async (
       appendMode = true;
 
       // Show existing files
-      const existingModule = await detectExistingModule({ moduleName: moduleName! });
+      const existingModule = await detectExistingModule({
+        moduleName: moduleName!,
+        ...(framework && { framework }),
+      });
       if (existingModule && existingModule.existingFiles.length > 0) {
         displayExistingFiles(moduleName!, existingModule.existingFiles);
       }
@@ -411,7 +420,10 @@ const handleInteractiveFlow = async (
     moduleName = moduleNameResult.data;
 
     // Check if the new module name already exists
-    const existingModule = await detectExistingModule({ moduleName: moduleName! });
+    const existingModule = await detectExistingModule({
+      moduleName: moduleName!,
+      ...(framework && { framework }),
+    });
     if (existingModule && existingModule.existingFiles.length > 0) {
       displayExistingFiles(moduleName!, existingModule.existingFiles);
 
@@ -455,8 +467,8 @@ const handleInteractiveFlow = async (
   }
 
   // Handle framework selection if not provided via CLI and not in config
-  let selectedFramework: string | undefined = cliFramework;
-  if (!cliFramework && apiType) {
+  let selectedFramework: string | undefined = framework;
+  if (!framework && apiType) {
     const hasConfig = await configExists();
 
     // If no config exists, prompt user for framework

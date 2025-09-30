@@ -9,7 +9,7 @@ import {
   generateServiceTypeContent,
   generateServiceContent,
 } from '../templates/services.templates';
-import { parseModuleTypes } from './type-parser.service';
+import { parseModuleTypes, convertEmptyTypePayload } from './type-parser.service';
 
 import { generateTypedRepositoryContent } from '../templates/typed-repository.templates';
 import {
@@ -151,9 +151,20 @@ export const generateCodeWithParsedTypes = async ({
   const handlersDir = path.join(modulePath, 'handlers');
 
   const repositoryDir = path.join(modulePath, 'repository');
+  const typesDir = path.join(modulePath, 'types');
 
   // Parse the type files to get actual field names
   const parsedTypes = await parseModuleTypes(modulePath);
+
+  // Convert empty typePayloads to Record<string, never>
+  await Promise.all(
+    Object.entries(parsedTypes).map(async ([operation, parsedType]) => {
+      if (parsedType.isEmpty) {
+        const typeFilePath = path.join(typesDir, `${operation}.${moduleName}.ts`);
+        await convertEmptyTypePayload(typeFilePath);
+      }
+    })
+  );
 
   if (apiType.type === 'crud') {
     const crudValidatorFileNames = getCrudValidatorFileNames({ moduleName });
@@ -176,20 +187,22 @@ export const generateCodeWithParsedTypes = async ({
         hasPagination: false,
       };
 
-      // Generate validator file
-      const validatorFilePath = path.join(validatorsDir, validatorFileName);
-      if (!appendMode || !(await fileExists({ filePath: validatorFilePath }))) {
-        const validatorContent = generateCrudValidatorContent({
-          operation,
-          moduleName,
-          parsedType,
-        });
-        await writeFile({ filePath: validatorFilePath, content: validatorContent });
-        generatedFiles.push({
-          fileName: validatorFileName,
-          filePath: validatorFilePath,
-          content: validatorContent,
-        });
+      // Generate validator file (skip if typePayload is empty)
+      if (!parsedType.isEmpty) {
+        const validatorFilePath = path.join(validatorsDir, validatorFileName);
+        if (!appendMode || !(await fileExists({ filePath: validatorFilePath }))) {
+          const validatorContent = generateCrudValidatorContent({
+            operation,
+            moduleName,
+            parsedType,
+          });
+          await writeFile({ filePath: validatorFilePath, content: validatorContent });
+          generatedFiles.push({
+            fileName: validatorFileName,
+            filePath: validatorFilePath,
+            content: validatorContent,
+          });
+        }
       }
 
       // Generate controller or procedure file based on style
@@ -289,21 +302,23 @@ export const generateCodeWithParsedTypes = async ({
       // Generate procedure file name for custom operations
       const procedureFileName = `${customName}.${moduleName}.ts`;
 
-      // Generate validator file with parsed types
-      const validatorFilePath = path.join(validatorsDir, validatorFileName);
-      if (!appendMode || !(await fileExists({ filePath: validatorFilePath }))) {
-        const parsedType = parsedTypes[customName] || { fields: [], hasId: false, hasPagination: false };
-        const validatorContent = generateTypedCustomValidatorContent({ 
-          customName, 
-          moduleName, 
-          parsedType 
-        });
-        await writeFile({ filePath: validatorFilePath, content: validatorContent });
-        generatedFiles.push({
-          fileName: validatorFileName,
-          filePath: validatorFilePath,
-          content: validatorContent,
-        });
+      // Generate validator file with parsed types (skip if typePayload is empty)
+      const parsedType = parsedTypes[customName] || { fields: [], hasId: false, hasPagination: false };
+      if (!parsedType.isEmpty) {
+        const validatorFilePath = path.join(validatorsDir, validatorFileName);
+        if (!appendMode || !(await fileExists({ filePath: validatorFilePath }))) {
+          const validatorContent = generateTypedCustomValidatorContent({
+            customName,
+            moduleName,
+            parsedType
+          });
+          await writeFile({ filePath: validatorFilePath, content: validatorContent });
+          generatedFiles.push({
+            fileName: validatorFileName,
+            filePath: validatorFilePath,
+            content: validatorContent,
+          });
+        }
       }
 
       // Generate controller or procedure file based on framework

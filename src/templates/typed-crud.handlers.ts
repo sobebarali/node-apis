@@ -113,14 +113,14 @@ ${fieldTypes}
     const duration = Date.now() - startTime;
     console.info(\`\${requestId} [${naming.constant}] - CREATE handler completed successfully in \${duration}ms\`);
   } catch (err) {
-    const customError = err as any;
+    const customError = err as Error;
     console.error(
       \`\${requestId} [${naming.constant}] - CREATE handler error: \${customError.message}\`
     );
     error = {
-      code: customError.errorCode ?? 'INTERNAL_ERROR',
+      code: (customError as any).errorCode ?? 'INTERNAL_ERROR',
       message: customError.message ?? 'An unexpected error occurred',
-      statusCode: customError.statusCode ?? 500,
+      statusCode: (customError as any).statusCode ?? 500,
       requestId,
     };
   }
@@ -177,7 +177,7 @@ ${fieldTypes}
     const duration = Date.now() - startTime;
     console.info(\`\${requestId} [${naming.constant}] - GET handler completed successfully in \${duration}ms\`);
   } catch (err) {
-    const customError = err as any;
+    const customError = err as Error;
     console.error(
       \`\${requestId} [${naming.constant}] - GET handler error: \${customError.message}\`
     );
@@ -191,9 +191,9 @@ ${fieldTypes}
       };
     } else {
       error = {
-        code: customError.errorCode ?? 'INTERNAL_ERROR',
+        code: (customError as any).errorCode ?? 'INTERNAL_ERROR',
         message: customError.message ?? 'An unexpected error occurred',
-        statusCode: customError.statusCode ?? 500,
+        statusCode: (customError as any).statusCode ?? 500,
       };
     }
   }
@@ -289,7 +289,7 @@ ${fieldTypes}
     const duration = Date.now() - startTime;
     console.info(\`\${requestId} [${naming.constant}] - ${operation.toUpperCase()} handler completed successfully in \${duration}ms\`);
   } catch (err) {
-    const customError = err as any;
+    const customError = err as Error;
     console.error(
       \`\${requestId} [${naming.constant}] - ${operation.toUpperCase()} handler error: \${customError.message}\`
     );
@@ -306,9 +306,9 @@ ${fieldTypes}
     } else {`
     }
     error = {
-      code: customError.errorCode ?? 'INTERNAL_ERROR',
+      code: (customError as any).errorCode ?? 'INTERNAL_ERROR',
       message: customError.message ?? 'An unexpected error occurred',
-      statusCode: customError.statusCode ?? 500,
+      statusCode: (customError as any).statusCode ?? 500,
       requestId,
     };
     ${operation === 'delete' && `}`}

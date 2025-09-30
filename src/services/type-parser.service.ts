@@ -19,6 +19,7 @@ export interface ParsedTypePayload {
   fields: ParsedField[];
   hasId: boolean;
   hasPagination: boolean;
+  isEmpty?: boolean; // True if typePayload is empty (no fields)
 }
 
 /**
@@ -67,7 +68,10 @@ export const parseTypePayload = async (filePath: string): Promise<ParsedTypePayl
       }
     }
 
-    return { fields, hasId, hasPagination };
+    // Check if typePayload is empty (no fields defined)
+    const isEmpty = fields.length === 0;
+
+    return { fields, hasId, hasPagination, isEmpty };
   } catch (error) {
     console.error(`Error parsing type file ${filePath}:`, error);
     return { fields: [], hasId: false, hasPagination: false };
@@ -265,4 +269,32 @@ export const generateFieldObject = (
   });
 
   return fieldLines.join('\n');
+};
+
+/**
+ * Converts empty typePayload from {} to Record<string, never>
+ */
+export const convertEmptyTypePayload = async (filePath: string): Promise<boolean> => {
+  try {
+    const content = await fs.promises.readFile(filePath, 'utf-8');
+
+    // Check if typePayload is empty {}
+    const emptyPattern = /export type typePayload = \{\s*\};?/;
+
+    if (emptyPattern.test(content)) {
+      // Replace with Record<string, never>
+      const updatedContent = content.replace(
+        emptyPattern,
+        'export type typePayload = Record<string, never>;'
+      );
+
+      await fs.promises.writeFile(filePath, updatedContent, 'utf-8');
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.error(`Error converting empty typePayload in ${filePath}:`, error);
+    return false;
+  }
 };
