@@ -121,7 +121,8 @@ export const ${functionName} = async ({
       data: mockResult as any, // Replace with actual response data
       error: null,
     };
-  } catch (error: any) {
+  } catch (err) {
+    const error = err as Error;
     return {
       data: null,
       error: {

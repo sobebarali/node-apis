@@ -70,9 +70,10 @@ export const ${customName}${capitalizedModule} = async ({
     const result = {}; // Replace with actual implementation
 
     return { data: result, error: null };
-  } catch (error) {
+  } catch (err) {
+    const error = err as Error;
     // Handle specific error types
-    if (error instanceof Error && error.name === 'NotFoundError') {
+    if (error.name === 'NotFoundError') {
       return {
         data: null,
         error: {
@@ -84,7 +85,7 @@ export const ${customName}${capitalizedModule} = async ({
       };
     }
 
-    if (error instanceof Error && error.name === 'ValidationError') {
+    if (error.name === 'ValidationError') {
       return {
         data: null,
         error: {
@@ -100,7 +101,7 @@ export const ${customName}${capitalizedModule} = async ({
       data: null,
       error: {
         code: 'INTERNAL_ERROR',
-        message: error instanceof Error ? error.message : 'Failed to ${customName} ${moduleName}',
+        message: error.message || 'Failed to ${customName} ${moduleName}',
         statusCode: 500,
         requestId
       }
