@@ -37,7 +37,7 @@ const generateCreateT3ProcedureContent = (
 import { payloadSchema } from "../validators/create.${naming.file}";
 import create${naming.class}Handler from "../handlers/create.${naming.file}";
 import type { typePayload } from "../types/create.${naming.file}";
-import { randomBytes } from 'crypto';
+import { randomBytes } from 'node:crypto';
 
 export const create${naming.class}Procedure = publicProcedure
   .input(payloadSchema)
@@ -72,7 +72,7 @@ const generateGetT3ProcedureContent = (
 import { payloadSchema } from "../validators/get.${naming.file}";
 import get${naming.class}Handler from "../handlers/get.${naming.file}";
 import type { typePayload } from "../types/get.${naming.file}";
-import { randomBytes } from 'crypto';
+import { randomBytes } from 'node:crypto';
 
 export const get${naming.class}Procedure = publicProcedure
   .input(payloadSchema)
@@ -107,7 +107,7 @@ const generateListT3ProcedureContent = (
 import { payloadSchema } from "../validators/list.${naming.file}";
 import list${naming.class}sHandler from "../handlers/list.${naming.file}";
 import type { typePayload } from "../types/list.${naming.file}";
-import { randomBytes } from 'crypto';
+import { randomBytes } from 'node:crypto';
 
 export const list${naming.class}sProcedure = publicProcedure
   .input(payloadSchema)
@@ -142,7 +142,7 @@ const generateUpdateT3ProcedureContent = (
 import { payloadSchema } from "../validators/update.${naming.file}";
 import update${naming.class}Handler from "../handlers/update.${naming.file}";
 import type { typePayload } from "../types/update.${naming.file}";
-import { randomBytes } from 'crypto';
+import { randomBytes } from 'node:crypto';
 
 export const update${naming.class}Procedure = publicProcedure
   .input(payloadSchema)
@@ -177,7 +177,7 @@ const generateDeleteT3ProcedureContent = (
 import { payloadSchema } from "../validators/delete.${naming.file}";
 import delete${naming.class}Handler from "../handlers/delete.${naming.file}";
 import type { typePayload } from "../types/delete.${naming.file}";
-import { randomBytes } from 'crypto';
+import { randomBytes } from 'node:crypto';
 
 export const delete${naming.class}Procedure = publicProcedure
   .input(payloadSchema)
@@ -213,7 +213,7 @@ const generateGenericT3ProcedureContent = (
 import { payloadSchema } from "../validators/${operation}.${naming.file}";
 import ${operation}${naming.class}Handler from "../handlers/${operation}.${naming.file}";
 import type { typePayload } from "../types/${operation}.${naming.file}";
-import { randomBytes } from 'crypto';
+import { randomBytes } from 'node:crypto';
 
 export const ${operation}${naming.class}Procedure = publicProcedure
   .input(payloadSchema)
