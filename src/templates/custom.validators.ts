@@ -53,7 +53,12 @@ import type { typePayload } from '../types/${customName}.${moduleName}';
 
 export const payloadSchema = z.object({
   // Define validation rules for ${customName} ${moduleName}
-  id: z.string().uuid().optional(),
+  id: z.string().min(1).max(255).optional(), // Customize based on your ID format
+  // Common validation patterns:
+  // - Strings: z.string().min(1).max(500)
+  // - Email: z.string().email().min(3).max(255)
+  // - Numbers: z.number().min(0).max(999999999)
+  // - Arrays: z.array(z.string()).min(0).max(100)
 });
 
 export const validatePayload = (data: unknown): { success: true; data: typePayload } | { success: false; error: z.ZodError } => {

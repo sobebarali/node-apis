@@ -23,13 +23,37 @@ export const generateTypedCustomValidatorContent = ({
  */
 const typeToZodSchema = (field: { name: string; type: string; optional: boolean }): string => {
   const { type, optional } = field;
+  const fieldName = field.name.toLowerCase();
 
   let baseSchema: string;
 
-  if (type === 'string') {
-    baseSchema = 'z.string()';
+  // Field name-based intelligent validation
+  if (fieldName.includes('email')) {
+    baseSchema = 'z.string().email().min(3).max(255)';
+  } else if (fieldName.includes('url') || fieldName.includes('link')) {
+    baseSchema = 'z.string().url().min(3).max(2048)';
+  } else if (fieldName.includes('phone') || fieldName.includes('mobile')) {
+    baseSchema = 'z.string().min(10).max(20)';
+  } else if ((fieldName.includes('id') || fieldName.endsWith('id')) && type === 'string') {
+    baseSchema = 'z.string().min(1).max(255)'; // Customize based on your ID format (UUID, nanoid, etc.)
+  } else if (fieldName.includes('name') || fieldName.includes('title')) {
+    baseSchema = 'z.string().min(1).max(255)';
+  } else if (fieldName.includes('description') || fieldName.includes('content') || fieldName.includes('text')) {
+    baseSchema = 'z.string().min(1).max(5000)';
+  } else if (fieldName.includes('code') || fieldName.includes('slug') || fieldName.includes('key')) {
+    baseSchema = 'z.string().min(1).max(100)';
+  } else if (fieldName.includes('password')) {
+    baseSchema = 'z.string().min(8).max(255)';
+  } else if (fieldName.includes('age')) {
+    baseSchema = 'z.number().int().min(0).max(150)';
+  } else if (fieldName.includes('price') || fieldName.includes('amount') || fieldName.includes('cost')) {
+    baseSchema = 'z.number().min(0).max(999999999)';
+  } else if (fieldName.includes('quantity') || fieldName.includes('count')) {
+    baseSchema = 'z.number().int().min(0).max(999999999)';
+  } else if (type === 'string') {
+    baseSchema = 'z.string().min(1).max(500)'; // Customize length limits as needed
   } else if (type === 'number') {
-    baseSchema = 'z.number()';
+    baseSchema = 'z.number().min(-999999999).max(999999999)'; // Adjust range as needed
   } else if (type === 'boolean') {
     baseSchema = 'z.boolean()';
   } else if (type === 'Date') {
@@ -38,29 +62,18 @@ const typeToZodSchema = (field: { name: string; type: string; optional: boolean 
     // Array types
     const arrayType = type.replace('[]', '');
     if (arrayType === 'string') {
-      baseSchema = 'z.array(z.string())';
+      baseSchema = 'z.array(z.string().min(1).max(500)).min(0).max(1000)'; // Customize array and element limits
     } else if (arrayType === 'number') {
-      baseSchema = 'z.array(z.number())';
+      baseSchema = 'z.array(z.number().min(-999999999).max(999999999)).min(0).max(1000)';
     } else {
-      baseSchema = 'z.array(z.any())';
+      baseSchema = 'z.array(z.any()).min(0).max(1000)';
     }
   } else if (type.includes('|')) {
-    // Union types - for now, just use string validation
-    baseSchema = 'z.string()';
+    // Union types
+    baseSchema = 'z.string().min(1).max(500)';
   } else {
     // Fallback for complex types
     baseSchema = 'z.any()';
-  }
-
-  // Add common validations based on field name patterns
-  if (field.name.toLowerCase().includes('email')) {
-    baseSchema = 'z.string().email()';
-  } else if (field.name.toLowerCase().includes('url')) {
-    baseSchema = 'z.string().url()';
-  } else if (field.name.toLowerCase().includes('id') && type === 'string') {
-    baseSchema = 'z.string().uuid()';
-  } else if (field.name.toLowerCase().includes('phone')) {
-    baseSchema = 'z.string().min(10)';
   }
 
   return optional ? `${baseSchema}.optional()` : baseSchema;

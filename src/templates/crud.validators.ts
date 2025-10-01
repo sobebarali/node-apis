@@ -66,6 +66,9 @@ import type { typePayload } from '../types/create.${moduleName}';
 
 export const payloadSchema = z.object({
   // Define your ${moduleName} creation validation rules here
+  // Example: name: z.string().min(1).max(255),
+  // Example: email: z.string().email().min(3).max(255),
+  // Example: age: z.number().int().min(0).max(150),
 });
 
 export const validatePayload = (data: unknown): { success: true; data: typePayload } | { success: false; error: z.ZodError } => {
@@ -90,7 +93,7 @@ const generateGetValidatorContent = (
 import type { typePayload } from '../types/get.${moduleName}';
 
 export const payloadSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().min(1).max(255), // Customize based on your ID format (UUID, nanoid, numeric, etc.)
 });
 
 export const validatePayload = (data: unknown): { success: true; data: typePayload } | { success: false; error: z.ZodError } => {
@@ -115,12 +118,14 @@ const generateListValidatorContent = (
 import type { typePayload } from '../types/list.${moduleName}';
 
 export const payloadSchema = z.object({
-  page: z.number().int().positive().optional(),
-  limit: z.number().int().positive().max(100).optional(),
-  sort_by: z.string().optional(),
+  page: z.number().int().positive().min(1).max(1000000).optional(), // Adjust max page limit as needed
+  limit: z.number().int().positive().min(1).max(100).optional(), // Adjust max items per page
+  sort_by: z.string().min(1).max(100).optional(), // Field name to sort by
   sort_order: z.enum(['asc', 'desc']).optional(),
-  search: z.string().optional(),
+  search: z.string().min(1).max(500).optional(), // Search query string
   // Add your ${moduleName} specific filter validations here
+  // Example: status: z.enum(['active', 'inactive']).optional(),
+  // Example: category_id: z.string().min(1).max(255).optional(),
 });
 
 export const validatePayload = (data: unknown): { success: true; data: typePayload } | { success: false; error: z.ZodError } => {
@@ -145,8 +150,10 @@ const generateUpdateValidatorContent = (
 import type { typePayload } from '../types/update.${moduleName}';
 
 export const payloadSchema = z.object({
-  id: z.string().uuid(),
-  // Add your ${moduleName} update validation rules here
+  id: z.string().min(1).max(255), // Customize based on your ID format
+  // Add your ${moduleName} update validation rules here (make fields optional for partial updates)
+  // Example: name: z.string().min(1).max(255).optional(),
+  // Example: status: z.enum(['active', 'inactive']).optional(),
 });
 
 export const validatePayload = (data: unknown): { success: true; data: typePayload } | { success: false; error: z.ZodError } => {
@@ -171,8 +178,8 @@ const generateDeleteValidatorContent = (
 import type { typePayload } from '../types/delete.${moduleName}';
 
 export const payloadSchema = z.object({
-  id: z.string().uuid(),
-  permanent: z.boolean().optional(),
+  id: z.string().min(1).max(255), // Customize based on your ID format
+  permanent: z.boolean().optional(), // Set to true for hard delete, false/undefined for soft delete
 });
 
 export const validatePayload = (data: unknown): { success: true; data: typePayload } | { success: false; error: z.ZodError } => {
@@ -199,6 +206,13 @@ import type { typePayload } from '../types/${operation}.${moduleName}';
 
 export const payloadSchema = z.object({
   // Define validation rules for ${operation} ${moduleName}
+  // Common patterns:
+  // - Strings: z.string().min(1).max(500)
+  // - IDs: z.string().min(1).max(255)
+  // - Email: z.string().email().min(3).max(255)
+  // - Numbers: z.number().min(0).max(999999999)
+  // - Booleans: z.boolean()
+  // - Enums: z.enum(['value1', 'value2'])
 });
 
 export const validatePayload = (data: unknown): { success: true; data: typePayload } | { success: false; error: z.ZodError } => {
