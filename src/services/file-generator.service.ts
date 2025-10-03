@@ -238,29 +238,82 @@ export const generateTestFiles = async ({
 
     if (trpcStyle || framework === 't3') {
       // Generate tRPC-style tests
-      const testTypes = ['procedure.test.ts', 'validation.test.ts', 'errors.test.ts'];
+      if (framework === 't3') {
+        // T3 framework: Use modular test structure (success/validation/failure folders)
+        for (const operation of crudOperations) {
+          const operationDir = path.join(moduleTestDir, operation);
+          await ensureDirectory({ dirPath: operationDir });
 
-      for (const operation of crudOperations) {
-        const operationDir = path.join(moduleTestDir, operation);
+          // Create subdirectories for each test category
+          const successDir = path.join(operationDir, 'success');
+          const validationDir = path.join(operationDir, 'validation');
+          const failureDir = path.join(operationDir, 'failure');
 
-        // Ensure operation directory exists
-        await ensureDirectory({ dirPath: operationDir });
+          await ensureDirectory({ dirPath: successDir });
+          await ensureDirectory({ dirPath: validationDir });
+          await ensureDirectory({ dirPath: failureDir });
 
-        for (const testType of testTypes) {
-          const testFilePath = path.join(operationDir, testType);
+          // Define test files for each category
+          const testFiles = [
+            'success/basic.test.ts',
+            'success/variations.test.ts',
+            'validation/required.test.ts',
+            'validation/types.test.ts',
+          ];
 
-          if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
-            // Use T3 test templates for T3 framework, otherwise use regular tRPC templates
-            const testContent = framework === 't3' 
-              ? generateT3TestContent({ operation, testType, moduleName })
-              : generateTrpcTestContent({ operation, testType, moduleName });
-            
-            await writeFile({ filePath: testFilePath, content: testContent });
-            generatedFiles.push({
-              fileName: testType,
-              filePath: testFilePath,
-              content: testContent,
-            });
+          // Add operation-specific failure tests
+          if (operation === 'create') {
+            testFiles.push('failure/duplicate.test.ts');
+            testFiles.push('failure/unauthorized.test.ts');
+          } else if (operation === 'list') {
+            testFiles.push('failure/unauthorized.test.ts');
+          } else {
+            // get, update, delete operations
+            testFiles.push('failure/not-found.test.ts');
+            testFiles.push('failure/unauthorized.test.ts');
+          }
+
+          // Generate each test file
+          for (const testFile of testFiles) {
+            const testFilePath = path.join(operationDir, testFile);
+
+            if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
+              const testContent = generateT3TestContent({
+                operation,
+                testType: testFile, // Pass the full path like "success/basic.test.ts"
+                moduleName
+              });
+
+              await writeFile({ filePath: testFilePath, content: testContent });
+              generatedFiles.push({
+                fileName: testFile,
+                filePath: testFilePath,
+                content: testContent,
+              });
+            }
+          }
+        }
+      } else {
+        // Regular tRPC: Use flat test structure
+        const testTypes = ['procedure.test.ts', 'validation.test.ts', 'errors.test.ts'];
+
+        for (const operation of crudOperations) {
+          const operationDir = path.join(moduleTestDir, operation);
+          await ensureDirectory({ dirPath: operationDir });
+
+          for (const testType of testTypes) {
+            const testFilePath = path.join(operationDir, testType);
+
+            if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
+              const testContent = generateTrpcTestContent({ operation, testType, moduleName });
+
+              await writeFile({ filePath: testFilePath, content: testContent });
+              generatedFiles.push({
+                fileName: testType,
+                filePath: testFilePath,
+                content: testContent,
+              });
+            }
           }
         }
       }
@@ -319,29 +372,75 @@ export const generateTestFiles = async ({
   } else if (apiType.type === 'custom' && apiType.customNames) {
     if (trpcStyle || framework === 't3') {
       // Generate tRPC-style tests for custom operations
-      const testTypes = ['procedure.test.ts', 'validation.test.ts', 'errors.test.ts'];
+      if (framework === 't3') {
+        // T3 framework: Use modular test structure for custom operations
+        for (const customName of apiType.customNames) {
+          const operationDir = path.join(moduleTestDir, customName);
+          await ensureDirectory({ dirPath: operationDir });
 
-      for (const customName of apiType.customNames) {
-        const operationDir = path.join(moduleTestDir, customName);
+          // Create subdirectories for each test category
+          const successDir = path.join(operationDir, 'success');
+          const validationDir = path.join(operationDir, 'validation');
+          const failureDir = path.join(operationDir, 'failure');
 
-        // Ensure operation directory exists
-        await ensureDirectory({ dirPath: operationDir });
+          await ensureDirectory({ dirPath: successDir });
+          await ensureDirectory({ dirPath: validationDir });
+          await ensureDirectory({ dirPath: failureDir });
 
-        for (const testType of testTypes) {
-          const testFilePath = path.join(operationDir, testType);
+          // Define test files for custom operations (generic structure)
+          const testFiles = [
+            'success/basic.test.ts',
+            'success/variations.test.ts',
+            'validation/required.test.ts',
+            'validation/types.test.ts',
+            'failure/unauthorized.test.ts', // All custom operations get unauthorized test
+          ];
 
-          if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
-            // Use T3 test templates for T3 framework, otherwise use regular tRPC templates
-            const testContent = framework === 't3' 
-              ? generateT3TestContent({ operation: customName, testType, moduleName })
-              : generateTrpcTestContent({ operation: customName, testType, moduleName });
-            
-            await writeFile({ filePath: testFilePath, content: testContent });
-            generatedFiles.push({
-              fileName: testType,
-              filePath: testFilePath,
-              content: testContent,
-            });
+          // Generate each test file
+          for (const testFile of testFiles) {
+            const testFilePath = path.join(operationDir, testFile);
+
+            if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
+              const testContent = generateT3TestContent({
+                operation: customName,
+                testType: testFile,
+                moduleName
+              });
+
+              await writeFile({ filePath: testFilePath, content: testContent });
+              generatedFiles.push({
+                fileName: testFile,
+                filePath: testFilePath,
+                content: testContent,
+              });
+            }
+          }
+        }
+      } else {
+        // Regular tRPC: Use flat test structure
+        const testTypes = ['procedure.test.ts', 'validation.test.ts', 'errors.test.ts'];
+
+        for (const customName of apiType.customNames) {
+          const operationDir = path.join(moduleTestDir, customName);
+          await ensureDirectory({ dirPath: operationDir });
+
+          for (const testType of testTypes) {
+            const testFilePath = path.join(operationDir, testType);
+
+            if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
+              const testContent = generateTrpcTestContent({
+                operation: customName,
+                testType,
+                moduleName
+              });
+
+              await writeFile({ filePath: testFilePath, content: testContent });
+              generatedFiles.push({
+                fileName: testType,
+                filePath: testFilePath,
+                content: testContent,
+              });
+            }
           }
         }
       }
@@ -379,29 +478,75 @@ export const generateTestFiles = async ({
   } else if (apiType.type === 'services' && apiType.serviceNames) {
     if (trpcStyle || framework === 't3') {
       // Generate tRPC-style tests for service operations
-      const testTypes = ['procedure.test.ts', 'validation.test.ts', 'errors.test.ts'];
+      if (framework === 't3') {
+        // T3 framework: Use modular test structure for service operations
+        for (const serviceName of apiType.serviceNames) {
+          const operationDir = path.join(moduleTestDir, serviceName);
+          await ensureDirectory({ dirPath: operationDir });
 
-      for (const serviceName of apiType.serviceNames) {
-        const operationDir = path.join(moduleTestDir, serviceName);
+          // Create subdirectories for each test category
+          const successDir = path.join(operationDir, 'success');
+          const validationDir = path.join(operationDir, 'validation');
+          const failureDir = path.join(operationDir, 'failure');
 
-        // Ensure operation directory exists
-        await ensureDirectory({ dirPath: operationDir });
+          await ensureDirectory({ dirPath: successDir });
+          await ensureDirectory({ dirPath: validationDir });
+          await ensureDirectory({ dirPath: failureDir });
 
-        for (const testType of testTypes) {
-          const testFilePath = path.join(operationDir, testType);
+          // Define test files for service operations
+          const testFiles = [
+            'success/basic.test.ts',
+            'success/variations.test.ts',
+            'validation/required.test.ts',
+            'validation/types.test.ts',
+            'failure/unauthorized.test.ts',
+          ];
 
-          if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
-            // Use T3 test templates for T3 framework, otherwise use regular tRPC templates
-            const testContent = framework === 't3' 
-              ? generateT3TestContent({ operation: serviceName, testType, moduleName })
-              : generateTrpcTestContent({ operation: serviceName, testType, moduleName });
-            
-            await writeFile({ filePath: testFilePath, content: testContent });
-            generatedFiles.push({
-              fileName: testType,
-              filePath: testFilePath,
-              content: testContent,
-            });
+          // Generate each test file
+          for (const testFile of testFiles) {
+            const testFilePath = path.join(operationDir, testFile);
+
+            if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
+              const testContent = generateT3TestContent({
+                operation: serviceName,
+                testType: testFile,
+                moduleName
+              });
+
+              await writeFile({ filePath: testFilePath, content: testContent });
+              generatedFiles.push({
+                fileName: testFile,
+                filePath: testFilePath,
+                content: testContent,
+              });
+            }
+          }
+        }
+      } else {
+        // Regular tRPC: Use flat test structure
+        const testTypes = ['procedure.test.ts', 'validation.test.ts', 'errors.test.ts'];
+
+        for (const serviceName of apiType.serviceNames) {
+          const operationDir = path.join(moduleTestDir, serviceName);
+          await ensureDirectory({ dirPath: operationDir });
+
+          for (const testType of testTypes) {
+            const testFilePath = path.join(operationDir, testType);
+
+            if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
+              const testContent = generateTrpcTestContent({
+                operation: serviceName,
+                testType,
+                moduleName
+              });
+
+              await writeFile({ filePath: testFilePath, content: testContent });
+              generatedFiles.push({
+                fileName: testType,
+                filePath: testFilePath,
+                content: testContent,
+              });
+            }
           }
         }
       }

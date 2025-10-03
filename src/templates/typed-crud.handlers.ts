@@ -89,7 +89,7 @@ const generateTypedCreateHandlerContent = (
       : '{}';
 
   return `import type { typeResult, typeResultData, typeResultError } from '../types/create.${naming.file}';
-import create from '../repository/${naming.directory}.repository';
+import create from '../repository/create.${naming.file}';
 
 export default async function create${naming.class}Handler({
   ${fieldDestructuring},
@@ -153,7 +153,7 @@ const generateTypedGetHandlerContent = (
   const idAccess = idField || 'id';
 
   return `import type { typeResult, typeResultData, typeResultError } from '../types/get.${naming.file}';
-import { findById } from '../repository/${naming.directory}.repository';
+import get from '../repository/get.${naming.file}';
 
 export default async function get${naming.class}Handler({
   ${fieldDestructuring},
@@ -170,7 +170,7 @@ ${fieldTypes}
     console.info(\`\${requestId} [${naming.constant}] - GET handler started\`);
 
     // Business logic here - direct repository call
-    const ${naming.variable} = await findById(${idAccess});
+    const ${naming.variable} = await get(${idAccess});
 
     data = ${naming.variable};
 
@@ -245,7 +245,7 @@ const generateGenericHandlerContent = (
                 : field.name
             ).join(', ')} }`
           : '{}';
-      return `const result = await findMany(${payloadObject});
+      return `const result = await list(${payloadObject});
     data = result;`;
     } else if (operation === 'update') {
       const idField = findIdField(parsedType, naming.variable);
@@ -267,7 +267,7 @@ const generateGenericHandlerContent = (
   };
 
   return `import type { typeResult, typeResultData, typeResultError } from '../types/${operation}.${naming.file}';
-import { ${operation === 'delete' ? 'remove' : operation === 'list' ? 'findMany' : operation} } from '../repository/${naming.directory}.repository';
+import ${operation === 'delete' ? 'remove' : operation === 'list' ? 'list' : operation} from '../repository/${operation}.${naming.file}';
 
 export default async function ${operation}${naming.class}Handler({
   ${fieldDestructuring},

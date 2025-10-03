@@ -91,10 +91,13 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
     apiType = parseCommandLineApiType(options);
 
     if (options.interactive !== false) {
-      // Get effective framework early for interactive flow
-      const framework = await getEffectiveFramework({
+      // Only get framework from config/CLI if explicitly provided
+      // Don't use default yet - let interactive flow prompt if needed
+      const hasConfig = await configExists();
+      const framework = options.framework || (hasConfig ? await getEffectiveFramework({
         ...(options.framework && { cliFramework: options.framework }),
-      });
+      }) : undefined);
+
       const interactiveResult = await handleInteractiveFlow(moduleName, framework, apiType);
       if (!interactiveResult.success) {
         displayCancellation();
@@ -469,28 +472,23 @@ const handleInteractiveFlow = async (
   // Handle framework selection if not provided via CLI and not in config
   let selectedFramework: string | undefined = framework;
   if (!framework && apiType) {
-    const hasConfig = await configExists();
+    const frameworkResult = await promptFrameworkSelection();
+    if (!frameworkResult.success) {
+      return { success: false, appendMode: false, forceOverwrite: false };
+    }
 
-    // If no config exists, prompt user for framework
-    if (!hasConfig) {
-      const frameworkResult = await promptFrameworkSelection();
-      if (!frameworkResult.success) {
-        return { success: false, appendMode: false, forceOverwrite: false };
-      }
+    selectedFramework = frameworkResult.data!;
 
-      selectedFramework = frameworkResult.data!;
-
-      // Ask if user wants to save this choice
-      const saveResult = await promptSaveFrameworkToConfig({ framework: selectedFramework as SupportedFramework });
-      if (saveResult.success && saveResult.data) {
-        try {
-          await setFramework({ framework: selectedFramework as SupportedFramework });
-          console.log(
-            `✅ Saved ${selectedFramework} as default framework in node-apis.config.json\n`
-          );
-        } catch (error: any) {
-          console.warn(`⚠️  Could not save framework to config: ${error.message}\n`);
-        }
+    // Ask if user wants to save this choice
+    const saveResult = await promptSaveFrameworkToConfig({ framework: selectedFramework as SupportedFramework });
+    if (saveResult.success && saveResult.data) {
+      try {
+        await setFramework({ framework: selectedFramework as SupportedFramework });
+        console.log(
+          `✅ Saved ${selectedFramework} as default framework in node-apis.config.json\n`
+        );
+      } catch (error: any) {
+        console.warn(`⚠️  Could not save framework to config: ${error.message}\n`);
       }
     }
   }

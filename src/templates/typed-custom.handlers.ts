@@ -32,7 +32,7 @@ const generateGenericTypedCustomHandlerContent = (
     : '  // No fields defined in typePayload';
 
   return `import type { typeResult, typeResultData, typeResultError } from '../types/${customName}.${naming.file}';
-import { ${customName} } from '../repository/${naming.directory}.repository';
+import ${customName} from '../repository/${customName}.${naming.file}';
 
 export default async function ${customName}${naming.class}Handler({
   ${fieldDestructuring},

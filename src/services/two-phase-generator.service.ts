@@ -11,7 +11,11 @@ import {
 } from '../templates/services.templates';
 import { parseModuleTypes, convertEmptyTypePayload } from './type-parser.service';
 
-import { generateTypedRepositoryContent } from '../templates/typed-repository.templates';
+import {
+  getCrudRepositoryFileNames,
+  generateCrudRepositoryContent,
+  generateCustomRepositoryContent
+} from '../templates/typed-repository.templates';
 import {
   getCrudValidatorFileNames,
   generateCrudValidatorContent,
@@ -171,6 +175,7 @@ export const generateCodeWithParsedTypes = async ({
     const crudControllerFileNames = getCrudControllerFileNames({ moduleName });
     const crudProcedureFileNames = getTrpcProcedureFileNames({ moduleName });
     const crudHandlerFileNames = getCrudHandlerFileNames({ moduleName });
+    const crudRepositoryFileNames = getCrudRepositoryFileNames({ moduleName });
     // const crudServiceFileNames = getCrudServiceFileNames({ moduleName }); // Removed - no longer using service layer
     const crudOperations = ['create', 'get', 'list', 'delete', 'update'];
 
@@ -179,6 +184,7 @@ export const generateCodeWithParsedTypes = async ({
       const controllerFileName = crudControllerFileNames[i];
       const procedureFileName = crudProcedureFileNames[i];
       const handlerFileName = crudHandlerFileNames[i];
+      const repositoryFileName = crudRepositoryFileNames[i];
       // const serviceFileName = crudServiceFileNames[i]; // Removed - no longer using service layer
       const operation = crudOperations[i];
       const parsedType = parsedTypes[operation] || {
@@ -266,24 +272,23 @@ export const generateCodeWithParsedTypes = async ({
         });
       }
 
-      // Skip service generation - business logic is now in handlers
-    }
+      // Generate individual repository file per operation
+      const repositoryFilePath = path.join(repositoryDir, repositoryFileName);
+      if (!appendMode || !(await fileExists({ filePath: repositoryFilePath }))) {
+        const repositoryContent = generateCrudRepositoryContent({
+          operation,
+          moduleName,
+          parsedType,
+        });
+        await writeFile({ filePath: repositoryFilePath, content: repositoryContent });
+        generatedFiles.push({
+          fileName: repositoryFileName,
+          filePath: repositoryFilePath,
+          content: repositoryContent,
+        });
+      }
 
-    // Generate repository file with parsed types
-    const repositoryFileName = `${moduleName}.repository.ts`;
-    const repositoryFilePath = path.join(repositoryDir, repositoryFileName);
-    if (!appendMode || !(await fileExists({ filePath: repositoryFilePath }))) {
-      const repositoryContent = generateTypedRepositoryContent({
-        moduleName,
-        apiType,
-        parsedTypes,
-      });
-      await writeFile({ filePath: repositoryFilePath, content: repositoryContent });
-      generatedFiles.push({
-        fileName: repositoryFileName,
-        filePath: repositoryFilePath,
-        content: repositoryContent,
-      });
+      // Skip service generation - business logic is now in handlers
     }
   } else if (apiType.type === 'custom' && apiType.customNames) {
     const customValidatorFileNames = getCustomValidatorFileNames({
@@ -372,23 +377,24 @@ export const generateCodeWithParsedTypes = async ({
           content: handlerContent,
         });
       }
-    }
 
-    // Generate repository file with parsed types
-    const repositoryFileName = `${moduleName}.repository.ts`;
-    const repositoryFilePath = path.join(repositoryDir, repositoryFileName);
-    if (!appendMode || !(await fileExists({ filePath: repositoryFilePath }))) {
-      const repositoryContent = generateTypedRepositoryContent({
-        moduleName,
-        apiType,
-        parsedTypes,
-      });
-      await writeFile({ filePath: repositoryFilePath, content: repositoryContent });
-      generatedFiles.push({
-        fileName: repositoryFileName,
-        filePath: repositoryFilePath,
-        content: repositoryContent,
-      });
+      // Generate individual repository file per custom operation
+      const repositoryFileName = `${customName}.${moduleName}.ts`;
+      const repositoryFilePath = path.join(repositoryDir, repositoryFileName);
+      if (!appendMode || !(await fileExists({ filePath: repositoryFilePath }))) {
+        const parsedType = parsedTypes[customName] || { fields: [], hasId: false, hasPagination: false };
+        const repositoryContent = generateCustomRepositoryContent({
+          customName,
+          moduleName,
+          parsedType,
+        });
+        await writeFile({ filePath: repositoryFilePath, content: repositoryContent });
+        generatedFiles.push({
+          fileName: repositoryFileName,
+          filePath: repositoryFilePath,
+          content: repositoryContent,
+        });
+      }
     }
   } else if (apiType.type === 'services' && apiType.serviceNames) {
     const servicesDir = path.join(modulePath, 'services');
