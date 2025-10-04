@@ -60,6 +60,12 @@ import {
   getLoggerFileName,
 } from '../templates/t3.logger';
 import {
+  getT3CrudTypeFileNames,
+  getT3CustomTypeFileNames,
+  generateT3CrudTypeContent,
+  generateT3CustomTypeContent,
+} from '../templates/t3.types';
+import {
   getCrudHandlerFileNames,
   generateCrudHandlerContent,
 } from '../templates/typed-crud.handlers';
@@ -75,47 +81,91 @@ export const generateTypeFilesOnly = async ({
   modulePath,
   apiType,
   appendMode = false,
+  framework = 'express',
 }: {
   moduleName: string;
   modulePath: string;
   apiType: ApiType;
   appendMode?: boolean;
+  framework?: 'express' | 'hono' | 't3';
 }): Promise<GeneratedFile[]> => {
   const generatedFiles: GeneratedFile[] = [];
   const typesDir = path.join(modulePath, 'types');
 
   if (apiType.type === 'crud') {
-    const crudFileNames = getCrudFileNames({ moduleName });
-    const crudOperations = ['create', 'get', 'list', 'delete', 'update'];
+    // Use T3-specific type templates for T3 framework
+    if (framework === 't3') {
+      const crudFileNames = getT3CrudTypeFileNames({ moduleName });
+      const crudOperations = ['create', 'get', 'list', 'delete', 'update'];
 
-    for (let i = 0; i < crudFileNames.length; i++) {
-      const fileName = crudFileNames[i];
-      const operation = crudOperations[i];
+      for (let i = 0; i < crudFileNames.length; i++) {
+        const fileName = crudFileNames[i];
+        const operation = crudOperations[i];
 
-      // Generate type file
-      const typeFilePath = path.join(typesDir, fileName);
-      if (!appendMode || !(await fileExists({ filePath: typeFilePath }))) {
-        const typeContent = generateCrudFileContent({ operation, moduleName });
-        await writeFile({ filePath: typeFilePath, content: typeContent });
-        generatedFiles.push({ fileName, filePath: typeFilePath, content: typeContent });
+        // Generate T3 type file (only typePayload and typeResult)
+        const typeFilePath = path.join(typesDir, fileName);
+        if (!appendMode || !(await fileExists({ filePath: typeFilePath }))) {
+          const typeContent = generateT3CrudTypeContent({ operation, moduleName });
+          await writeFile({ filePath: typeFilePath, content: typeContent });
+          generatedFiles.push({ fileName, filePath: typeFilePath, content: typeContent });
+        }
+      }
+    } else {
+      // Use standard type templates for Express/Hono
+      const crudFileNames = getCrudFileNames({ moduleName });
+      const crudOperations = ['create', 'get', 'list', 'delete', 'update'];
+
+      for (let i = 0; i < crudFileNames.length; i++) {
+        const fileName = crudFileNames[i];
+        const operation = crudOperations[i];
+
+        // Generate type file
+        const typeFilePath = path.join(typesDir, fileName);
+        if (!appendMode || !(await fileExists({ filePath: typeFilePath }))) {
+          const typeContent = generateCrudFileContent({ operation, moduleName });
+          await writeFile({ filePath: typeFilePath, content: typeContent });
+          generatedFiles.push({ fileName, filePath: typeFilePath, content: typeContent });
+        }
       }
     }
   } else if (apiType.type === 'custom' && apiType.customNames) {
-    const customFileNames = getCustomFileNames({
-      customNames: apiType.customNames,
-      moduleName,
-    });
+    // Use T3-specific type templates for T3 framework
+    if (framework === 't3') {
+      const customFileNames = getT3CustomTypeFileNames({
+        customNames: apiType.customNames,
+        moduleName,
+      });
 
-    for (let i = 0; i < customFileNames.length; i++) {
-      const fileName = customFileNames[i];
-      const customName = apiType.customNames[i];
+      for (let i = 0; i < customFileNames.length; i++) {
+        const fileName = customFileNames[i];
+        const customName = apiType.customNames[i];
 
-      // Generate type file
-      const typeFilePath = path.join(typesDir, fileName);
-      if (!appendMode || !(await fileExists({ filePath: typeFilePath }))) {
-        const typeContent = generateCustomFileContent({ customName, moduleName });
-        await writeFile({ filePath: typeFilePath, content: typeContent });
-        generatedFiles.push({ fileName, filePath: typeFilePath, content: typeContent });
+        // Generate T3 custom type file (only typePayload and typeResult)
+        const typeFilePath = path.join(typesDir, fileName);
+        if (!appendMode || !(await fileExists({ filePath: typeFilePath }))) {
+          const typeContent = generateT3CustomTypeContent({ customName, moduleName });
+          await writeFile({ filePath: typeFilePath, content: typeContent });
+          generatedFiles.push({ fileName, filePath: typeFilePath, content: typeContent });
+        }
+      }
+    } else {
+      // Use standard type templates for Express/Hono
+      const customFileNames = getCustomFileNames({
+        customNames: apiType.customNames,
+        moduleName,
+      });
+
+      for (let i = 0; i < customFileNames.length; i++) {
+        const fileName = customFileNames[i];
+        const customName = apiType.customNames[i];
+
+        // Generate type file
+        const typeFilePath = path.join(typesDir, fileName);
+        if (!appendMode || !(await fileExists({ filePath: typeFilePath }))) {
+          const typeContent = generateCustomFileContent({ customName, moduleName });
+          await writeFile({ filePath: typeFilePath, content: typeContent });
+          generatedFiles.push({ fileName, filePath: typeFilePath, content: typeContent });
+        }
       }
     }
   } else if (apiType.type === 'services' && apiType.serviceNames) {

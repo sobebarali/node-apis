@@ -88,21 +88,20 @@ const generateTypedCreateHandlerContent = (
         ).join(', ')} }`
       : '{}';
 
-  return `import { TRPC_ERROR_CODES, ERROR_MESSAGES, ERROR_NAMES } from "~/server/api/constants/errors";
-import { createScopedLogger } from "~/server/api/utils/logger";
+  return `import { TRPCError } from "@trpc/server";
+import { TRPC_ERROR_CODES, ERROR_MESSAGES, ERROR_NAMES } from "~/server/constants/errors";
+import { createScopedLogger } from "~/server/utils/logger";
 import create from "../repository/create.${naming.file}";
-import type { typeResult, typeResultData, typeResultError } from "../types/create.${naming.file}";
+import type { typeResult } from "../types/create.${naming.file}";
 
 export default async function create${naming.class}Handler({
-  ${fieldDestructuring},
+  ${fieldDestructuring}
   requestId,
 }: {
 ${fieldTypes}
   requestId: string;
 }): Promise<typeResult> {
   const log = createScopedLogger({ requestId, feature: "${naming.constant}" });
-  let data: typeResultData | null = null;
-  let error: typeResultError | null = null;
 
   try {
     const startTime = Date.now();
@@ -111,8 +110,6 @@ ${fieldTypes}
     // Business logic here - direct repository call
     const ${naming.variable} = await create(${payloadObject});
 
-    data = ${naming.variable};
-
     const duration = Date.now() - startTime;
     log.info(
       {
@@ -120,42 +117,42 @@ ${fieldTypes}
       },
       "CREATE handler completed successfully",
     );
+
+    return ${naming.variable};
   } catch (err) {
-    const customError = err as Error;
+    const error = err as Error;
     log.error(
       {
-        error: customError.message,
-        stack: customError.stack,
+        error: error.message,
+        stack: error.stack,
       },
       "CREATE handler error",
     );
 
     // Handle specific error types using ERROR_NAMES
-    if (customError.name === ERROR_NAMES.VALIDATION) {
-      error = {
+    if (error.name === ERROR_NAMES.VALIDATION) {
+      throw new TRPCError({
         code: TRPC_ERROR_CODES.BAD_REQUEST,
-        message: customError.message,
-        statusCode: 400,
-        requestId,
-      };
-    } else if (customError.name === ERROR_NAMES.CONFLICT) {
-      error = {
+        message: error.message,
+        cause: error,
+      });
+    }
+
+    if (error.name === ERROR_NAMES.CONFLICT) {
+      throw new TRPCError({
         code: TRPC_ERROR_CODES.CONFLICT,
         message: ERROR_MESSAGES.ALREADY_EXISTS,
-        statusCode: 409,
-        requestId,
-      };
-    } else {
-      error = {
-        code: TRPC_ERROR_CODES.INTERNAL_SERVER_ERROR,
-        message: ERROR_MESSAGES.INTERNAL_ERROR,
-        statusCode: 500,
-        requestId,
-      };
+        cause: error,
+      });
     }
-  }
 
-  return { data, error };
+    // Generic error fallback
+    throw new TRPCError({
+      code: TRPC_ERROR_CODES.INTERNAL_SERVER_ERROR,
+      message: ERROR_MESSAGES.INTERNAL_ERROR,
+      cause: error,
+    });
+  }
 }
 `;
 };
@@ -182,21 +179,20 @@ const generateTypedGetHandlerContent = (
   const idField = findIdField(parsedType, naming.variable);
   const idAccess = idField || 'id';
 
-  return `import { TRPC_ERROR_CODES, ERROR_MESSAGES, ERROR_NAMES } from "~/server/api/constants/errors";
-import { createScopedLogger } from "~/server/api/utils/logger";
+  return `import { TRPCError } from "@trpc/server";
+import { TRPC_ERROR_CODES, ERROR_MESSAGES, ERROR_NAMES } from "~/server/constants/errors";
+import { createScopedLogger } from "~/server/utils/logger";
 import get from "../repository/get.${naming.file}";
-import type { typeResult, typeResultData, typeResultError } from "../types/get.${naming.file}";
+import type { typeResult } from "../types/get.${naming.file}";
 
 export default async function get${naming.class}Handler({
-  ${fieldDestructuring},
+  ${fieldDestructuring}
   requestId,
 }: {
 ${fieldTypes}
   requestId: string;
 }): Promise<typeResult> {
   const log = createScopedLogger({ requestId, feature: "${naming.constant}" });
-  let data: typeResultData | null = null;
-  let error: typeResultError | null = null;
 
   try {
     const startTime = Date.now();
@@ -205,8 +201,6 @@ ${fieldTypes}
     // Business logic here - direct repository call
     const ${naming.variable} = await get(${idAccess});
 
-    data = ${naming.variable};
-
     const duration = Date.now() - startTime;
     log.info(
       {
@@ -214,42 +208,42 @@ ${fieldTypes}
       },
       "GET handler completed successfully",
     );
+
+    return ${naming.variable};
   } catch (err) {
-    const customError = err as Error;
+    const error = err as Error;
     log.error(
       {
-        error: customError.message,
-        stack: customError.stack,
+        error: error.message,
+        stack: error.stack,
       },
       "GET handler error",
     );
 
     // Handle specific error types using ERROR_NAMES
-    if (customError.name === ERROR_NAMES.NOT_FOUND) {
-      error = {
+    if (error.name === ERROR_NAMES.NOT_FOUND) {
+      throw new TRPCError({
         code: TRPC_ERROR_CODES.NOT_FOUND,
         message: ERROR_MESSAGES.NOT_FOUND,
-        statusCode: 404,
-        requestId,
-      };
-    } else if (customError.name === ERROR_NAMES.VALIDATION) {
-      error = {
-        code: TRPC_ERROR_CODES.BAD_REQUEST,
-        message: customError.message,
-        statusCode: 400,
-        requestId,
-      };
-    } else {
-      error = {
-        code: TRPC_ERROR_CODES.INTERNAL_SERVER_ERROR,
-        message: ERROR_MESSAGES.INTERNAL_ERROR,
-        statusCode: 500,
-        requestId,
-      };
+        cause: error,
+      });
     }
-  }
 
-  return { data, error };
+    if (error.name === ERROR_NAMES.VALIDATION) {
+      throw new TRPCError({
+        code: TRPC_ERROR_CODES.BAD_REQUEST,
+        message: error.message,
+        cause: error,
+      });
+    }
+
+    // Generic error fallback
+    throw new TRPCError({
+      code: TRPC_ERROR_CODES.INTERNAL_SERVER_ERROR,
+      message: ERROR_MESSAGES.INTERNAL_ERROR,
+      cause: error,
+    });
+  }
 }
 `;
 };
@@ -281,57 +275,49 @@ const generateGenericHandlerContent = (
       const permanentAccess = parsedType.fields.find(f => f.name === 'permanent')
         ? 'permanent'
         : 'false';
-      return `await remove(${idAccess}, ${permanentAccess} || false);
-    data = {
-      deleted_id: ${idAccess},
-      deleted_at: new Date().toISOString(),
-      permanent: ${permanentAccess} || false
-    };`;
+      return `const result = await remove(${idAccess}, ${permanentAccess} || false);`;
     } else if (operation === 'list') {
       const payloadObject =
         parsedType.fields.length > 0
-          ? `{ ${parsedType.fields.map(field => 
-              field.optional 
+          ? `{ ${parsedType.fields.map(field =>
+              field.optional
                 ? `...(${field.name} !== undefined && { ${field.name} })`
                 : field.name
             ).join(', ')} }`
           : '{}';
-      return `const result = await list(${payloadObject});
-    data = result;`;
+      return `const result = await list(${payloadObject});`;
     } else if (operation === 'update') {
       const idField = findIdField(parsedType, naming.variable);
       const idAccess = idField || 'id';
       const nonIdFields = parsedType.fields.filter(f => f.name !== idField);
-      const updateObject = nonIdFields.length > 0 
-        ? `{ ${nonIdFields.map(field => 
-            field.optional 
+      const updateObject = nonIdFields.length > 0
+        ? `{ ${nonIdFields.map(field =>
+            field.optional
               ? `...(${field.name} !== undefined && { ${field.name} })`
               : field.name
-          ).join(', ')} }` 
+          ).join(', ')} }`
         : '{}';
-      return `const result = await update(${idAccess}, ${updateObject});
-    data = result;`;
+      return `const result = await update(${idAccess}, ${updateObject});`;
     } else {
       return `// TODO: Implement ${operation} logic
-    data = null;`;
+    throw new Error("Not implemented");`;
     }
   };
 
-  return `import { TRPC_ERROR_CODES, ERROR_MESSAGES, ERROR_NAMES } from "~/server/api/constants/errors";
-import { createScopedLogger } from "~/server/api/utils/logger";
+  return `import { TRPCError } from "@trpc/server";
+import { TRPC_ERROR_CODES, ERROR_MESSAGES, ERROR_NAMES } from "~/server/constants/errors";
+import { createScopedLogger } from "~/server/utils/logger";
 import ${operation === 'delete' ? 'remove' : operation === 'list' ? 'list' : operation} from "../repository/${operation}.${naming.file}";
-import type { typeResult, typeResultData, typeResultError } from "../types/${operation}.${naming.file}";
+import type { typeResult } from "../types/${operation}.${naming.file}";
 
 export default async function ${operation}${naming.class}Handler({
-  ${fieldDestructuring},
+  ${fieldDestructuring}
   requestId,
 }: {
 ${fieldTypes}
   requestId: string;
 }): Promise<typeResult> {
   const log = createScopedLogger({ requestId, feature: "${naming.constant}" });
-  let data: typeResultData | null = null;
-  let error: typeResultError | null = null;
 
   try {
     const startTime = Date.now();
@@ -347,12 +333,14 @@ ${fieldTypes}
       },
       "${operation.toUpperCase()} handler completed successfully",
     );
+
+    return result;
   } catch (err) {
-    const customError = err as Error;
+    const error = err as Error;
     log.error(
       {
-        error: customError.message,
-        stack: customError.stack,
+        error: error.message,
+        stack: error.stack,
       },
       "${operation.toUpperCase()} handler error",
     );
@@ -360,32 +348,30 @@ ${fieldTypes}
     // Handle specific error types using ERROR_NAMES
     ${
       (operation === 'delete' || operation === 'update') &&
-      `if (customError.name === ERROR_NAMES.NOT_FOUND) {
-      error = {
+      `if (error.name === ERROR_NAMES.NOT_FOUND) {
+      throw new TRPCError({
         code: TRPC_ERROR_CODES.NOT_FOUND,
         message: ERROR_MESSAGES.NOT_FOUND,
-        statusCode: 404,
-        requestId,
-      };
-    } else `
-    }if (customError.name === ERROR_NAMES.VALIDATION) {
-      error = {
-        code: TRPC_ERROR_CODES.BAD_REQUEST,
-        message: customError.message,
-        statusCode: 400,
-        requestId,
-      };
-    } else {
-      error = {
-        code: TRPC_ERROR_CODES.INTERNAL_SERVER_ERROR,
-        message: ERROR_MESSAGES.INTERNAL_ERROR,
-        statusCode: 500,
-        requestId,
-      };
+        cause: error,
+      });
     }
-  }
 
-  return { data, error };
+    `
+    }if (error.name === ERROR_NAMES.VALIDATION) {
+      throw new TRPCError({
+        code: TRPC_ERROR_CODES.BAD_REQUEST,
+        message: error.message,
+        cause: error,
+      });
+    }
+
+    // Generic error fallback
+    throw new TRPCError({
+      code: TRPC_ERROR_CODES.INTERNAL_SERVER_ERROR,
+      message: ERROR_MESSAGES.INTERNAL_ERROR,
+      cause: error,
+    });
+  }
 }
 `;
 };

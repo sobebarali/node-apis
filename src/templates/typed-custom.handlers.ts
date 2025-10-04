@@ -31,21 +31,20 @@ const generateGenericTypedCustomHandlerContent = (
     ? parsedType.fields.map(field => `  ${field.name}${field.optional ? '?' : ''}: ${field.type};`).join('\n')
     : '  // No fields defined in typePayload';
 
-  return `import { TRPC_ERROR_CODES, ERROR_MESSAGES, ERROR_NAMES } from "~/server/api/constants/errors";
-import { createScopedLogger } from "~/server/api/utils/logger";
+  return `import { TRPCError } from "@trpc/server";
+import { TRPC_ERROR_CODES, ERROR_MESSAGES, ERROR_NAMES } from "~/server/constants/errors";
+import { createScopedLogger } from "~/server/utils/logger";
 import ${customName} from "../repository/${customName}.${naming.file}";
-import type { typeResult, typeResultData, typeResultError } from "../types/${customName}.${naming.file}";
+import type { typeResult } from "../types/${customName}.${naming.file}";
 
 export default async function ${customName}${naming.class}Handler({
-  ${fieldDestructuring},
+  ${fieldDestructuring}
   requestId,
 }: {
 ${fieldTypes}
   requestId: string;
 }): Promise<typeResult> {
   const log = createScopedLogger({ requestId, feature: "${naming.constant}" });
-  let data: typeResultData | null = null;
-  let error: typeResultError | null = null;
 
   try {
     const startTime = Date.now();
@@ -56,8 +55,6 @@ ${fieldTypes}
       ${parsedType.fields.map(field => field.name).join(',\n      ')}
     });
 
-    data = result;
-
     const duration = Date.now() - startTime;
     log.info(
       {
@@ -65,42 +62,42 @@ ${fieldTypes}
       },
       "${customName.toUpperCase()} handler completed successfully",
     );
+
+    return result;
   } catch (err) {
-    const customError = err as Error;
+    const error = err as Error;
     log.error(
       {
-        error: customError.message,
-        stack: customError.stack,
+        error: error.message,
+        stack: error.stack,
       },
       "${customName.toUpperCase()} handler error",
     );
 
     // Handle specific error types using ERROR_NAMES
-    if (customError.name === ERROR_NAMES.NOT_FOUND) {
-      error = {
+    if (error.name === ERROR_NAMES.NOT_FOUND) {
+      throw new TRPCError({
         code: TRPC_ERROR_CODES.NOT_FOUND,
         message: ERROR_MESSAGES.NOT_FOUND,
-        statusCode: 404,
-        requestId,
-      };
-    } else if (customError.name === ERROR_NAMES.VALIDATION) {
-      error = {
-        code: TRPC_ERROR_CODES.BAD_REQUEST,
-        message: customError.message,
-        statusCode: 400,
-        requestId,
-      };
-    } else {
-      error = {
-        code: TRPC_ERROR_CODES.INTERNAL_SERVER_ERROR,
-        message: ERROR_MESSAGES.INTERNAL_ERROR,
-        statusCode: 500,
-        requestId,
-      };
+        cause: error,
+      });
     }
-  }
 
-  return { data, error };
+    if (error.name === ERROR_NAMES.VALIDATION) {
+      throw new TRPCError({
+        code: TRPC_ERROR_CODES.BAD_REQUEST,
+        message: error.message,
+        cause: error,
+      });
+    }
+
+    // Generic error fallback
+    throw new TRPCError({
+      code: TRPC_ERROR_CODES.INTERNAL_SERVER_ERROR,
+      message: ERROR_MESSAGES.INTERNAL_ERROR,
+      cause: error,
+    });
+  }
 }
 `;
 };

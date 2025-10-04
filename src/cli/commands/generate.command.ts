@@ -250,6 +250,7 @@ const handleTwoPhaseGeneration = async ({
       modulePath,
       apiType,
       appendMode,
+      framework: framework as 'express' | 'hono' | 't3',
     });
 
     console.log('✅ Type files generated successfully!\n');

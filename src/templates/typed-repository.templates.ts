@@ -89,13 +89,13 @@ const generateTypedCreateRepositoryContent = (
   const fieldDestructuring = generateFieldDestructuring(parsedType.fields);
   const fieldObject = generateFieldObject(parsedType.fields);
 
-  return `import type { typeResultData } from "../types/create.${naming.file}";
+  return `import type { typeResult } from "../types/create.${naming.file}";
 
 export default async function create({
 ${fieldDestructuring}
 }: {
 ${parsedType.fields.map(field => `  ${field.name}${field.optional ? '?' : ''}: ${field.type};`).join('\n')}
-}): Promise<typeResultData> {
+}): Promise<typeResult> {
   try {
     // TODO: Implement your create logic here
     // Example: return await db.${variableName}.create({ data: { ${parsedType.fields.map(f => f.name).join(', ')} } });
@@ -123,9 +123,9 @@ const generateTypedGetRepositoryContent = (
   const variableName = naming.variable;
   const capitalizedModule = naming.class;
 
-  return `import type { typeResultData } from "../types/get.${naming.file}";
+  return `import type { typeResult } from "../types/get.${naming.file}";
 
-export default async function get(${variableName}Id: string): Promise<typeResultData> {
+export default async function get(${variableName}Id: string): Promise<typeResult> {
   try {
     // TODO: Replace with your database implementation
     // Example with Prisma:
@@ -166,13 +166,13 @@ const generateTypedListRepositoryContent = (
   const moduleName = naming.file;
   const fieldDestructuring = generateFieldDestructuring(parsedType.fields);
 
-  return `import type { typeResultData } from "../types/list.${naming.file}";
+  return `import type { typeResult } from "../types/list.${naming.file}";
 
 export default async function list({
 ${fieldDestructuring}
 }: {
 ${parsedType.fields.map(field => `  ${field.name}${field.optional ? '?' : ''}: ${field.type};`).join('\n')}
-}): Promise<typeResultData> {
+}): Promise<typeResult> {
   try {
     // TODO: Replace with your database implementation
     // Example with Prisma:
@@ -230,9 +230,9 @@ const generateTypedDeleteRepositoryContent = (
   const capitalizedModule = naming.class;
   const moduleName = naming.file;
 
-  return `import type { typeResultData } from "../types/delete.${naming.file}";
+  return `import type { typeResult } from "../types/delete.${naming.file}";
 
-export default async function remove(${variableName}Id: string, permanent: boolean = false): Promise<typeResultData> {
+export default async function remove(${variableName}Id: string, permanent: boolean = false): Promise<typeResult> {
   try {
     // TODO: Replace with your database implementation
     // Example with Prisma:
@@ -272,7 +272,7 @@ const generateTypedUpdateRepositoryContent = (
   const moduleName = naming.file;
   const fieldObject = generateFieldObject(parsedType.fields.filter(f => f.name !== `${variableName}Id`));
 
-  return `import type { typeResultData } from "../types/update.${naming.file}";
+  return `import type { typeResult } from "../types/update.${naming.file}";
 
 export default async function update(${variableName}Id: string, {
 ${parsedType.fields
@@ -282,7 +282,7 @@ ${parsedType.fields
 ${parsedType.fields
   .filter(f => f.name !== `${variableName}Id`)
   .map(field => `  ${field.name}${field.optional ? '?' : ''}: ${field.type};`).join('\n')}
-}): Promise<typeResultData> {
+}): Promise<typeResult> {
   try {
     // TODO: Replace with your database implementation
     // Example with Prisma:
@@ -519,13 +519,13 @@ export const generateCustomRepositoryContent = ({
   const variableName = naming.variable;
   const fieldDestructuring = generateFieldDestructuring(parsedType.fields);
 
-  return `import type { typeResultData } from "../types/${customName}.${naming.file}";
+  return `import type { typeResult } from "../types/${customName}.${naming.file}";
 
 export default async function ${customName}({
 ${fieldDestructuring}
 }: {
 ${parsedType.fields.map(field => `  ${field.name}${field.optional ? '?' : ''}: ${field.type};`).join('\n')}
-}): Promise<typeResultData> {
+}): Promise<typeResult> {
   try {
     // TODO: Implement your ${customName} logic here
     // Example: return await db.${variableName}.${customName}({
