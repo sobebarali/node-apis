@@ -538,10 +538,11 @@ describe("${capitalizedModuleName} ${operation.charAt(0).toUpperCase() + operati
     const ctx = await createTRPCContext({ headers: new Headers() });
     const caller = appRouter.createCaller(ctx);
 
-    const invalidInput = {}; // Missing all fields
+    const invalidInput = {} as unknown; // Missing all fields
 
+    // @ts-expect-error - Testing invalid input type
     await expect(
-      caller.${moduleName}.${operation}(invalidInput as any)
+      caller.${moduleName}.${operation}(invalidInput)
     ).rejects.toThrow();
   });
 
@@ -554,8 +555,9 @@ describe("${capitalizedModuleName} ${operation.charAt(0).toUpperCase() + operati
       description: "Missing name field",
     };
 
+    // @ts-expect-error - Testing invalid input type
     await expect(
-      caller.${moduleName}.${operation}(invalidInput as any)
+      caller.${moduleName}.${operation}(invalidInput)
     ).rejects.toThrow();
   });` : ''}
 
@@ -568,8 +570,9 @@ describe("${capitalizedModuleName} ${operation.charAt(0).toUpperCase() + operati
       ${operation === 'update' ? 'name: "Without ID",' : ''}
     };
 
+    // @ts-expect-error - Testing invalid input type
     await expect(
-      caller.${moduleName}.${operation}(invalidInput as any)
+      caller.${moduleName}.${operation}(invalidInput)
     ).rejects.toThrow();
   });` : ''}
 
@@ -583,8 +586,9 @@ describe("${capitalizedModuleName} ${operation.charAt(0).toUpperCase() + operati
       ${operation === 'update' ? `${moduleName}Id: null, name: null,` : ''}
     };
 
+    // @ts-expect-error - Testing invalid input type
     await expect(
-      caller.${moduleName}.${operation}(invalidInput as any)
+      caller.${moduleName}.${operation}(invalidInput)
     ).rejects.toThrow();
   });
 });
@@ -624,8 +628,9 @@ describe("${capitalizedModuleName} ${operation.charAt(0).toUpperCase() + operati
       ` : ''}
     };
 
+    // @ts-expect-error - Testing invalid input type
     await expect(
-      caller.${moduleName}.${operation}(invalidInput as any)
+      caller.${moduleName}.${operation}(invalidInput)
     ).rejects.toThrow();
   });
 
@@ -641,8 +646,9 @@ describe("${capitalizedModuleName} ${operation.charAt(0).toUpperCase() + operati
     ];
 
     for (const invalidInput of invalidInputs) {
+      // @ts-expect-error - Testing invalid input type
       await expect(
-        caller.${moduleName}.${operation}(invalidInput as any)
+        caller.${moduleName}.${operation}(invalidInput)
       ).rejects.toThrow();
     }
   });` : ''}
@@ -657,8 +663,9 @@ describe("${capitalizedModuleName} ${operation.charAt(0).toUpperCase() + operati
       name: 'A'.repeat(10000), // Extremely long string
     };
 
+    // @ts-expect-error - Testing invalid input type
     await expect(
-      caller.${moduleName}.${operation}(invalidInput as any)
+      caller.${moduleName}.${operation}(invalidInput)
     ).rejects.toThrow();
   });` : ''}
 
@@ -674,8 +681,9 @@ describe("${capitalizedModuleName} ${operation.charAt(0).toUpperCase() + operati
     ];
 
     for (const invalidInput of edgeCases) {
+      // @ts-expect-error - Testing invalid input type
       await expect(
-        caller.${moduleName}.${operation}(invalidInput as any)
+        caller.${moduleName}.${operation}(invalidInput as unknown)
       ).rejects.toThrow();
     }
   });

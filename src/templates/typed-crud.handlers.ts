@@ -88,8 +88,10 @@ const generateTypedCreateHandlerContent = (
         ).join(', ')} }`
       : '{}';
 
-  return `import type { typeResult, typeResultData, typeResultError } from '../types/create.${naming.file}';
-import create from '../repository/create.${naming.file}';
+  return `import { TRPC_ERROR_CODES, ERROR_MESSAGES, ERROR_NAMES } from "~/server/api/constants/errors";
+import { createScopedLogger } from "~/server/api/utils/logger";
+import create from "../repository/create.${naming.file}";
+import type { typeResult, typeResultData, typeResultError } from "../types/create.${naming.file}";
 
 export default async function create${naming.class}Handler({
   ${fieldDestructuring},
@@ -98,12 +100,13 @@ export default async function create${naming.class}Handler({
 ${fieldTypes}
   requestId: string;
 }): Promise<typeResult> {
+  const log = createScopedLogger({ requestId, feature: "${naming.constant}" });
   let data: typeResultData | null = null;
   let error: typeResultError | null = null;
 
   try {
     const startTime = Date.now();
-    console.info(\`\${requestId} [${naming.constant}] - CREATE handler started\`);
+    log.info({ ${parsedType.fields.length > 0 ? parsedType.fields.map(f => f.name).join(', ') : ''} }, "CREATE handler started");
 
     // Business logic here - direct repository call
     const ${naming.variable} = await create(${payloadObject});
@@ -111,18 +114,45 @@ ${fieldTypes}
     data = ${naming.variable};
 
     const duration = Date.now() - startTime;
-    console.info(\`\${requestId} [${naming.constant}] - CREATE handler completed successfully in \${duration}ms\`);
+    log.info(
+      {
+        duration: \`\${duration}ms\`,
+      },
+      "CREATE handler completed successfully",
+    );
   } catch (err) {
     const customError = err as Error;
-    console.error(
-      \`\${requestId} [${naming.constant}] - CREATE handler error: \${customError.message}\`
+    log.error(
+      {
+        error: customError.message,
+        stack: customError.stack,
+      },
+      "CREATE handler error",
     );
-    error = {
-      code: (customError as any).errorCode ?? 'INTERNAL_ERROR',
-      message: customError.message ?? 'An unexpected error occurred',
-      statusCode: (customError as any).statusCode ?? 500,
-      requestId,
-    };
+
+    // Handle specific error types using ERROR_NAMES
+    if (customError.name === ERROR_NAMES.VALIDATION) {
+      error = {
+        code: TRPC_ERROR_CODES.BAD_REQUEST,
+        message: customError.message,
+        statusCode: 400,
+        requestId,
+      };
+    } else if (customError.name === ERROR_NAMES.CONFLICT) {
+      error = {
+        code: TRPC_ERROR_CODES.CONFLICT,
+        message: ERROR_MESSAGES.ALREADY_EXISTS,
+        statusCode: 409,
+        requestId,
+      };
+    } else {
+      error = {
+        code: TRPC_ERROR_CODES.INTERNAL_SERVER_ERROR,
+        message: ERROR_MESSAGES.INTERNAL_ERROR,
+        statusCode: 500,
+        requestId,
+      };
+    }
   }
 
   return { data, error };
@@ -152,8 +182,10 @@ const generateTypedGetHandlerContent = (
   const idField = findIdField(parsedType, naming.variable);
   const idAccess = idField || 'id';
 
-  return `import type { typeResult, typeResultData, typeResultError } from '../types/get.${naming.file}';
-import get from '../repository/get.${naming.file}';
+  return `import { TRPC_ERROR_CODES, ERROR_MESSAGES, ERROR_NAMES } from "~/server/api/constants/errors";
+import { createScopedLogger } from "~/server/api/utils/logger";
+import get from "../repository/get.${naming.file}";
+import type { typeResult, typeResultData, typeResultError } from "../types/get.${naming.file}";
 
 export default async function get${naming.class}Handler({
   ${fieldDestructuring},
@@ -162,12 +194,13 @@ export default async function get${naming.class}Handler({
 ${fieldTypes}
   requestId: string;
 }): Promise<typeResult> {
+  const log = createScopedLogger({ requestId, feature: "${naming.constant}" });
   let data: typeResultData | null = null;
   let error: typeResultError | null = null;
 
   try {
     const startTime = Date.now();
-    console.info(\`\${requestId} [${naming.constant}] - GET handler started\`);
+    log.info({ ${idAccess} }, "GET handler started");
 
     // Business logic here - direct repository call
     const ${naming.variable} = await get(${idAccess});
@@ -175,25 +208,43 @@ ${fieldTypes}
     data = ${naming.variable};
 
     const duration = Date.now() - startTime;
-    console.info(\`\${requestId} [${naming.constant}] - GET handler completed successfully in \${duration}ms\`);
+    log.info(
+      {
+        duration: \`\${duration}ms\`,
+      },
+      "GET handler completed successfully",
+    );
   } catch (err) {
     const customError = err as Error;
-    console.error(
-      \`\${requestId} [${naming.constant}] - GET handler error: \${customError.message}\`
+    log.error(
+      {
+        error: customError.message,
+        stack: customError.stack,
+      },
+      "GET handler error",
     );
 
-    if (customError.name === 'NotFoundError') {
+    // Handle specific error types using ERROR_NAMES
+    if (customError.name === ERROR_NAMES.NOT_FOUND) {
       error = {
-        code: 'NOT_FOUND',
-        message: \`${naming.class} not found\`,
+        code: TRPC_ERROR_CODES.NOT_FOUND,
+        message: ERROR_MESSAGES.NOT_FOUND,
         statusCode: 404,
+        requestId,
+      };
+    } else if (customError.name === ERROR_NAMES.VALIDATION) {
+      error = {
+        code: TRPC_ERROR_CODES.BAD_REQUEST,
+        message: customError.message,
+        statusCode: 400,
         requestId,
       };
     } else {
       error = {
-        code: (customError as any).errorCode ?? 'INTERNAL_ERROR',
-        message: customError.message ?? 'An unexpected error occurred',
-        statusCode: (customError as any).statusCode ?? 500,
+        code: TRPC_ERROR_CODES.INTERNAL_SERVER_ERROR,
+        message: ERROR_MESSAGES.INTERNAL_ERROR,
+        statusCode: 500,
+        requestId,
       };
     }
   }
@@ -266,8 +317,10 @@ const generateGenericHandlerContent = (
     }
   };
 
-  return `import type { typeResult, typeResultData, typeResultError } from '../types/${operation}.${naming.file}';
-import ${operation === 'delete' ? 'remove' : operation === 'list' ? 'list' : operation} from '../repository/${operation}.${naming.file}';
+  return `import { TRPC_ERROR_CODES, ERROR_MESSAGES, ERROR_NAMES } from "~/server/api/constants/errors";
+import { createScopedLogger } from "~/server/api/utils/logger";
+import ${operation === 'delete' ? 'remove' : operation === 'list' ? 'list' : operation} from "../repository/${operation}.${naming.file}";
+import type { typeResult, typeResultData, typeResultError } from "../types/${operation}.${naming.file}";
 
 export default async function ${operation}${naming.class}Handler({
   ${fieldDestructuring},
@@ -276,42 +329,60 @@ export default async function ${operation}${naming.class}Handler({
 ${fieldTypes}
   requestId: string;
 }): Promise<typeResult> {
+  const log = createScopedLogger({ requestId, feature: "${naming.constant}" });
   let data: typeResultData | null = null;
   let error: typeResultError | null = null;
 
   try {
     const startTime = Date.now();
-    console.info(\`\${requestId} [${naming.constant}] - ${operation.toUpperCase()} handler started\`);
+    log.info({ ${parsedType.fields.length > 0 ? parsedType.fields.map(f => f.name).join(', ') : ''} }, "${operation.toUpperCase()} handler started");
 
     // Business logic here - direct repository call
     ${getRepositoryCall()}
 
     const duration = Date.now() - startTime;
-    console.info(\`\${requestId} [${naming.constant}] - ${operation.toUpperCase()} handler completed successfully in \${duration}ms\`);
+    log.info(
+      {
+        duration: \`\${duration}ms\`,
+      },
+      "${operation.toUpperCase()} handler completed successfully",
+    );
   } catch (err) {
     const customError = err as Error;
-    console.error(
-      \`\${requestId} [${naming.constant}] - ${operation.toUpperCase()} handler error: \${customError.message}\`
+    log.error(
+      {
+        error: customError.message,
+        stack: customError.stack,
+      },
+      "${operation.toUpperCase()} handler error",
     );
 
+    // Handle specific error types using ERROR_NAMES
     ${
-      operation === 'delete' &&
-      `if (customError.name === 'NotFoundError') {
+      (operation === 'delete' || operation === 'update') &&
+      `if (customError.name === ERROR_NAMES.NOT_FOUND) {
       error = {
-        code: 'NOT_FOUND',
-        message: \`${naming.class} not found\`,
+        code: TRPC_ERROR_CODES.NOT_FOUND,
+        message: ERROR_MESSAGES.NOT_FOUND,
         statusCode: 404,
         requestId,
       };
-    } else {`
+    } else `
+    }if (customError.name === ERROR_NAMES.VALIDATION) {
+      error = {
+        code: TRPC_ERROR_CODES.BAD_REQUEST,
+        message: customError.message,
+        statusCode: 400,
+        requestId,
+      };
+    } else {
+      error = {
+        code: TRPC_ERROR_CODES.INTERNAL_SERVER_ERROR,
+        message: ERROR_MESSAGES.INTERNAL_ERROR,
+        statusCode: 500,
+        requestId,
+      };
     }
-    error = {
-      code: (customError as any).errorCode ?? 'INTERNAL_ERROR',
-      message: customError.message ?? 'An unexpected error occurred',
-      statusCode: (customError as any).statusCode ?? 500,
-      requestId,
-    };
-    ${operation === 'delete' && `}`}
   }
 
   return { data, error };

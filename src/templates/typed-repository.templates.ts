@@ -89,12 +89,17 @@ const generateTypedCreateRepositoryContent = (
   const fieldDestructuring = generateFieldDestructuring(parsedType.fields);
   const fieldObject = generateFieldObject(parsedType.fields);
 
-  return `export default async function create({
+  return `import type { typeResultData } from "../types/create.${naming.file}";
+
+export default async function create({
 ${fieldDestructuring}
 }: {
 ${parsedType.fields.map(field => `  ${field.name}${field.optional ? '?' : ''}: ${field.type};`).join('\n')}
-}) {
+}): Promise<typeResultData> {
   try {
+    // TODO: Implement your create logic here
+    // Example: return await db.${variableName}.create({ data: { ${parsedType.fields.map(f => f.name).join(', ')} } });
+
     const ${variableName} = {
       ${variableName}Id: \`mock-id-\${Date.now()}\`,
 ${fieldObject}
@@ -118,7 +123,9 @@ const generateTypedGetRepositoryContent = (
   const variableName = naming.variable;
   const capitalizedModule = naming.class;
 
-  return `export default async function get(${variableName}Id: string) {
+  return `import type { typeResultData } from "../types/get.${naming.file}";
+
+export default async function get(${variableName}Id: string): Promise<typeResultData> {
   try {
     // TODO: Replace with your database implementation
     // Example with Prisma:
@@ -128,7 +135,9 @@ const generateTypedGetRepositoryContent = (
 
     // Mock implementation - replace with actual database call
     if (${variableName}Id === 'not-found') {
-      throw new Error(\`${capitalizedModule} not found: \${${variableName}Id}\`);
+      const error = new Error(\`${capitalizedModule} not found: \${${variableName}Id}\`);
+      error.name = "NotFoundError";
+      throw error;
     }
 
     const ${variableName} = {
@@ -141,7 +150,7 @@ const generateTypedGetRepositoryContent = (
 
     return ${variableName};
   } catch (error) {
-    if (error instanceof Error && error.message.includes('not found')) throw error;
+    if (error instanceof Error && error.name === 'NotFoundError') throw error;
     throw new Error(\`Database error: Failed to ${capitalizedOperation.toLowerCase()} ${variableName}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
 }
@@ -157,11 +166,13 @@ const generateTypedListRepositoryContent = (
   const moduleName = naming.file;
   const fieldDestructuring = generateFieldDestructuring(parsedType.fields);
 
-  return `export default async function list({
+  return `import type { typeResultData } from "../types/list.${naming.file}";
+
+export default async function list({
 ${fieldDestructuring}
 }: {
 ${parsedType.fields.map(field => `  ${field.name}${field.optional ? '?' : ''}: ${field.type};`).join('\n')}
-}) {
+}): Promise<typeResultData> {
   try {
     // TODO: Replace with your database implementation
     // Example with Prisma:
@@ -219,7 +230,9 @@ const generateTypedDeleteRepositoryContent = (
   const capitalizedModule = naming.class;
   const moduleName = naming.file;
 
-  return `export default async function remove(${variableName}Id: string, permanent: boolean = false) {
+  return `import type { typeResultData } from "../types/delete.${naming.file}";
+
+export default async function remove(${variableName}Id: string, permanent: boolean = false): Promise<typeResultData> {
   try {
     // TODO: Replace with your database implementation
     // Example with Prisma:
@@ -231,14 +244,18 @@ const generateTypedDeleteRepositoryContent = (
 
     // Mock implementation - replace with actual database call
     if (${variableName}Id === 'not-found') {
-      throw new Error(\`${capitalizedModule} not found: \${${variableName}Id}\`);
+      const error = new Error(\`${capitalizedModule} not found: \${${variableName}Id}\`);
+      error.name = "NotFoundError";
+      throw error;
     }
 
     return {
+      deleted_id: ${variableName}Id,
       deleted_at: new Date().toISOString(),
+      permanent,
     };
   } catch (error) {
-    if (error instanceof Error && error.message.includes('not found')) throw error;
+    if (error instanceof Error && error.name === 'NotFoundError') throw error;
     throw new Error(\`Database error: Failed to delete ${moduleName}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
 }
@@ -255,7 +272,9 @@ const generateTypedUpdateRepositoryContent = (
   const moduleName = naming.file;
   const fieldObject = generateFieldObject(parsedType.fields.filter(f => f.name !== `${variableName}Id`));
 
-  return `export default async function update(${variableName}Id: string, {
+  return `import type { typeResultData } from "../types/update.${naming.file}";
+
+export default async function update(${variableName}Id: string, {
 ${parsedType.fields
   .filter(f => f.name !== `${variableName}Id`)
   .map(field => `  ${field.name},`).join('\n')}
@@ -263,7 +282,7 @@ ${parsedType.fields
 ${parsedType.fields
   .filter(f => f.name !== `${variableName}Id`)
   .map(field => `  ${field.name}${field.optional ? '?' : ''}: ${field.type};`).join('\n')}
-}) {
+}): Promise<typeResultData> {
   try {
     // TODO: Replace with your database implementation
     // Example with Prisma:
@@ -278,7 +297,9 @@ ${parsedType.fields
 
     // Mock implementation - replace with actual database call
     if (${variableName}Id === 'not-found') {
-      throw new Error(\`${capitalizedModule} not found: \${${variableName}Id}\`);
+      const error = new Error(\`${capitalizedModule} not found: \${${variableName}Id}\`);
+      error.name = "NotFoundError";
+      throw error;
     }
 
     const ${variableName} = {
@@ -290,7 +311,7 @@ ${fieldObject}
 
     return ${variableName};
   } catch (error) {
-    if (error instanceof Error && error.message.includes('not found')) throw error;
+    if (error instanceof Error && error.name === 'NotFoundError') throw error;
     throw new Error(\`Database error: Failed to update ${moduleName}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
 }
@@ -498,11 +519,13 @@ export const generateCustomRepositoryContent = ({
   const variableName = naming.variable;
   const fieldDestructuring = generateFieldDestructuring(parsedType.fields);
 
-  return `export default async function ${customName}({
+  return `import type { typeResultData } from "../types/${customName}.${naming.file}";
+
+export default async function ${customName}({
 ${fieldDestructuring}
 }: {
 ${parsedType.fields.map(field => `  ${field.name}${field.optional ? '?' : ''}: ${field.type};`).join('\n')}
-}): Promise<any> {
+}): Promise<typeResultData> {
   try {
     // TODO: Implement your ${customName} logic here
     // Example: return await db.${variableName}.${customName}({
@@ -510,9 +533,9 @@ ${parsedType.fields.map(field => `  ${field.name}${field.optional ? '?' : ''}: $
     // });
 
     // Mock implementation - replace with actual database call
-    return { success: true, operation: '${customName}' };
+    throw new Error("Not implemented - replace with actual database query");
   } catch (error) {
-    throw new Error(\`Database error: Failed to ${customName} ${moduleName}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
+    throw new Error(\`Database error: Failed to ${customName}: \${error instanceof Error ? error.message : 'Unknown error'}\`);
   }
 }
 `;

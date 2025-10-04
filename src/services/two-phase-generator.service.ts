@@ -52,6 +52,14 @@ import {
   generateServicesT3RouterContent,
 } from '../templates/t3.router';
 import {
+  generateErrorConstantsContent,
+  getErrorConstantsFileName,
+} from '../templates/t3.constants';
+import {
+  generateLoggerContent,
+  getLoggerFileName,
+} from '../templates/t3.logger';
+import {
   getCrudHandlerFileNames,
   generateCrudHandlerContent,
 } from '../templates/typed-crud.handlers';
@@ -430,36 +438,69 @@ export const generateCodeWithParsedTypes = async ({
 
   // Generate routes or router file based on style
   if (framework === 't3') {
+    // Generate T3 utility files (constants and logger) - only once
+    const constantsDir = path.join(modulePath, '..', '..', 'constants');
+    const utilsDir = path.join(modulePath, '..', '..', 'utils');
+
+    await ensureDirectory({ dirPath: constantsDir });
+    await ensureDirectory({ dirPath: utilsDir });
+
+    // Generate error constants file if it doesn't exist
+    const constantsFileName = getErrorConstantsFileName();
+    const constantsFilePath = path.join(constantsDir, constantsFileName);
+    if (!(await fileExists({ filePath: constantsFilePath }))) {
+      const constantsContent = generateErrorConstantsContent();
+      await writeFile({ filePath: constantsFilePath, content: constantsContent });
+      generatedFiles.push({
+        fileName: constantsFileName,
+        filePath: constantsFilePath,
+        content: constantsContent,
+      });
+    }
+
+    // Generate logger file if it doesn't exist
+    const loggerFileName = getLoggerFileName();
+    const loggerFilePath = path.join(utilsDir, loggerFileName);
+    if (!(await fileExists({ filePath: loggerFilePath }))) {
+      const loggerContent = generateLoggerContent();
+      await writeFile({ filePath: loggerFilePath, content: loggerContent });
+      generatedFiles.push({
+        fileName: loggerFileName,
+        filePath: loggerFilePath,
+        content: loggerContent,
+      });
+    }
+
     // Generate T3 router file
     const routerFileName = `${moduleName}.ts`;
     const routersDir = path.join(modulePath, '..', 'routers');
     const routerFilePath = path.join(routersDir, routerFileName);
-    
+
     // Ensure routers directory exists
     await ensureDirectory({ dirPath: routersDir });
-    
+
     if (!appendMode || !(await fileExists({ filePath: routerFilePath }))) {
       let routerContent: string;
-      
+
       if (apiType.type === 'crud') {
-        routerContent = generateT3RouterContent({ 
-          moduleName, 
-          operations: ['create', 'get', 'list', 'update', 'delete'] 
+        routerContent = generateT3RouterContent({
+          moduleName,
+          operations: ['create', 'get', 'list', 'update', 'delete']
         });
       } else if (apiType.type === 'custom' && apiType.customNames) {
-        routerContent = generateCustomT3RouterContent({ 
-          moduleName, 
-          operations: apiType.customNames 
+        routerContent = generateCustomT3RouterContent({
+          moduleName,
+          operations: apiType.customNames
         });
       } else if (apiType.type === 'services' && apiType.serviceNames) {
-        routerContent = generateServicesT3RouterContent({ 
-          moduleName, 
-          operations: apiType.serviceNames 
+        routerContent = generateServicesT3RouterContent({
+          moduleName,
+          operations: apiType.serviceNames
         });
       } else {
         routerContent = generateT3RouterContent({ moduleName });
       }
-      
+
       await writeFile({ filePath: routerFilePath, content: routerContent });
       generatedFiles.push({
         fileName: routerFileName,
