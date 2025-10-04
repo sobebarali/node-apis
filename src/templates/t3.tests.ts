@@ -713,7 +713,7 @@ describe("${capitalizedModuleName} ${operation.charAt(0).toUpperCase() + operati
     const input: RouterInputs["${moduleName}"]["${operation}"] = {
       ${moduleName}Id: "non-existent-id-12345",
       ${operation === 'update' ? 'name: "Update attempt",' : ''}
-    } as any;
+    }
 
     const res: RouterOutputs["${moduleName}"]["${operation}"] = await caller.${moduleName}.${operation}(input);
 
@@ -734,7 +734,7 @@ describe("${capitalizedModuleName} ${operation.charAt(0).toUpperCase() + operati
     const input: RouterInputs["${moduleName}"]["${operation}"] = {
       ${moduleName}Id: "definitely-not-found-id",
       ${operation === 'update' ? 'name: "Some name",' : ''}
-    } as any;
+    }
 
     const res: RouterOutputs["${moduleName}"]["${operation}"] = await caller.${moduleName}.${operation}(input);
 
@@ -760,7 +760,7 @@ describe("${capitalizedModuleName} ${operation.charAt(0).toUpperCase() + operati
       const input: RouterInputs["${moduleName}"]["${operation}"] = {
         ${moduleName}Id,
         ${operation === 'update' ? 'name: "Test",' : ''}
-      } as any;
+      }
 
       const res: RouterOutputs["${moduleName}"]["${operation}"] = await caller.${moduleName}.${operation}(input);
 
@@ -864,7 +864,7 @@ describe("${capitalizedModuleName} ${operation.charAt(0).toUpperCase() + operati
       ${operation === 'get' || operation === 'delete' ? `${moduleName}Id: "test-id-unauth",` : ''}
       ${operation === 'update' ? `${moduleName}Id: "test-id-unauth", name: "Update",` : ''}
       ${operation === 'list' ? `page: 1, limit: 10,` : ''}
-    } as any;
+    }
 
     const res = await caller.${moduleName}.${operation}(input);
 
@@ -881,7 +881,7 @@ describe("${capitalizedModuleName} ${operation.charAt(0).toUpperCase() + operati
       ${operation === 'create' ? `name: "Auth Test",` : ''}
       ${operation === 'get' || operation === 'delete' ? `${moduleName}Id: "auth-test-id",` : ''}
       ${operation === 'update' ? `${moduleName}Id: "auth-test-id", name: "Update",` : ''}
-    } as any;
+    }
 
     try {
       const res = await caller.${moduleName}.${operation}(input);
@@ -907,7 +907,7 @@ describe("${capitalizedModuleName} ${operation.charAt(0).toUpperCase() + operati
       ${operation === 'get' || operation === 'delete' ? `${moduleName}Id: "timeout-test-id",` : ''}
       ${operation === 'update' ? `${moduleName}Id: "timeout-test-id", name: "Timeout",` : ''}
       ${operation === 'list' ? `search: "timeout test query",` : ''}
-    } as any;
+    }
 
     // Should complete within reasonable time
     const startTime = Date.now();
