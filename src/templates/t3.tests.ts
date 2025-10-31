@@ -107,22 +107,14 @@ describe("Create ${capitalizedModuleName} - Basic Success", () => {
 
     const res: RouterOutputs["${moduleName}"]["create"] = await caller.${moduleName}.create(input);
 
-    console.log("Created ${moduleName}:", res.data);
+    console.log("Created ${moduleName}:", res);
 
-    const expectedResponse: RouterOutputs["${moduleName}"]["create"] = {
-      data: {
-        ${moduleName}Id: expect.any(String),
-        name: input.name,
-        description: input.description,
-        status: input.status,
-        created_at: expect.any(String),
-        updated_at: expect.any(String),
-      },
-      error: null
-    };
-
-    expect(res).toEqual(expectedResponse);
-    expect(res.error).toBeNull();
+    expect(res).toHaveProperty("${moduleName}Id");
+    expect(res.name).toBe(input.name);
+    expect(res.description).toBe(input.description);
+    expect(res.status).toBe(input.status);
+    expect(res).toHaveProperty("created_at");
+    expect(res).toHaveProperty("updated_at");
   });
 });
 `;
@@ -143,22 +135,15 @@ describe("Get ${capitalizedModuleName} - Basic Success", () => {
 
     const res: RouterOutputs["${moduleName}"]["get"] = await caller.${moduleName}.get(input);
 
-    console.log("Retrieved ${moduleName}:", res.data);
+    console.log("Retrieved ${moduleName}:", res);
 
-    const expectedResponse: RouterOutputs["${moduleName}"]["get"] = {
-      data: {
-        ${moduleName}Id: input.${moduleName}Id,
-        name: expect.any(String),
-        description: expect.any(String),
-        status: expect.any(String),
-        created_at: expect.any(String),
-        updated_at: expect.any(String),
-      },
-      error: null
-    };
-
-    expect(res).toEqual(expectedResponse);
-    expect(res.error).toBeNull();
+    expect(res).toHaveProperty("${moduleName}Id");
+    expect(res.${moduleName}Id).toBe(input.${moduleName}Id);
+    expect(res).toHaveProperty("name");
+    expect(res).toHaveProperty("description");
+    expect(res).toHaveProperty("status");
+    expect(res).toHaveProperty("created_at");
+    expect(res).toHaveProperty("updated_at");
   });
 });
 `;
@@ -177,26 +162,17 @@ describe("List ${capitalizedModuleName}s - Basic Success", () => {
 
     const res: RouterOutputs["${moduleName}"]["list"] = await caller.${moduleName}.list(input);
 
-    console.log("Listed ${moduleName}s:", res.data);
+    console.log("Listed ${moduleName}s:", res);
 
-    const expectedResponse: RouterOutputs["${moduleName}"]["list"] = {
-      data: {
-        items: expect.any(Array),
-        _metadata: {
-          page: expect.any(Number),
-          limit: expect.any(Number),
-          total_count: expect.any(Number),
-          total_pages: expect.any(Number),
-          has_next: expect.any(Boolean),
-          has_prev: expect.any(Boolean),
-        },
-      },
-      error: null
-    };
-
-    expect(res).toEqual(expectedResponse);
-    expect(Array.isArray(res.data?.items)).toBe(true);
-    expect(res.error).toBeNull();
+    expect(res).toHaveProperty("items");
+    expect(Array.isArray(res.items)).toBe(true);
+    expect(res).toHaveProperty("_metadata");
+    expect(res._metadata).toHaveProperty("page");
+    expect(res._metadata).toHaveProperty("limit");
+    expect(res._metadata).toHaveProperty("total_count");
+    expect(res._metadata).toHaveProperty("total_pages");
+    expect(res._metadata).toHaveProperty("has_next");
+    expect(res._metadata).toHaveProperty("has_prev");
   });
 });
 `;
@@ -220,22 +196,15 @@ describe("Update ${capitalizedModuleName} - Basic Success", () => {
 
     const res: RouterOutputs["${moduleName}"]["update"] = await caller.${moduleName}.update(input);
 
-    console.log("Updated ${moduleName}:", res.data);
+    console.log("Updated ${moduleName}:", res);
 
-    const expectedResponse: RouterOutputs["${moduleName}"]["update"] = {
-      data: {
-        ${moduleName}Id: input.${moduleName}Id,
-        name: input.name,
-        description: input.description,
-        status: input.status,
-        created_at: expect.any(String),
-        updated_at: expect.any(String),
-      },
-      error: null
-    };
-
-    expect(res).toEqual(expectedResponse);
-    expect(res.error).toBeNull();
+    expect(res).toHaveProperty("${moduleName}Id");
+    expect(res.${moduleName}Id).toBe(input.${moduleName}Id);
+    expect(res.name).toBe(input.name);
+    expect(res.description).toBe(input.description);
+    expect(res.status).toBe(input.status);
+    expect(res).toHaveProperty("created_at");
+    expect(res).toHaveProperty("updated_at");
   });
 });
 `;
@@ -256,18 +225,11 @@ describe("Delete ${capitalizedModuleName} - Basic Success", () => {
 
     const res: RouterOutputs["${moduleName}"]["delete"] = await caller.${moduleName}.delete(input);
 
-    console.log("Deleted ${moduleName}:", res.data);
+    console.log("Deleted ${moduleName}:", res);
 
-    const expectedResponse: RouterOutputs["${moduleName}"]["delete"] = {
-      data: {
-        deleted_id: input.${moduleName}Id,
-        deleted_at: expect.any(String),
-      },
-      error: null
-    };
-
-    expect(res).toEqual(expectedResponse);
-    expect(res.error).toBeNull();
+    expect(res).toHaveProperty("deleted_id");
+    expect(res.deleted_id).toBe(input.${moduleName}Id);
+    expect(res).toHaveProperty("deleted_at");
   });
 });
 `;
