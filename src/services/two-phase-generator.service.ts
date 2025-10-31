@@ -1,6 +1,6 @@
 import * as path from 'path';
 import { ApiType, GeneratedFile } from '../types/common.types';
-import { fileExists, writeFile } from '../filesystem/file.operations';
+import { fileExists, writeFile, readFile } from '../filesystem/file.operations';
 import { ensureDirectory } from '../filesystem/directory.operations';
 import { getCrudFileNames, generateCrudFileContent } from '../templates/crud.templates';
 import { getCustomFileNames, generateCustomFileContent } from '../templates/custom.templates';
@@ -47,9 +47,8 @@ import {
   generateT3ProcedureContent,
 } from '../templates/t3.procedures';
 import {
-  generateT3RouterContent,
-  generateCustomT3RouterContent,
-  generateServicesT3RouterContent,
+  generateMergedT3RouterContent,
+  parseT3RouterOperations,
 } from '../templates/t3.router';
 import {
   generateErrorConstantsContent,
@@ -521,7 +520,7 @@ export const generateCodeWithParsedTypes = async ({
       });
     }
 
-    // Generate T3 router file
+    // Generate T3 router file with automatic operation merging
     const routerFileName = `${moduleName}.ts`;
     const routersDir = path.join(modulePath, '..', 'routers');
     const routerFilePath = path.join(routersDir, routerFileName);
@@ -529,35 +528,45 @@ export const generateCodeWithParsedTypes = async ({
     // Ensure routers directory exists
     await ensureDirectory({ dirPath: routersDir });
 
-    if (!appendMode || !(await fileExists({ filePath: routerFilePath }))) {
-      let routerContent: string;
-
-      if (apiType.type === 'crud') {
-        routerContent = generateT3RouterContent({
-          moduleName,
-          operations: ['create', 'get', 'list', 'update', 'delete']
-        });
-      } else if (apiType.type === 'custom' && apiType.customNames) {
-        routerContent = generateCustomT3RouterContent({
-          moduleName,
-          operations: apiType.customNames
-        });
-      } else if (apiType.type === 'services' && apiType.serviceNames) {
-        routerContent = generateServicesT3RouterContent({
-          moduleName,
-          operations: apiType.serviceNames
-        });
-      } else {
-        routerContent = generateT3RouterContent({ moduleName });
-      }
-
-      await writeFile({ filePath: routerFilePath, content: routerContent });
-      generatedFiles.push({
-        fileName: routerFileName,
-        filePath: routerFilePath,
-        content: routerContent,
-      });
+    // Determine new operations to add
+    let newOperations: string[] = [];
+    if (apiType.type === 'crud') {
+      newOperations = ['create', 'get', 'list', 'update', 'delete'];
+    } else if (apiType.type === 'custom' && apiType.customNames) {
+      newOperations = apiType.customNames;
+    } else if (apiType.type === 'services' && apiType.serviceNames) {
+      newOperations = apiType.serviceNames;
     }
+
+    // Check if router file already exists
+    const routerExists = await fileExists({ filePath: routerFilePath });
+    let existingOperations: string[] = [];
+
+    if (routerExists) {
+      try {
+        const existingContent = await readFile({ filePath: routerFilePath });
+        existingOperations = parseT3RouterOperations(existingContent);
+      } catch (error) {
+        // If parsing fails, continue with just new operations
+        existingOperations = [];
+      }
+    }
+
+    // Merge existing and new operations (removes duplicates)
+    const allOperations = [...new Set([...existingOperations, ...newOperations])];
+
+    // Generate router with merged operations
+    const routerContent = generateMergedT3RouterContent({
+      moduleName,
+      operations: allOperations,
+    });
+
+    await writeFile({ filePath: routerFilePath, content: routerContent });
+    generatedFiles.push({
+      fileName: routerFileName,
+      filePath: routerFilePath,
+      content: routerContent,
+    });
   } else if (trpcStyle) {
     // Generate tRPC router file
     const routerFileName = `${moduleName}.router.ts`;

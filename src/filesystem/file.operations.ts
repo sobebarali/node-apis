@@ -26,6 +26,13 @@ export const fileExists = async ({ filePath }: { filePath: string }): Promise<bo
 };
 
 /**
+ * Reads content from a file
+ */
+export const readFile = async ({ filePath }: { filePath: string }): Promise<string> => {
+  return await fs.readFile(filePath, 'utf8');
+};
+
+/**
  * Reads files from a directory with a specific extension
  */
 export const getFilesWithExtension = async ({

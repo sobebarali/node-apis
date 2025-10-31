@@ -46,7 +46,6 @@ import {
   promptApiType,
   promptCustomOperations,
   promptServiceOperations,
-  promptConfirmation,
   promptApiStyleSelection,
   promptSaveApiStyleToConfig,
   promptFrameworkSelection,
@@ -133,14 +132,6 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
       apiType: apiType?.type || undefined,
       operationNames: getOperationNames(apiType),
     });
-
-    if (options.interactive !== false) {
-      const confirmResult = await promptConfirmation();
-      if (!confirmResult.success || !confirmResult.data) {
-        displayCancellation();
-        process.exit(0);
-      }
-    }
 
     if (apiType) {
       // Handle backward compatibility: --trpc-style maps to --api-style trpc
