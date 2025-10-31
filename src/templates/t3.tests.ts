@@ -251,7 +251,7 @@ const generateSuccessVariationsTest = (operation: string, moduleName: string): s
 describe("${operationTitle} ${capitalizedModuleName} - Input Variations", () => {
   it("should handle different input variations", async () => {
     // TODO: Implement test with different input variations
-    expect(true).toBe(true);
+    expect(true).toBe(false);
   });
 });
 `;
@@ -273,7 +273,7 @@ const generateValidationRequiredTest = (operation: string, moduleName: string): 
 describe("${capitalizedModuleName} ${operationTitle} - Required Field Validation", () => {
   it("should reject request with missing required fields", async () => {
     // TODO: Implement validation test for required fields
-    expect(true).toBe(true);
+    expect(true).toBe(false);
   });
 });
 `;
@@ -291,7 +291,7 @@ const generateValidationTypesTest = (operation: string, moduleName: string): str
 describe("${capitalizedModuleName} ${operationTitle} - Field Type Validation", () => {
   it("should reject invalid field types", async () => {
     // TODO: Implement validation test for field types
-    expect(true).toBe(true);
+    expect(true).toBe(false);
   });
 });
 `;
@@ -313,7 +313,7 @@ const generateFailureNotFoundTest = (operation: string, moduleName: string): str
 describe("${capitalizedModuleName} ${operationTitle} - Not Found Errors", () => {
   it("should handle non-existent ${moduleName} ID gracefully", async () => {
     // TODO: Implement test for not found errors
-    expect(true).toBe(true);
+    expect(true).toBe(false);
   });
 });
 `;
@@ -330,7 +330,7 @@ const generateFailureDuplicateTest = (_operation: string, moduleName: string): s
 describe("${capitalizedModuleName} Create - Duplicate/Conflict Errors", () => {
   it("should handle duplicate ${moduleName} creation gracefully", async () => {
     // TODO: Implement test for duplicate/conflict errors
-    expect(true).toBe(true);
+    expect(true).toBe(false);
   });
 });
 `;
@@ -348,7 +348,7 @@ const generateFailureUnauthorizedTest = (operation: string, moduleName: string):
 describe("${capitalizedModuleName} ${operationTitle} - Authorization Errors", () => {
   it("should handle unauthorized ${operation} attempts gracefully", async () => {
     // TODO: Implement test for unauthorized access
-    expect(true).toBe(true);
+    expect(true).toBe(false);
   });
 });
 `;
@@ -367,7 +367,7 @@ const generateGenericSuccessBasicTest = (operation: string, moduleName: string):
 describe("${capitalizedModuleName} ${operationTitle} - Basic Success", () => {
   it("should ${operation} successfully", async () => {
     // TODO: Implement test for custom operation
-    expect(true).toBe(true);
+    expect(true).toBe(false);
   });
 });
 `;
