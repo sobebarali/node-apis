@@ -129,12 +129,8 @@ junit.xml
 
 # START Ruler Generated Files
 *.bak
-.augment/rules/ruler_augment_instructions.md
-.augment/rules/ruler_augment_instructions.md.bak
-.mcp.json
-.mcp.json.bak
-.vscode/settings.json
-.vscode/settings.json.bak
-CLAUDE.md
-CLAUDE.md.bak
+.crush.json
+.crush.json.bak
+CRUSH.md
+CRUSH.md.bak
 # END Ruler Generated Files

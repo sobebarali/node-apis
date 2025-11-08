@@ -1,7 +1,4 @@
 ---
-alwaysApply: true
----
----
 Source: .ruler/coding_style.md
 ---
 # Coding Style Guidelines
