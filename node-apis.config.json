@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "framework": "t3",
+  "framework": "express",
   "database": {},
   "preferences": {
     "autoFormat": true,

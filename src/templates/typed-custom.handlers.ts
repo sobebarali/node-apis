@@ -31,10 +31,7 @@ const generateGenericTypedCustomHandlerContent = (
     ? parsedType.fields.map(field => `  ${field.name}${field.optional ? '?' : ''}: ${field.type};`).join('\n')
     : '  // No fields defined in typePayload';
 
-  return `import { TRPCError } from "@trpc/server";
-import { TRPC_ERROR_CODES, ERROR_MESSAGES, ERROR_NAMES } from "~/server/constants/errors";
-import { createScopedLogger } from "~/server/utils/logger";
-import ${customName} from "../repository/${customName}.${naming.file}";
+  return `import ${customName} from "../repository/${customName}.${naming.file}";
 import type { typeResult } from "../types/${customName}.${naming.file}";
 
 export default async function ${customName}${naming.class}Handler({
@@ -44,59 +41,28 @@ export default async function ${customName}${naming.class}Handler({
 ${fieldTypes}
   requestId: string;
 }): Promise<typeResult> {
-  const log = createScopedLogger({ requestId, feature: "${naming.constant}" });
-
   try {
-    const startTime = Date.now();
-    log.info({ ${parsedType.fields.length > 0 ? parsedType.fields.map(f => f.name).join(', ') : ''} }, "${customName.toUpperCase()} handler started");
+    console.info(\`\${requestId} [HANDLER] - ${customName.toUpperCase()} ${naming.constant} started\`);
 
     // Business logic here - call repository function
     const result = await ${customName}({
       ${parsedType.fields.map(field => field.name).join(',\n      ')}
     });
 
-    const duration = Date.now() - startTime;
-    log.info(
-      {
-        duration: \`\${duration}ms\`,
-      },
-      "${customName.toUpperCase()} handler completed successfully",
-    );
+    console.info(\`\${requestId} [HANDLER] - ${customName.toUpperCase()} ${naming.constant} completed successfully\`);
 
     return result;
-  } catch (err) {
-    const error = err as Error;
-    log.error(
-      {
-        error: error.message,
-        stack: error.stack,
-      },
-      "${customName.toUpperCase()} handler error",
-    );
+  } catch (error) {
+    console.error(\`\${requestId} [HANDLER] - ${customName.toUpperCase()} ${naming.constant} error:\`, error);
 
-    // Handle specific error types using ERROR_NAMES
-    if (error.name === ERROR_NAMES.NOT_FOUND) {
-      throw new TRPCError({
-        code: TRPC_ERROR_CODES.NOT_FOUND,
-        message: ERROR_MESSAGES.NOT_FOUND,
-        cause: error,
-      });
-    }
-
-    if (error.name === ERROR_NAMES.VALIDATION) {
-      throw new TRPCError({
-        code: TRPC_ERROR_CODES.BAD_REQUEST,
-        message: error.message,
-        cause: error,
-      });
-    }
-
-    // Generic error fallback
-    throw new TRPCError({
-      code: TRPC_ERROR_CODES.INTERNAL_SERVER_ERROR,
-      message: ERROR_MESSAGES.INTERNAL_ERROR,
-      cause: error,
-    });
+    return {
+      data: null,
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: (error as Error).message || 'Failed to execute ${customName} operation for ${naming.variable}',
+        statusCode: 500
+      }
+    };
   }
 }
 `;

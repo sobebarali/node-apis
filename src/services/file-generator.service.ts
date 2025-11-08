@@ -6,32 +6,7 @@ import * as path from 'path';
 import { ApiType, GeneratedFile } from '../types/common.types';
 import { fileExists, writeFile } from '../filesystem/file.operations';
 import { ensureDirectory } from '../filesystem/directory.operations';
-import { getCrudFileNames, generateCrudFileContent } from '../templates/crud.templates';
-import { getCustomFileNames, generateCustomFileContent } from '../templates/custom.templates';
-import {
-  getCrudValidatorFileNames,
-  generateCrudValidatorContent,
-} from '../templates/crud.validators';
-import {
-  getCustomValidatorFileNames,
-  generateCustomValidatorContent,
-} from '../templates/custom.validators';
-import {
-  getCrudControllerFileNames,
-  generateCrudControllerContent,
-} from '../templates/crud.controllers';
-import {
-  getCustomControllerFileNames,
-  generateCustomControllerContent,
-} from '../templates/custom.controllers';
-
-// Custom services not generated - business logic is now in handlers
-import { generateRouteContent } from '../templates/routes.templates';
-import { generateRepositoryContent } from '../templates/repository.templates';
-import { generateCrudTestContent } from '../templates/crud.tests';
-import { generateCustomTestContent } from '../templates/custom.tests';
-import { generateTrpcTestContent } from '../templates/trpc.tests';
-import { generateT3TestContent } from '../templates/t3.tests';
+import { getCrudFileNames, generateCrudFileContent } from '../templates/shared/crud.templates';
 
 /**
  * Gets the test types for each operation
@@ -52,9 +27,6 @@ const getTestTypesForOperation = (operation: string): string[] => {
       return ['success', 'validation', 'errors'];
   }
 };
-import {
-  generateServiceComprehensiveTestContent,
-} from '../templates/services.tests';
 
 /**
  * Generates TypeScript files based on API type (types + validators + controllers + services + repository + routes)
@@ -71,16 +43,39 @@ export const generateApiFiles = async ({
   appendMode?: boolean;
 }): Promise<GeneratedFile[]> => {
   const generatedFiles: GeneratedFile[] = [];
+  const framework = apiType.framework || 'express'; // Default to express if framework is not specified
+
+  // Determine the directory structure based on API type
   const typesDir = path.join(modulePath, 'types');
   const validatorsDir = path.join(modulePath, 'validators');
   const controllersDir = path.join(modulePath, 'controllers');
   const repositoryDir = path.join(modulePath, 'repository');
 
   if (apiType.type === 'crud') {
+    // Determine which framework-specific templates to use
+    let crudControllerModule, crudValidatorModule;
+    
+    switch (framework) {
+      case 'hono':
+        crudControllerModule = await import('../templates/hono/crud/controllers');
+        crudValidatorModule = await import('../templates/hono/crud/validators');
+        break;
+      case 't3':
+        // For T3, we use a different structure entirely
+        // This would be handled separately in the T3 generation process
+        // For now, we'll return an empty array as T3 generation is not part of this function
+        return generatedFiles;
+      case 'express':
+      default:
+        crudControllerModule = await import('../templates/express/crud/controllers');
+        crudValidatorModule = await import('../templates/express/crud/validators');
+        break;
+    }
+
     // Generate type files
     const crudFileNames = getCrudFileNames({ moduleName });
-    const crudValidatorFileNames = getCrudValidatorFileNames({ moduleName });
-    const crudControllerFileNames = getCrudControllerFileNames({ moduleName });
+    const crudValidatorFileNames = crudControllerModule.getCrudValidatorFileNames({ moduleName });
+    const crudControllerFileNames = crudControllerModule.getCrudControllerFileNames({ moduleName });
 
     const crudOperations = ['create', 'get', 'list', 'delete', 'update'];
 
@@ -102,7 +97,7 @@ export const generateApiFiles = async ({
       // Generate validator file
       const validatorFilePath = path.join(validatorsDir, validatorFileName);
       if (!appendMode || !(await fileExists({ filePath: validatorFilePath }))) {
-        const validatorContent = generateCrudValidatorContent({ operation, moduleName });
+        const validatorContent = crudValidatorModule.generateCrudValidatorContent({ operation, moduleName });
         await writeFile({ filePath: validatorFilePath, content: validatorContent });
         generatedFiles.push({
           fileName: validatorFileName,
@@ -114,7 +109,7 @@ export const generateApiFiles = async ({
       // Generate controller file
       const controllerFilePath = path.join(controllersDir, controllerFileName);
       if (!appendMode || !(await fileExists({ filePath: controllerFilePath }))) {
-        const controllerContent = generateCrudControllerContent({ operation, moduleName });
+        const controllerContent = crudControllerModule.generateCrudControllerContent({ operation, moduleName });
         await writeFile({ filePath: controllerFilePath, content: controllerContent });
         generatedFiles.push({
           fileName: controllerFileName,
@@ -123,42 +118,60 @@ export const generateApiFiles = async ({
         });
       }
 
-      // Skip service generation - business logic is now in handlers
+      // Generate handler files for each operation (handlers are framework-agnostic)
+      // Note: handler files would be generated separately with business logic
     }
   } else if (apiType.type === 'custom' && apiType.customNames) {
+    // Determine which framework-specific templates to use
+    let customControllerModule, customValidatorModule;
+    
+    switch (framework) {
+      case 'hono':
+        customControllerModule = await import('../templates/hono/custom/controllers');
+        customValidatorModule = await import('../templates/hono/custom/validators');
+        break;
+      case 't3':
+        // For T3, we use a different structure entirely
+        // This would be handled separately in the T3 generation process
+        // For now, we'll return an empty array as T3 generation is not part of this function
+        return generatedFiles;
+      case 'express':
+      default:
+        customControllerModule = await import('../templates/express/custom/controllers');
+        customValidatorModule = await import('../templates/express/custom/validators');
+        break;
+    }
+
     // Generate type files
-    const customFileNames = getCustomFileNames({
-      customNames: apiType.customNames,
+    const customFileNames = getCrudFileNames({ moduleName }); // Reusing CRUD file naming for types
+    const customValidatorFileNames = customControllerModule.getCustomValidatorFileNames({
       moduleName,
+      customNames: apiType.customNames,
     });
-    const customValidatorFileNames = getCustomValidatorFileNames({
-      customNames: apiType.customNames,
+    const customControllerFileNames = customControllerModule.getCustomControllerFileNames({
       moduleName,
-    });
-    const customControllerFileNames = getCustomControllerFileNames({
       customNames: apiType.customNames,
-      moduleName,
     });
     // Custom service files not generated - business logic is now in handlers
 
-    for (let i = 0; i < customFileNames.length; i++) {
-      const fileName = customFileNames[i];
+    for (let i = 0; i < apiType.customNames.length; i++) {
+      const fileName = customFileNames[i % customFileNames.length]; // Cycle through CRUD type files
       const validatorFileName = customValidatorFileNames[i];
       const controllerFileName = customControllerFileNames[i];
       const customName = apiType.customNames[i];
 
       // Generate type file
-      const typeFilePath = path.join(typesDir, fileName);
+      const typeFilePath = path.join(typesDir, fileName.replace('create', customName)); // Replace operation name
       if (!appendMode || !(await fileExists({ filePath: typeFilePath }))) {
-        const typeContent = generateCustomFileContent({ customName, moduleName });
+        const typeContent = generateCrudFileContent({ operation: customName, moduleName });
         await writeFile({ filePath: typeFilePath, content: typeContent });
-        generatedFiles.push({ fileName, filePath: typeFilePath, content: typeContent });
+        generatedFiles.push({ fileName: fileName.replace('create', customName), filePath: typeFilePath, content: typeContent });
       }
 
       // Generate validator file
       const validatorFilePath = path.join(validatorsDir, validatorFileName);
       if (!appendMode || !(await fileExists({ filePath: validatorFilePath }))) {
-        const validatorContent = generateCustomValidatorContent({ customName, moduleName });
+        const validatorContent = customValidatorModule.generateCustomValidatorContent({ operation: customName, moduleName });
         await writeFile({ filePath: validatorFilePath, content: validatorContent });
         generatedFiles.push({
           fileName: validatorFileName,
@@ -170,7 +183,7 @@ export const generateApiFiles = async ({
       // Generate controller file
       const controllerFilePath = path.join(controllersDir, controllerFileName);
       if (!appendMode || !(await fileExists({ filePath: controllerFilePath }))) {
-        const controllerContent = generateCustomControllerContent({ customName, moduleName });
+        const controllerContent = customControllerModule.generateCustomControllerContent({ operation: customName, moduleName });
         await writeFile({ filePath: controllerFilePath, content: controllerContent });
         generatedFiles.push({
           fileName: controllerFileName,
@@ -179,7 +192,8 @@ export const generateApiFiles = async ({
         });
       }
 
-      // Skip service generation for custom APIs - business logic is now in handlers
+      // Generate handler files for custom operations (handlers are framework-agnostic)
+      // Note: handler files would be generated separately with business logic
     }
   }
 
@@ -187,7 +201,11 @@ export const generateApiFiles = async ({
   const repositoryFileName = `${moduleName}.repository.ts`;
   const repositoryFilePath = path.join(repositoryDir, repositoryFileName);
   if (!appendMode || !(await fileExists({ filePath: repositoryFilePath }))) {
-    const repositoryContent = generateRepositoryContent({ moduleName, apiType });
+    const repositoryModule = framework === 'hono' 
+      ? await import('../templates/hono/repository') 
+      : await import('../templates/express/repository');
+      
+    const repositoryContent = repositoryModule.generateRepositoryContent({ moduleName });
     await writeFile({ filePath: repositoryFilePath, content: repositoryContent });
     generatedFiles.push({
       fileName: repositoryFileName,
@@ -200,7 +218,25 @@ export const generateApiFiles = async ({
   const routeFileName = `${moduleName}.routes.ts`;
   const routeFilePath = path.join(modulePath, routeFileName);
   if (!appendMode || !(await fileExists({ filePath: routeFilePath }))) {
-    const routeContent = generateRouteContent({ moduleName, apiType });
+    // Import the appropriate route module based on framework and API type
+    let routeModule;
+    if (framework === 't3') {
+      routeModule = await import('../templates/t3/router');
+    } else if (framework === 'hono') {
+      if (apiType.type === 'custom' && apiType.customNames) {
+        routeModule = await import('../templates/hono/custom/routes');
+      } else {
+        routeModule = await import('../templates/hono/crud/routes');
+      }
+    } else {
+      if (apiType.type === 'custom' && apiType.customNames) {
+        routeModule = await import('../templates/express/custom/routes');
+      } else {
+        routeModule = await import('../templates/express/crud/routes');
+      }
+    }
+    
+    const routeContent = routeModule.generateRouteContent({ moduleName, apiType });
     await writeFile({ filePath: routeFilePath, content: routeContent });
     generatedFiles.push({
       fileName: routeFileName,
@@ -278,7 +314,8 @@ export const generateTestFiles = async ({
             const testFilePath = path.join(operationDir, testFile);
 
             if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
-              const testContent = generateT3TestContent({
+              const t3TestModule = await import('../templates/t3/tests');
+              const testContent = t3TestModule.generateSpecificTestContent({
                 operation,
                 testType: testFile, // Pass the full path like "success/basic.test.ts"
                 moduleName
@@ -305,7 +342,8 @@ export const generateTestFiles = async ({
             const testFilePath = path.join(operationDir, testType);
 
             if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
-              const testContent = generateTrpcTestContent({ operation, testType, moduleName });
+              const trpcTestModule = await import('../templates/trpc.tests');
+              const testContent = trpcTestModule.generateTrpcTestContent({ operation: operation, testType: testType, moduleName: moduleName });
 
               await writeFile({ filePath: testFilePath, content: testContent });
               generatedFiles.push({
@@ -325,7 +363,8 @@ export const generateTestFiles = async ({
         
         const helpersFilePath = path.join(sharedDir, 'trpc-helpers.ts');
         if (!appendMode || !(await fileExists({ filePath: helpersFilePath }))) {
-          const helpersContent = generateTrpcTestContent({ 
+          const trpcTestModule = await import('../templates/trpc.tests');
+          const helpersContent = trpcTestModule.generateTrpcTestContent({ 
             operation: '', 
             testType: 'trpc-helpers.ts', 
             moduleName 
@@ -354,11 +393,22 @@ export const generateTestFiles = async ({
           const testFilePath = path.join(operationDir, testFileName);
 
           if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
-            const testContent = generateCrudTestContent({ 
-              operation, 
-              moduleName, 
-              testType: testType as 'success' | 'validation' | 'duplicate' | 'unauthorized' | 'not-found' | 'invalid-id'
-            });
+            let testContent;
+            if (framework === 'hono') {
+              const honoTestModule = await import('../templates/hono/crud/tests');
+              testContent = honoTestModule.generateCrudTestContent({ 
+                operation, 
+                moduleName, 
+                testType: testType as 'success' | 'validation' | 'duplicate' | 'unauthorized' | 'not-found' | 'invalid-id'
+              });
+            } else {
+              const expressTestModule = await import('../templates/express/crud/tests');
+              testContent = expressTestModule.generateCrudTestContent({ 
+                operation, 
+                moduleName, 
+                testType: testType as 'success' | 'validation' | 'duplicate' | 'unauthorized' | 'not-found' | 'invalid-id'
+              });
+            }
             await writeFile({ filePath: testFilePath, content: testContent });
             generatedFiles.push({
               fileName: testFileName,
@@ -401,7 +451,8 @@ export const generateTestFiles = async ({
             const testFilePath = path.join(operationDir, testFile);
 
             if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
-              const testContent = generateT3TestContent({
+              const t3TestModule = await import('../templates/t3/tests');
+              const testContent = t3TestModule.generateSpecificTestContent({
                 operation: customName,
                 testType: testFile,
                 moduleName
@@ -428,7 +479,8 @@ export const generateTestFiles = async ({
             const testFilePath = path.join(operationDir, testType);
 
             if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
-              const testContent = generateTrpcTestContent({
+              const trpcTestModule = await import('../templates/trpc.tests');
+              const testContent = trpcTestModule.generateTrpcTestContent({
                 operation: customName,
                 testType,
                 moduleName
@@ -460,11 +512,22 @@ export const generateTestFiles = async ({
           const testFilePath = path.join(operationDir, testFileName);
 
           if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
-            const testContent = generateCustomTestContent({ 
-              customName, 
-              moduleName, 
-              testType: testType as 'success' | 'validation' | 'unauthorized'
-            });
+            let testContent;
+            if (framework === 'hono') {
+              const honoTestModule = await import('../templates/hono/custom/tests');
+              testContent = honoTestModule.generateCustomTestContent({ 
+                operation: customName, 
+                moduleName, 
+                testType: testType as 'success' | 'validation' | 'unauthorized'
+              });
+            } else {
+              const expressTestModule = await import('../templates/express/custom/tests');
+              testContent = expressTestModule.generateCustomTestContent({ 
+                operation: customName, 
+                moduleName, 
+                testType: testType as 'success' | 'validation' | 'unauthorized'
+              });
+            }
             await writeFile({ filePath: testFilePath, content: testContent });
             generatedFiles.push({
               fileName: testFileName,
@@ -507,7 +570,8 @@ export const generateTestFiles = async ({
             const testFilePath = path.join(operationDir, testFile);
 
             if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
-              const testContent = generateT3TestContent({
+              const t3TestModule = await import('../templates/t3/tests');
+              const testContent = t3TestModule.generateSpecificTestContent({
                 operation: serviceName,
                 testType: testFile,
                 moduleName
@@ -534,7 +598,8 @@ export const generateTestFiles = async ({
             const testFilePath = path.join(operationDir, testType);
 
             if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
-              const testContent = generateTrpcTestContent({
+              const trpcTestModule = await import('../templates/trpc.tests');
+              const testContent = trpcTestModule.generateTrpcTestContent({
                 operation: serviceName,
                 testType,
                 moduleName
@@ -563,7 +628,8 @@ export const generateTestFiles = async ({
 
         if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
           // Generate comprehensive test content for services
-          const testContent = generateServiceComprehensiveTestContent({ serviceName, moduleName });
+          const servicesTestsModule = await import('../templates/services.tests');
+          const testContent = servicesTestsModule.generateServiceComprehensiveTestContent({ serviceName, moduleName });
           await writeFile({ filePath: testFilePath, content: testContent });
           generatedFiles.push({
             fileName: testFileName,

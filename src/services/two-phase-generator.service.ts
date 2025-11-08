@@ -64,15 +64,10 @@ import {
   generateT3CrudTypeContent,
   generateT3CustomTypeContent,
 } from '../templates/t3.types';
-import {
-  getCrudHandlerFileNames,
-  generateCrudHandlerContent,
-} from '../templates/typed-crud.handlers';
-import {
-  generateTypedCustomHandlerContent,
-} from '../templates/typed-custom.handlers';
+import { getCrudHandlerFileNames } from '../templates/typed-crud.handlers';
 
-import { generateRouteContent } from '../templates/routes.templates';
+// The generateRouteContent function is now dynamically imported based on framework
+// to use the appropriate route template (Express, Hono, or T3)
 import { formatGeneratedFiles } from './formatter.service';
 
 export const generateTypeFilesOnly = async ({
@@ -320,7 +315,17 @@ export const generateCodeWithParsedTypes = async ({
       // Generate handler file with parsed types (contains business logic)
       const handlerFilePath = path.join(handlersDir, handlerFileName);
       if (!appendMode || !(await fileExists({ filePath: handlerFilePath }))) {
-        const handlerContent = generateCrudHandlerContent({ operation, moduleName, parsedType });
+        // Dynamically import the appropriate handler module based on framework
+        let handlerModule;
+        if (framework === 'hono') {
+          handlerModule = await import('../templates/typed-crud.handlers'); // Use framework-agnostic for now
+        } else if (framework === 't3') {
+          handlerModule = await import('../templates/typed-crud.handlers'); // Use framework-agnostic for now
+        } else { // Express
+          handlerModule = await import('../templates/express/crud/handlers');
+        }
+        
+        const handlerContent = handlerModule.generateCrudHandlerContent({ operation, moduleName, parsedType });
         await writeFile({ filePath: handlerFilePath, content: handlerContent });
         generatedFiles.push({
           fileName: handlerFileName,
@@ -421,11 +426,20 @@ export const generateCodeWithParsedTypes = async ({
       const handlerFileName = `${customName}.${moduleName}.ts`;
       const handlerFilePath = path.join(handlersDir, handlerFileName);
       if (!appendMode || !(await fileExists({ filePath: handlerFilePath }))) {
-        const parsedType = parsedTypes[customName] || { fields: [], hasId: false, hasPagination: false };
-        const handlerContent = generateTypedCustomHandlerContent({
+        // Dynamically import the appropriate handler module based on framework
+        let handlerModule;
+        if (framework === 'hono') {
+          handlerModule = await import('../templates/typed-custom.handlers'); // Use framework-agnostic for now
+        } else if (framework === 't3') {
+          handlerModule = await import('../templates/typed-custom.handlers'); // Use framework-agnostic for now
+        } else { // Express
+          handlerModule = await import('../templates/express/custom/handlers');
+        }
+        
+        const handlerContent = handlerModule.generateTypedCustomHandlerContent({
           customName,
           moduleName,
-          parsedType,
+          parsedType: parsedTypes[customName] || { fields: [], hasId: false, hasPagination: false },
         });
         await writeFile({ filePath: handlerFilePath, content: handlerContent });
         generatedFiles.push({
@@ -605,7 +619,23 @@ export const generateCodeWithParsedTypes = async ({
     const routesFileName = `${moduleName}.routes.ts`;
     const routesFilePath = path.join(modulePath, routesFileName);
     if (!appendMode || !(await fileExists({ filePath: routesFilePath }))) {
-      const routesContent = generateRouteContent({ moduleName, apiType, framework });
+      // Import the appropriate route module based on framework and API type
+      let routeModule;
+      if (framework === 'hono') {
+        if (apiType.type === 'custom' && apiType.customNames) {
+          routeModule = await import('../templates/hono/custom/routes');
+        } else {
+          routeModule = await import('../templates/hono/crud/routes');
+        }
+      } else {
+        if (apiType.type === 'custom' && apiType.customNames) {
+          routeModule = await import('../templates/express/custom/routes');
+        } else {
+          routeModule = await import('../templates/express/crud/routes');
+        }
+      }
+
+      const routesContent = routeModule.generateRouteContent({ moduleName, apiType });
       await writeFile({ filePath: routesFilePath, content: routesContent });
       generatedFiles.push({
         fileName: routesFileName,
