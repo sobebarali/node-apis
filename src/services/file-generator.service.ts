@@ -8,25 +8,7 @@ import { fileExists, writeFile } from '../filesystem/file.operations';
 import { ensureDirectory } from '../filesystem/directory.operations';
 import { getCrudFileNames, generateCrudFileContent } from '../templates/shared/crud.templates';
 
-/**
- * Gets the test types for each operation
- */
-const getTestTypesForOperation = (operation: string): string[] => {
-  switch (operation) {
-    case 'create':
-      return ['success', 'validation', 'duplicate', 'unauthorized'];
-    case 'get':
-      return ['success', 'not-found', 'invalid-id', 'unauthorized'];
-    case 'list':
-      return ['success', 'validation', 'unauthorized'];
-    case 'update':
-      return ['success', 'validation', 'not-found', 'unauthorized'];
-    case 'delete':
-      return ['success', 'not-found', 'invalid-id', 'unauthorized'];
-    default:
-      return ['success', 'validation', 'errors'];
-  }
-};
+
 
 /**
  * Generates TypeScript files based on API type (types + validators + controllers + services + repository + routes)
@@ -255,19 +237,30 @@ export const generateTestFiles = async ({
   moduleName,
   testPath,
   apiType,
-  appendMode = false,
   trpcStyle = false,
   framework = 'express',
 }: {
   moduleName: string;
   testPath: string;
   apiType: ApiType;
-  appendMode?: boolean;
   trpcStyle?: boolean;
   framework?: string;
 }): Promise<GeneratedFile[]> => {
   const generatedFiles: GeneratedFile[] = [];
-  const moduleTestDir = path.join(testPath, moduleName);
+  
+  // Check if there's a "server" directory in the root
+  const hasServerDir = await fileExists({ filePath: path.join(testPath, '..', 'server') });
+  let moduleTestDir: string;
+  
+  if (!hasServerDir) {
+    // Use tests directory in the root
+    const testsDir = path.join(testPath, '..', 'tests');
+    await ensureDirectory({ dirPath: testsDir });
+    moduleTestDir = path.join(testsDir, moduleName);
+  } else {
+    // Use tests directory relative to testPath (this might be inside server/)
+    moduleTestDir = path.join(testPath, moduleName);
+  }
 
   if (apiType.type === 'crud') {
     const crudOperations = ['create', 'get', 'list', 'update', 'delete'];
@@ -275,84 +268,34 @@ export const generateTestFiles = async ({
     if (trpcStyle || framework === 't3') {
       // Generate tRPC-style tests
       if (framework === 't3') {
-        // T3 framework: Use modular test structure (success/validation/failure folders)
+        // T3 framework: Use the new test structure (validators/success/failed folders)
         for (const operation of crudOperations) {
           const operationDir = path.join(moduleTestDir, operation);
           await ensureDirectory({ dirPath: operationDir });
 
           // Create subdirectories for each test category
+          const validatorsDir = path.join(operationDir, 'validators');
           const successDir = path.join(operationDir, 'success');
-          const validationDir = path.join(operationDir, 'validation');
-          const failureDir = path.join(operationDir, 'failure');
+          const failedDir = path.join(operationDir, 'failed');
 
+          await ensureDirectory({ dirPath: validatorsDir });
           await ensureDirectory({ dirPath: successDir });
-          await ensureDirectory({ dirPath: validationDir });
-          await ensureDirectory({ dirPath: failureDir });
-
-          // Define test files for each category
-          const testFiles = [
-            'success/basic.test.ts',
-            'success/variations.test.ts',
-            'validation/required.test.ts',
-            'validation/types.test.ts',
-          ];
-
-          // Add operation-specific failure tests
-          if (operation === 'create') {
-            testFiles.push('failure/duplicate.test.ts');
-            testFiles.push('failure/unauthorized.test.ts');
-          } else if (operation === 'list') {
-            testFiles.push('failure/unauthorized.test.ts');
-          } else {
-            // get, update, delete operations
-            testFiles.push('failure/not-found.test.ts');
-            testFiles.push('failure/unauthorized.test.ts');
-          }
-
-          // Generate each test file
-          for (const testFile of testFiles) {
-            const testFilePath = path.join(operationDir, testFile);
-
-            if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
-              const t3TestModule = await import('../templates/t3/tests');
-              const testContent = t3TestModule.generateSpecificTestContent({
-                operation,
-                testType: testFile, // Pass the full path like "success/basic.test.ts"
-                moduleName
-              });
-
-              await writeFile({ filePath: testFilePath, content: testContent });
-              generatedFiles.push({
-                fileName: testFile,
-                filePath: testFilePath,
-                content: testContent,
-              });
-            }
-          }
+          await ensureDirectory({ dirPath: failedDir });
         }
       } else {
-        // Regular tRPC: Use flat test structure
-        const testTypes = ['procedure.test.ts', 'validation.test.ts', 'errors.test.ts'];
-
+        // Regular tRPC: Use the new test structure (validators/success/failed folders)
         for (const operation of crudOperations) {
           const operationDir = path.join(moduleTestDir, operation);
           await ensureDirectory({ dirPath: operationDir });
 
-          for (const testType of testTypes) {
-            const testFilePath = path.join(operationDir, testType);
+          // Create subdirectories for each test category
+          const validatorsDir = path.join(operationDir, 'validators');
+          const successDir = path.join(operationDir, 'success');
+          const failedDir = path.join(operationDir, 'failed');
 
-            if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
-              const trpcTestModule = await import('../templates/trpc.tests');
-              const testContent = trpcTestModule.generateTrpcTestContent({ operation: operation, testType: testType, moduleName: moduleName });
-
-              await writeFile({ filePath: testFilePath, content: testContent });
-              generatedFiles.push({
-                fileName: testType,
-                filePath: testFilePath,
-                content: testContent,
-              });
-            }
-          }
+          await ensureDirectory({ dirPath: validatorsDir });
+          await ensureDirectory({ dirPath: successDir });
+          await ensureDirectory({ dirPath: failedDir });
         }
       }
 
@@ -360,140 +303,65 @@ export const generateTestFiles = async ({
       if (framework !== 't3') {
         const sharedDir = path.join(moduleTestDir, 'shared');
         await ensureDirectory({ dirPath: sharedDir });
-        
-        const helpersFilePath = path.join(sharedDir, 'trpc-helpers.ts');
-        if (!appendMode || !(await fileExists({ filePath: helpersFilePath }))) {
-          const trpcTestModule = await import('../templates/trpc.tests');
-          const helpersContent = trpcTestModule.generateTrpcTestContent({ 
-            operation: '', 
-            testType: 'trpc-helpers.ts', 
-            moduleName 
-          });
-          await writeFile({ filePath: helpersFilePath, content: helpersContent });
-          generatedFiles.push({
-            fileName: 'trpc-helpers.ts',
-            filePath: helpersFilePath,
-            content: helpersContent,
-          });
-        }
+
+        const validatorsDir = path.join(sharedDir, 'validators');
+        const successDir = path.join(sharedDir, 'success');
+        const failedDir = path.join(sharedDir, 'failed');
+
+        await ensureDirectory({ dirPath: validatorsDir });
+        await ensureDirectory({ dirPath: successDir });
+        await ensureDirectory({ dirPath: failedDir });
       }
     } else {
-      // Generate REST-style tests - multiple specialized test files per operation
+      // Generate REST-style tests - use the new test structure (validators/success/failed folders)
       for (const operation of crudOperations) {
         const operationDir = path.join(moduleTestDir, operation);
 
         // Ensure operation directory exists
         await ensureDirectory({ dirPath: operationDir });
 
-        // Get test types for this operation
-        const testTypes = getTestTypesForOperation(operation);
+        // Create subdirectories for each test category
+        const validatorsDir = path.join(operationDir, 'validators');
+        const successDir = path.join(operationDir, 'success');
+        const failedDir = path.join(operationDir, 'failed');
 
-        for (const testType of testTypes) {
-          const testFileName = `${testType}.test.ts`;
-          const testFilePath = path.join(operationDir, testFileName);
-
-          if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
-            let testContent;
-            if (framework === 'hono') {
-              const honoTestModule = await import('../templates/hono/crud/tests');
-              testContent = honoTestModule.generateCrudTestContent({ 
-                operation, 
-                moduleName, 
-                testType: testType as 'success' | 'validation' | 'duplicate' | 'unauthorized' | 'not-found' | 'invalid-id'
-              });
-            } else {
-              const expressTestModule = await import('../templates/express/crud/tests');
-              testContent = expressTestModule.generateCrudTestContent({ 
-                operation, 
-                moduleName, 
-                testType: testType as 'success' | 'validation' | 'duplicate' | 'unauthorized' | 'not-found' | 'invalid-id'
-              });
-            }
-            await writeFile({ filePath: testFilePath, content: testContent });
-            generatedFiles.push({
-              fileName: testFileName,
-              filePath: testFilePath,
-              content: testContent,
-            });
-          }
-        }
+        await ensureDirectory({ dirPath: validatorsDir });
+        await ensureDirectory({ dirPath: successDir });
+        await ensureDirectory({ dirPath: failedDir });
       }
     }
   } else if (apiType.type === 'custom' && apiType.customNames) {
     if (trpcStyle || framework === 't3') {
       // Generate tRPC-style tests for custom operations
       if (framework === 't3') {
-        // T3 framework: Use modular test structure for custom operations
+        // T3 framework: Use the new test structure (validators/success/failed folders)
         for (const customName of apiType.customNames) {
           const operationDir = path.join(moduleTestDir, customName);
           await ensureDirectory({ dirPath: operationDir });
 
           // Create subdirectories for each test category
+          const validatorsDir = path.join(operationDir, 'validators');
           const successDir = path.join(operationDir, 'success');
-          const validationDir = path.join(operationDir, 'validation');
-          const failureDir = path.join(operationDir, 'failure');
+          const failedDir = path.join(operationDir, 'failed');
 
+          await ensureDirectory({ dirPath: validatorsDir });
           await ensureDirectory({ dirPath: successDir });
-          await ensureDirectory({ dirPath: validationDir });
-          await ensureDirectory({ dirPath: failureDir });
-
-          // Define test files for custom operations (generic structure)
-          const testFiles = [
-            'success/basic.test.ts',
-            'success/variations.test.ts',
-            'validation/required.test.ts',
-            'validation/types.test.ts',
-            'failure/unauthorized.test.ts', // All custom operations get unauthorized test
-          ];
-
-          // Generate each test file
-          for (const testFile of testFiles) {
-            const testFilePath = path.join(operationDir, testFile);
-
-            if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
-              const t3TestModule = await import('../templates/t3/tests');
-              const testContent = t3TestModule.generateSpecificTestContent({
-                operation: customName,
-                testType: testFile,
-                moduleName
-              });
-
-              await writeFile({ filePath: testFilePath, content: testContent });
-              generatedFiles.push({
-                fileName: testFile,
-                filePath: testFilePath,
-                content: testContent,
-              });
-            }
-          }
+          await ensureDirectory({ dirPath: failedDir });
         }
       } else {
-        // Regular tRPC: Use flat test structure
-        const testTypes = ['procedure.test.ts', 'validation.test.ts', 'errors.test.ts'];
-
+        // Regular tRPC: Use the new test structure (validators/success/failed folders)
         for (const customName of apiType.customNames) {
           const operationDir = path.join(moduleTestDir, customName);
           await ensureDirectory({ dirPath: operationDir });
 
-          for (const testType of testTypes) {
-            const testFilePath = path.join(operationDir, testType);
+          // Create subdirectories for each test category
+          const validatorsDir = path.join(operationDir, 'validators');
+          const successDir = path.join(operationDir, 'success');
+          const failedDir = path.join(operationDir, 'failed');
 
-            if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
-              const trpcTestModule = await import('../templates/trpc.tests');
-              const testContent = trpcTestModule.generateTrpcTestContent({
-                operation: customName,
-                testType,
-                moduleName
-              });
-
-              await writeFile({ filePath: testFilePath, content: testContent });
-              generatedFiles.push({
-                fileName: testType,
-                filePath: testFilePath,
-                content: testContent,
-              });
-            }
-          }
+          await ensureDirectory({ dirPath: validatorsDir });
+          await ensureDirectory({ dirPath: successDir });
+          await ensureDirectory({ dirPath: failedDir });
         }
       }
     } else {
@@ -504,115 +372,48 @@ export const generateTestFiles = async ({
         // Ensure operation directory exists
         await ensureDirectory({ dirPath: operationDir });
 
-        // Get test types for custom operations
-        const testTypes = ['success', 'validation', 'unauthorized'];
+        // Create subdirectories for each test category
+        const validatorsDir = path.join(operationDir, 'validators');
+        const successDir = path.join(operationDir, 'success');
+        const failedDir = path.join(operationDir, 'failed');
 
-        for (const testType of testTypes) {
-          const testFileName = `${testType}.test.ts`;
-          const testFilePath = path.join(operationDir, testFileName);
-
-          if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
-            let testContent;
-            if (framework === 'hono') {
-              const honoTestModule = await import('../templates/hono/custom/tests');
-              testContent = honoTestModule.generateCustomTestContent({ 
-                operation: customName, 
-                moduleName, 
-                testType: testType as 'success' | 'validation' | 'unauthorized'
-              });
-            } else {
-              const expressTestModule = await import('../templates/express/custom/tests');
-              testContent = expressTestModule.generateCustomTestContent({ 
-                operation: customName, 
-                moduleName, 
-                testType: testType as 'success' | 'validation' | 'unauthorized'
-              });
-            }
-            await writeFile({ filePath: testFilePath, content: testContent });
-            generatedFiles.push({
-              fileName: testFileName,
-              filePath: testFilePath,
-              content: testContent,
-            });
-          }
-        }
+        await ensureDirectory({ dirPath: validatorsDir });
+        await ensureDirectory({ dirPath: successDir });
+        await ensureDirectory({ dirPath: failedDir });
       }
     }
   } else if (apiType.type === 'services' && apiType.serviceNames) {
     if (trpcStyle || framework === 't3') {
       // Generate tRPC-style tests for service operations
       if (framework === 't3') {
-        // T3 framework: Use modular test structure for service operations
+        // T3 framework: Use the new test structure (validators/success/failed folders)
         for (const serviceName of apiType.serviceNames) {
           const operationDir = path.join(moduleTestDir, serviceName);
           await ensureDirectory({ dirPath: operationDir });
 
           // Create subdirectories for each test category
+          const validatorsDir = path.join(operationDir, 'validators');
           const successDir = path.join(operationDir, 'success');
-          const validationDir = path.join(operationDir, 'validation');
-          const failureDir = path.join(operationDir, 'failure');
+          const failedDir = path.join(operationDir, 'failed');
 
+          await ensureDirectory({ dirPath: validatorsDir });
           await ensureDirectory({ dirPath: successDir });
-          await ensureDirectory({ dirPath: validationDir });
-          await ensureDirectory({ dirPath: failureDir });
-
-          // Define test files for service operations
-          const testFiles = [
-            'success/basic.test.ts',
-            'success/variations.test.ts',
-            'validation/required.test.ts',
-            'validation/types.test.ts',
-            'failure/unauthorized.test.ts',
-          ];
-
-          // Generate each test file
-          for (const testFile of testFiles) {
-            const testFilePath = path.join(operationDir, testFile);
-
-            if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
-              const t3TestModule = await import('../templates/t3/tests');
-              const testContent = t3TestModule.generateSpecificTestContent({
-                operation: serviceName,
-                testType: testFile,
-                moduleName
-              });
-
-              await writeFile({ filePath: testFilePath, content: testContent });
-              generatedFiles.push({
-                fileName: testFile,
-                filePath: testFilePath,
-                content: testContent,
-              });
-            }
-          }
+          await ensureDirectory({ dirPath: failedDir });
         }
       } else {
-        // Regular tRPC: Use flat test structure
-        const testTypes = ['procedure.test.ts', 'validation.test.ts', 'errors.test.ts'];
-
+        // Regular tRPC: Use the new test structure (validators/success/failed folders)
         for (const serviceName of apiType.serviceNames) {
           const operationDir = path.join(moduleTestDir, serviceName);
           await ensureDirectory({ dirPath: operationDir });
 
-          for (const testType of testTypes) {
-            const testFilePath = path.join(operationDir, testType);
+          // Create subdirectories for each test category
+          const validatorsDir = path.join(operationDir, 'validators');
+          const successDir = path.join(operationDir, 'success');
+          const failedDir = path.join(operationDir, 'failed');
 
-            if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
-              const trpcTestModule = await import('../templates/trpc.tests');
-              const testContent = trpcTestModule.generateTrpcTestContent({
-                operation: serviceName,
-                testType,
-                moduleName
-              });
-
-              await writeFile({ filePath: testFilePath, content: testContent });
-              generatedFiles.push({
-                fileName: testType,
-                filePath: testFilePath,
-                content: testContent,
-              });
-            }
-          }
+          await ensureDirectory({ dirPath: validatorsDir });
+          await ensureDirectory({ dirPath: successDir });
+          await ensureDirectory({ dirPath: failedDir });
         }
       }
     } else {
@@ -623,20 +424,14 @@ export const generateTestFiles = async ({
         // Ensure operation directory exists
         await ensureDirectory({ dirPath: operationDir });
 
-        const testFileName = `${serviceName}.test.ts`;
-        const testFilePath = path.join(operationDir, testFileName);
+        // Create subdirectories for each test category
+        const validatorsDir = path.join(operationDir, 'validators');
+        const successDir = path.join(operationDir, 'success');
+        const failedDir = path.join(operationDir, 'failed');
 
-        if (!appendMode || !(await fileExists({ filePath: testFilePath }))) {
-          // Generate comprehensive test content for services
-          const servicesTestsModule = await import('../templates/services.tests');
-          const testContent = servicesTestsModule.generateServiceComprehensiveTestContent({ serviceName, moduleName });
-          await writeFile({ filePath: testFilePath, content: testContent });
-          generatedFiles.push({
-            fileName: testFileName,
-            filePath: testFilePath,
-            content: testContent,
-          });
-        }
+        await ensureDirectory({ dirPath: validatorsDir });
+        await ensureDirectory({ dirPath: successDir });
+        await ensureDirectory({ dirPath: failedDir });
       }
     }
   }

@@ -296,7 +296,6 @@ const handleTwoPhaseGeneration = async ({
       moduleName: normalizedModuleName,
       testPath,
       apiType,
-      appendMode,
       trpcStyle,
       framework,
     });
