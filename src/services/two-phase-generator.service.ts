@@ -70,6 +70,12 @@ import { getCrudHandlerFileNames } from '../templates/typed-crud.handlers';
 // to use the appropriate route template (Express, Hono, or T3)
 import { formatGeneratedFiles } from './formatter.service';
 
+const isT3StyleFramework = (framework?: string): boolean =>
+  framework === 't3' || framework === 'tanstack';
+
+const getT3ApiBasePath = (framework?: string): string =>
+  framework === 'tanstack' ? '~/api' : '~/server/api';
+
 export const generateTypeFilesOnly = async ({
   moduleName,
   modulePath,
@@ -81,14 +87,14 @@ export const generateTypeFilesOnly = async ({
   modulePath: string;
   apiType: ApiType;
   appendMode?: boolean;
-  framework?: 'express' | 'hono' | 't3';
+  framework?: 'express' | 'hono' | 't3' | 'tanstack';
 }): Promise<GeneratedFile[]> => {
   const generatedFiles: GeneratedFile[] = [];
   const typesDir = path.join(modulePath, 'types');
 
   if (apiType.type === 'crud') {
-    // Use T3-specific type templates for T3 framework
-    if (framework === 't3') {
+    // Use T3/TanStack-specific type templates for these frameworks
+    if (isT3StyleFramework(framework)) {
       const crudFileNames = getT3CrudTypeFileNames({ moduleName });
       const crudOperations = ['create', 'get', 'list', 'delete', 'update'];
 
@@ -123,8 +129,8 @@ export const generateTypeFilesOnly = async ({
       }
     }
   } else if (apiType.type === 'custom' && apiType.customNames) {
-    // Use T3-specific type templates for T3 framework
-    if (framework === 't3') {
+    // Use T3/TanStack-specific type templates for these frameworks
+    if (isT3StyleFramework(framework)) {
       const customFileNames = getT3CustomTypeFileNames({
         customNames: apiType.customNames,
         moduleName,
@@ -201,6 +207,8 @@ export const generateCodeWithParsedTypes = async ({
   trpcStyle?: boolean;
 }): Promise<GeneratedFile[]> => {
   const generatedFiles: GeneratedFile[] = [];
+  const t3StyleFramework = isT3StyleFramework(framework);
+  const t3ApiBasePath = getT3ApiBasePath(framework);
   const validatorsDir = path.join(modulePath, 'validators');
   const controllersDir = path.join(modulePath, 'controllers');
   const proceduresDir = path.join(modulePath, 'procedures');
@@ -264,13 +272,14 @@ export const generateCodeWithParsedTypes = async ({
       }
 
       // Generate controller or procedure file based on style
-      if (framework === 't3') {
+      if (t3StyleFramework) {
         // Generate T3 procedure file
         const procedureFilePath = path.join(proceduresDir, procedureFileName);
         if (!appendMode || !(await fileExists({ filePath: procedureFilePath }))) {
           const procedureContent = generateT3ProcedureContent({
             operation,
             moduleName,
+            apiBasePath: t3ApiBasePath,
           });
           await writeFile({ filePath: procedureFilePath, content: procedureContent });
           generatedFiles.push({
@@ -319,7 +328,7 @@ export const generateCodeWithParsedTypes = async ({
         let handlerModule;
         if (framework === 'hono') {
           handlerModule = await import('../templates/typed-crud.handlers'); // Use framework-agnostic for now
-        } else if (framework === 't3') {
+        } else if (t3StyleFramework) {
           handlerModule = await import('../templates/typed-crud.handlers'); // Use framework-agnostic for now
         } else { // Express
           handlerModule = await import('../templates/express/crud/handlers');
@@ -389,13 +398,14 @@ export const generateCodeWithParsedTypes = async ({
       }
 
       // Generate controller or procedure file based on framework
-      if (framework === 't3') {
+      if (t3StyleFramework) {
         // Generate T3 procedure file
         const procedureFilePath = path.join(proceduresDir, procedureFileName);
         if (!appendMode || !(await fileExists({ filePath: procedureFilePath }))) {
           const procedureContent = generateT3ProcedureContent({
             operation: customName,
             moduleName,
+            apiBasePath: t3ApiBasePath,
           });
           await writeFile({ filePath: procedureFilePath, content: procedureContent });
           generatedFiles.push({
@@ -430,7 +440,7 @@ export const generateCodeWithParsedTypes = async ({
         let handlerModule;
         if (framework === 'hono') {
           handlerModule = await import('../templates/typed-custom.handlers'); // Use framework-agnostic for now
-        } else if (framework === 't3') {
+        } else if (t3StyleFramework) {
           handlerModule = await import('../templates/typed-custom.handlers'); // Use framework-agnostic for now
         } else { // Express
           handlerModule = await import('../templates/express/custom/handlers');
@@ -481,7 +491,11 @@ export const generateCodeWithParsedTypes = async ({
       // Generate service file
       const serviceFilePath = path.join(servicesDir, serviceFileName);
       if (!appendMode || !(await fileExists({ filePath: serviceFilePath }))) {
-        const serviceContent = generateServiceContent({ serviceName, moduleName });
+        const serviceContent = generateServiceContent({
+          serviceName,
+          moduleName,
+          ...(t3StyleFramework ? { apiBasePath: t3ApiBasePath } : {}),
+        });
         await writeFile({ filePath: serviceFilePath, content: serviceContent });
         generatedFiles.push({
           fileName: serviceFileName,
@@ -500,10 +514,12 @@ export const generateCodeWithParsedTypes = async ({
   }
 
   // Generate routes or router file based on style
-  if (framework === 't3') {
+  if (t3StyleFramework) {
     // Generate T3 utility files (constants and logger) - only once
-    const constantsDir = path.join(modulePath, '..', '..', 'constants');
-    const utilsDir = path.join(modulePath, '..', '..', 'utils');
+    const sharedBaseDir =
+      framework === 'tanstack' ? path.join(modulePath, '..') : path.join(modulePath, '..', '..');
+    const constantsDir = path.join(sharedBaseDir, 'constants');
+    const utilsDir = path.join(sharedBaseDir, 'utils');
 
     await ensureDirectory({ dirPath: constantsDir });
     await ensureDirectory({ dirPath: utilsDir });
@@ -573,6 +589,7 @@ export const generateCodeWithParsedTypes = async ({
     const routerContent = generateMergedT3RouterContent({
       moduleName,
       operations: allOperations,
+      apiBasePath: t3ApiBasePath,
     });
 
     await writeFile({ filePath: routerFilePath, content: routerContent });

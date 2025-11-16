@@ -33,9 +33,11 @@ export const parseT3RouterOperations = (content: string): string[] => {
 export const generateT3RouterContent = ({
   moduleName,
   operations = ['create', 'get', 'list', 'update', 'delete'],
+  apiBasePath = '~/server/api',
 }: {
   moduleName: string;
   operations?: string[];
+  apiBasePath?: string;
 }): string => {
   const naming = getModuleNaming(moduleName);
   
@@ -61,7 +63,7 @@ export const generateT3RouterContent = ({
     })
     .join('\n');
 
-  return `import { createTRPCRouter } from "~/server/api/trpc";
+  return `import { createTRPCRouter } from "${apiBasePath}/trpc";
 ${procedureImports}
 
 export const ${naming.variable}Router = createTRPCRouter({
@@ -73,9 +75,11 @@ ${routerProperties}
 export const generateCustomT3RouterContent = ({
   moduleName,
   operations,
+  apiBasePath = '~/server/api',
 }: {
   moduleName: string;
   operations: string[];
+  apiBasePath?: string;
 }): string => {
   const naming = getModuleNaming(moduleName);
   
@@ -95,7 +99,7 @@ export const generateCustomT3RouterContent = ({
     })
     .join('\n');
 
-  return `import { createTRPCRouter } from "~/server/api/trpc";
+  return `import { createTRPCRouter } from "${apiBasePath}/trpc";
 ${procedureImports}
 
 export const ${naming.variable}Router = createTRPCRouter({
@@ -107,9 +111,11 @@ ${routerProperties}
 export const generateServicesT3RouterContent = ({
   moduleName,
   operations,
+  apiBasePath = '~/server/api',
 }: {
   moduleName: string;
   operations: string[];
+  apiBasePath?: string;
 }): string => {
   const naming = getModuleNaming(moduleName);
 
@@ -129,7 +135,7 @@ export const generateServicesT3RouterContent = ({
     })
     .join('\n');
 
-  return `import { createTRPCRouter } from "~/server/api/trpc";
+  return `import { createTRPCRouter } from "${apiBasePath}/trpc";
 ${procedureImports}
 
 export const ${naming.variable}Router = createTRPCRouter({
@@ -145,9 +151,11 @@ ${routerProperties}
 export const generateMergedT3RouterContent = ({
   moduleName,
   operations,
+  apiBasePath = '~/server/api',
 }: {
   moduleName: string;
   operations: string[];
+  apiBasePath?: string;
 }): string => {
   const naming = getModuleNaming(moduleName);
 
@@ -176,7 +184,7 @@ export const generateMergedT3RouterContent = ({
     })
     .join('\n');
 
-  return `import { createTRPCRouter } from "~/server/api/trpc";
+  return `import { createTRPCRouter } from "${apiBasePath}/trpc";
 ${procedureImports}
 
 export const ${naming.variable}Router = createTRPCRouter({

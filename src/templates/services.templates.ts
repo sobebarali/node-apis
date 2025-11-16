@@ -61,16 +61,18 @@ export type typeResult = {
 export const generateServiceContent = ({
   serviceName,
   moduleName,
+  apiBasePath = '~/server/api',
 }: {
   serviceName: string;
   moduleName: string;
+  apiBasePath?: string;
 }): string => {
   const naming = getModuleNaming(moduleName);
   const capitalizedService = serviceName.charAt(0).toUpperCase() + serviceName.slice(1);
   const functionName = `${serviceName}${naming.class}`;
 
-  return `import { TRPC_ERROR_CODES, ERROR_MESSAGES } from "~/server/api/constants/errors";
-import { createScopedLogger } from "~/server/api/utils/logger";
+  return `import { TRPC_ERROR_CODES, ERROR_MESSAGES } from "${apiBasePath}/constants/errors";
+import { createScopedLogger } from "${apiBasePath}/utils/logger";
 import type { typeResult, typeResultData } from "../types/${serviceName}.${naming.file}";
 
 /**

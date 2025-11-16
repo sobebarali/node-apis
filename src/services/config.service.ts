@@ -290,8 +290,8 @@ export const validateConfig = ({ config }: { config: any }): ConfigValidationRes
   }
 
   // Validate framework
-  if (config.framework && !['express', 'hono', 't3'].includes(config.framework)) {
-    errors.push(`Invalid framework: ${config.framework}. Must be 'express', 'hono', or 't3'`);
+  if (config.framework && !['express', 'hono', 't3', 'tanstack'].includes(config.framework)) {
+    errors.push(`Invalid framework: ${config.framework}. Must be 'express', 'hono', 't3', or 'tanstack'`);
   }
 
   // Validate API style
@@ -370,7 +370,7 @@ export const getEffectiveFramework = async ({
   configPath?: string;
 } = {}): Promise<SupportedFramework> => {
   // CLI option takes precedence
-  if (cliFramework && ['express', 'hono', 't3'].includes(cliFramework)) {
+  if (cliFramework && ['express', 'hono', 't3', 'tanstack'].includes(cliFramework)) {
     return cliFramework as SupportedFramework;
   }
 

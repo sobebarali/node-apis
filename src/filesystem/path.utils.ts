@@ -20,10 +20,11 @@ export const detectSourcePath = async (baseDir: string = process.cwd()): Promise
   // Default fallback paths for common monorepo structures
   const defaultFallbacks = [
     'apps/server/src',
-    'packages/api/src', 
+    'packages/api/src',
     'apps/api/src',
     'services/api/src',
-    'backend/src'
+    'backend/src',
+    'api/src',
   ];
   
   // Get fallback paths from config or use defaults
@@ -71,38 +72,40 @@ export const getModulePath = async ({
   targetDir,
   framework,
 }: ModulePathInput & { targetDir?: string; framework?: string }): Promise<string> => {
-  if (targetDir) {
-    // If targetDir is absolute, use it directly with detected source path
-    if (path.isAbsolute(targetDir)) {
-      const srcPath = await detectSourcePath(targetDir);
-      if (framework === 't3') {
-        return path.join(targetDir, srcPath, 'server', 'api', moduleName);
-      }
-      return path.join(targetDir, srcPath, 'apis', moduleName);
-    }
-    // If targetDir is relative, resolve it from baseDir with detected source path
-    const targetBasePath = path.join(baseDir, targetDir);
-    const srcPath = await detectSourcePath(targetBasePath);
+  const resolveBasePath = async (base: string) => {
+    const srcPath = await detectSourcePath(base);
+
     if (framework === 't3') {
-      return path.join(targetBasePath, srcPath, 'server', 'api', moduleName);
+      return path.join(base, srcPath, 'server', 'api', moduleName);
     }
-    return path.join(targetBasePath, srcPath, 'apis', moduleName);
+
+    if (framework === 'tanstack') {
+      return path.join(base, srcPath, moduleName);
+    }
+
+    return path.join(base, srcPath, 'apis', moduleName);
+  };
+
+  if (targetDir) {
+    if (path.isAbsolute(targetDir)) {
+      return resolveBasePath(targetDir);
+    }
+
+    const targetBasePath = path.join(baseDir, targetDir);
+    return resolveBasePath(targetBasePath);
   }
 
-  // Default behavior: detect source path and use it
-  const srcPath = await detectSourcePath(baseDir);
-  if (framework === 't3') {
-    return path.join(baseDir, srcPath, 'server', 'api', moduleName);
-  }
-  return path.join(baseDir, srcPath, 'apis', moduleName);
+  return resolveBasePath(baseDir);
 };
 
 /**
  * Gets the list of subdirectories to create for an API module based on type
  */
 export const getModuleSubdirectories = (apiType?: ApiType, trpcStyle?: boolean, framework?: string): string[] => {
+  const isT3StyleFramework = framework === 't3' || framework === 'tanstack';
+
   if (apiType?.type === 'services') {
-    if (trpcStyle || framework === 't3') {
+    if (trpcStyle || isT3StyleFramework) {
       // tRPC services need procedures/ and types/ folders
       return ['procedures', 'types'];
     }
@@ -110,7 +113,7 @@ export const getModuleSubdirectories = (apiType?: ApiType, trpcStyle?: boolean, 
     return ['services', 'types'];
   }
 
-  if (trpcStyle || framework === 't3') {
+  if (trpcStyle || isT3StyleFramework) {
     // tRPC APIs need procedures/ instead of controllers/, services not needed
     return ['procedures', 'handlers', 'repository', 'types', 'validators'];
   }

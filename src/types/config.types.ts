@@ -2,7 +2,7 @@
  * Configuration type definitions
  */
 
-export type SupportedFramework = 'express' | 'hono' | 't3';
+export type SupportedFramework = 'express' | 'hono' | 't3' | 'tanstack';
 
 export type SupportedApiStyle = 'rest' | 'trpc';
 

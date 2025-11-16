@@ -16,10 +16,10 @@ export const main = async (): Promise<void> => {
     .option('--crud', 'generate CRUD operations (create, get, list, delete, update)')
     .option('--custom <names>', 'generate custom API operations (comma-separated names)')
     .option('--services <names>', 'generate internal service operations (comma-separated names)')
-    .option('--framework <framework>', 'web framework to use (express|hono|t3)')
+    .option('--framework <framework>', 'web framework to use (express|hono|t3|tanstack)')
     .option('--api-style <style>', 'API style to generate (rest|trpc)')
     .option('--init-config', 'initialize configuration file')
-    .option('--set-framework <framework>', 'set default framework in config (express|hono|t3)')
+    .option('--set-framework <framework>', 'set default framework in config (express|hono|t3|tanstack)')
     .option('--set-api-style <style>', 'set default API style in config (rest|trpc)')
     .option(
       '--target-dir <dir>',

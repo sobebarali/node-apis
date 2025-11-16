@@ -8,7 +8,7 @@ import { fileExists, writeFile } from '../filesystem/file.operations';
 import { ensureDirectory } from '../filesystem/directory.operations';
 import { getCrudFileNames, generateCrudFileContent } from '../templates/shared/crud.templates';
 
-
+const isT3StyleFramework = (framework?: string): boolean => framework === 't3' || framework === 'tanstack';
 
 /**
  * Generates TypeScript files based on API type (types + validators + controllers + services + repository + routes)
@@ -26,6 +26,12 @@ export const generateApiFiles = async ({
 }): Promise<GeneratedFile[]> => {
   const generatedFiles: GeneratedFile[] = [];
   const framework = apiType.framework || 'express'; // Default to express if framework is not specified
+  const t3StyleFramework = isT3StyleFramework(framework);
+
+  if (t3StyleFramework) {
+    // T3/TanStack Start use dedicated two-phase generator flow
+    return generatedFiles;
+  }
 
   // Determine the directory structure based on API type
   const typesDir = path.join(modulePath, 'types');
@@ -42,11 +48,6 @@ export const generateApiFiles = async ({
         crudControllerModule = await import('../templates/hono/crud/controllers');
         crudValidatorModule = await import('../templates/hono/crud/validators');
         break;
-      case 't3':
-        // For T3, we use a different structure entirely
-        // This would be handled separately in the T3 generation process
-        // For now, we'll return an empty array as T3 generation is not part of this function
-        return generatedFiles;
       case 'express':
       default:
         crudControllerModule = await import('../templates/express/crud/controllers');
@@ -112,11 +113,6 @@ export const generateApiFiles = async ({
         customControllerModule = await import('../templates/hono/custom/controllers');
         customValidatorModule = await import('../templates/hono/custom/validators');
         break;
-      case 't3':
-        // For T3, we use a different structure entirely
-        // This would be handled separately in the T3 generation process
-        // For now, we'll return an empty array as T3 generation is not part of this function
-        return generatedFiles;
       case 'express':
       default:
         customControllerModule = await import('../templates/express/custom/controllers');
@@ -202,7 +198,7 @@ export const generateApiFiles = async ({
   if (!appendMode || !(await fileExists({ filePath: routeFilePath }))) {
     // Import the appropriate route module based on framework and API type
     let routeModule;
-    if (framework === 't3') {
+    if (t3StyleFramework) {
       routeModule = await import('../templates/t3/router');
     } else if (framework === 'hono') {
       if (apiType.type === 'custom' && apiType.customNames) {
@@ -247,6 +243,7 @@ export const generateTestFiles = async ({
   framework?: string;
 }): Promise<GeneratedFile[]> => {
   const generatedFiles: GeneratedFile[] = [];
+  const t3StyleFramework = isT3StyleFramework(framework);
   
   // Check if there's a "server" directory in the root
   const hasServerDir = await fileExists({ filePath: path.join(testPath, '..', 'server') });
@@ -265,9 +262,9 @@ export const generateTestFiles = async ({
   if (apiType.type === 'crud') {
     const crudOperations = ['create', 'get', 'list', 'update', 'delete'];
 
-    if (trpcStyle || framework === 't3') {
+    if (trpcStyle || t3StyleFramework) {
       // Generate tRPC-style tests
-      if (framework === 't3') {
+      if (t3StyleFramework) {
         // T3 framework: Use the new test structure (validators/success/failed folders)
         for (const operation of crudOperations) {
           const operationDir = path.join(moduleTestDir, operation);
@@ -300,7 +297,7 @@ export const generateTestFiles = async ({
       }
 
       // Generate shared tRPC helpers (only for non-T3 frameworks)
-      if (framework !== 't3') {
+      if (!t3StyleFramework) {
         const sharedDir = path.join(moduleTestDir, 'shared');
         await ensureDirectory({ dirPath: sharedDir });
 
@@ -331,9 +328,9 @@ export const generateTestFiles = async ({
       }
     }
   } else if (apiType.type === 'custom' && apiType.customNames) {
-    if (trpcStyle || framework === 't3') {
+    if (trpcStyle || t3StyleFramework) {
       // Generate tRPC-style tests for custom operations
-      if (framework === 't3') {
+      if (t3StyleFramework) {
         // T3 framework: Use the new test structure (validators/success/failed folders)
         for (const customName of apiType.customNames) {
           const operationDir = path.join(moduleTestDir, customName);
@@ -383,9 +380,9 @@ export const generateTestFiles = async ({
       }
     }
   } else if (apiType.type === 'services' && apiType.serviceNames) {
-    if (trpcStyle || framework === 't3') {
+    if (trpcStyle || t3StyleFramework) {
       // Generate tRPC-style tests for service operations
-      if (framework === 't3') {
+      if (t3StyleFramework) {
         // T3 framework: Use the new test structure (validators/success/failed folders)
         for (const serviceName of apiType.serviceNames) {
           const operationDir = path.join(moduleTestDir, serviceName);

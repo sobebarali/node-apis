@@ -29,7 +29,7 @@ export interface InquirerAnswers {
   moduleChoice: 'new' | 'existing';
   existingModule: string;
   operationMode: 'replace' | 'append';
-  framework: 'express' | 'hono' | 't3';
+  framework: 'express' | 'hono' | 't3' | 'tanstack';
   apiStyle: 'rest' | 'trpc';
   saveToConfig: boolean;
   action: 'overwrite' | 'append' | 'cancel' | 'view' | 'update' | 'reset';

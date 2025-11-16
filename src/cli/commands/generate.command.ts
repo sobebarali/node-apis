@@ -149,7 +149,7 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
 
       // For T3 framework, always use tRPC (no need to ask for API style)
       let apiStyle: SupportedApiStyle;
-      if (framework === 't3') {
+      if (framework === 't3' || framework === 'tanstack') {
         apiStyle = 'trpc';
       } else {
         apiStyle = await getEffectiveApiStyle({
@@ -241,7 +241,7 @@ const handleTwoPhaseGeneration = async ({
       modulePath,
       apiType,
       appendMode,
-      framework: framework as 'express' | 'hono' | 't3',
+      framework: framework as 'express' | 'hono' | 't3' | 'tanstack',
     });
 
     console.log('✅ Type files generated successfully!\n');
@@ -491,7 +491,7 @@ const handleInteractiveFlow = async (
     const effectiveFramework = selectedFramework || (await getEffectiveFramework());
 
     // If no config exists and framework is not T3, prompt user for API style
-    if (!hasConfig && effectiveFramework !== 't3') {
+    if (!hasConfig && effectiveFramework !== 't3' && effectiveFramework !== 'tanstack') {
       const apiStyleResult = await promptApiStyleSelection();
       if (!apiStyleResult.success) {
         return { success: false, appendMode: false, forceOverwrite: false };
