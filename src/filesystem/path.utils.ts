@@ -102,10 +102,15 @@ export const getModulePath = async ({
  * Gets the list of subdirectories to create for an API module based on type
  */
 export const getModuleSubdirectories = (apiType?: ApiType, trpcStyle?: boolean, framework?: string): string[] => {
-  const isT3StyleFramework = framework === 't3' || framework === 'tanstack';
+  const isTanstackFramework = framework === 'tanstack';
+  const isT3StyleFramework = framework === 't3' || isTanstackFramework;
 
   if (apiType?.type === 'services') {
     if (trpcStyle || isT3StyleFramework) {
+      if (isTanstackFramework) {
+        // TanStack services keep business logic within services + types
+        return ['services', 'types'];
+      }
       // tRPC services need procedures/ and types/ folders
       return ['procedures', 'types'];
     }
@@ -114,6 +119,10 @@ export const getModuleSubdirectories = (apiType?: ApiType, trpcStyle?: boolean, 
   }
 
   if (trpcStyle || isT3StyleFramework) {
+    if (isTanstackFramework) {
+      // TanStack Start keeps logic in handlers + validators alongside types
+      return ['handlers', 'types', 'validators'];
+    }
     // tRPC APIs need procedures/ instead of controllers/, services not needed
     return ['procedures', 'handlers', 'repository', 'types', 'validators'];
   }

@@ -1,3 +1,4 @@
+import * as path from 'path';
 import { CommandOptions } from '../../types/cli.types';
 import { ApiType } from '../../types/common.types';
 import { validateTargetLocation } from '../../validators/location.validator';
@@ -291,7 +292,14 @@ const handleTwoPhaseGeneration = async ({
     // Phase 3: Generate test files
     console.log('🧪 Phase 3: Generating comprehensive test suite...\n');
 
-    const testPath = 'tests';
+    let testPath = 'tests';
+    if (framework === 'tanstack') {
+      const moduleBaseDir = path.dirname(modulePath);
+      const tanstackApiRoot =
+        path.basename(moduleBaseDir) === 'src' ? path.dirname(moduleBaseDir) : moduleBaseDir;
+      // TanStack Start stores backend modules in packages/api, so mirror that base for tests
+      testPath = path.join(tanstackApiRoot, 'tests');
+    }
     const testFiles = await generateTestFiles({
       moduleName: normalizedModuleName,
       testPath,

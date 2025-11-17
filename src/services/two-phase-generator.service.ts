@@ -208,6 +208,7 @@ export const generateCodeWithParsedTypes = async ({
 }): Promise<GeneratedFile[]> => {
   const generatedFiles: GeneratedFile[] = [];
   const t3StyleFramework = isT3StyleFramework(framework);
+  const isTanstackFramework = framework === 'tanstack';
   const t3ApiBasePath = getT3ApiBasePath(framework);
   const validatorsDir = path.join(modulePath, 'validators');
   const controllersDir = path.join(modulePath, 'controllers');
@@ -272,7 +273,7 @@ export const generateCodeWithParsedTypes = async ({
       }
 
       // Generate controller or procedure file based on style
-      if (t3StyleFramework) {
+      if (t3StyleFramework && !isTanstackFramework) {
         // Generate T3 procedure file
         const procedureFilePath = path.join(proceduresDir, procedureFileName);
         if (!appendMode || !(await fileExists({ filePath: procedureFilePath }))) {
@@ -288,7 +289,7 @@ export const generateCodeWithParsedTypes = async ({
             content: procedureContent,
           });
         }
-      } else if (trpcStyle) {
+      } else if (trpcStyle && !isTanstackFramework) {
         // Generate tRPC procedure file
         const procedureFilePath = path.join(proceduresDir, procedureFileName);
         if (!appendMode || !(await fileExists({ filePath: procedureFilePath }))) {
@@ -303,7 +304,7 @@ export const generateCodeWithParsedTypes = async ({
             content: procedureContent,
           });
         }
-      } else {
+      } else if (!t3StyleFramework && !trpcStyle) {
         // Generate REST controller file
         const controllerFilePath = path.join(controllersDir, controllerFileName);
         if (!appendMode || !(await fileExists({ filePath: controllerFilePath }))) {
@@ -334,7 +335,12 @@ export const generateCodeWithParsedTypes = async ({
           handlerModule = await import('../templates/express/crud/handlers');
         }
         
-        const handlerContent = handlerModule.generateCrudHandlerContent({ operation, moduleName, parsedType });
+        const handlerContent = handlerModule.generateCrudHandlerContent({
+          operation,
+          moduleName,
+          parsedType,
+          useRepositoryLayer: !isTanstackFramework,
+        });
         await writeFile({ filePath: handlerFilePath, content: handlerContent });
         generatedFiles.push({
           fileName: handlerFileName,
@@ -343,20 +349,22 @@ export const generateCodeWithParsedTypes = async ({
         });
       }
 
-      // Generate individual repository file per operation
-      const repositoryFilePath = path.join(repositoryDir, repositoryFileName);
-      if (!appendMode || !(await fileExists({ filePath: repositoryFilePath }))) {
-        const repositoryContent = generateCrudRepositoryContent({
-          operation,
-          moduleName,
-          parsedType,
-        });
-        await writeFile({ filePath: repositoryFilePath, content: repositoryContent });
-        generatedFiles.push({
-          fileName: repositoryFileName,
-          filePath: repositoryFilePath,
-          content: repositoryContent,
-        });
+      if (!isTanstackFramework) {
+        // Generate individual repository file per operation
+        const repositoryFilePath = path.join(repositoryDir, repositoryFileName);
+        if (!appendMode || !(await fileExists({ filePath: repositoryFilePath }))) {
+          const repositoryContent = generateCrudRepositoryContent({
+            operation,
+            moduleName,
+            parsedType,
+          });
+          await writeFile({ filePath: repositoryFilePath, content: repositoryContent });
+          generatedFiles.push({
+            fileName: repositoryFileName,
+            filePath: repositoryFilePath,
+            content: repositoryContent,
+          });
+        }
       }
 
       // Skip service generation - business logic is now in handlers
@@ -398,7 +406,7 @@ export const generateCodeWithParsedTypes = async ({
       }
 
       // Generate controller or procedure file based on framework
-      if (t3StyleFramework) {
+      if (t3StyleFramework && !isTanstackFramework) {
         // Generate T3 procedure file
         const procedureFilePath = path.join(proceduresDir, procedureFileName);
         if (!appendMode || !(await fileExists({ filePath: procedureFilePath }))) {
@@ -414,7 +422,7 @@ export const generateCodeWithParsedTypes = async ({
             content: procedureContent,
           });
         }
-      } else {
+      } else if (!t3StyleFramework) {
         // Generate REST controller file
         const controllerFilePath = path.join(controllersDir, controllerFileName);
         if (!appendMode || !(await fileExists({ filePath: controllerFilePath }))) {
@@ -450,6 +458,7 @@ export const generateCodeWithParsedTypes = async ({
           customName,
           moduleName,
           parsedType: parsedTypes[customName] || { fields: [], hasId: false, hasPagination: false },
+          useRepositoryLayer: !isTanstackFramework,
         });
         await writeFile({ filePath: handlerFilePath, content: handlerContent });
         generatedFiles.push({
@@ -459,22 +468,24 @@ export const generateCodeWithParsedTypes = async ({
         });
       }
 
-      // Generate individual repository file per custom operation
-      const repositoryFileName = `${customName}.${moduleName}.ts`;
-      const repositoryFilePath = path.join(repositoryDir, repositoryFileName);
-      if (!appendMode || !(await fileExists({ filePath: repositoryFilePath }))) {
-        const parsedType = parsedTypes[customName] || { fields: [], hasId: false, hasPagination: false };
-        const repositoryContent = generateCustomRepositoryContent({
-          customName,
-          moduleName,
-          parsedType,
-        });
-        await writeFile({ filePath: repositoryFilePath, content: repositoryContent });
-        generatedFiles.push({
-          fileName: repositoryFileName,
-          filePath: repositoryFilePath,
-          content: repositoryContent,
-        });
+      if (!isTanstackFramework) {
+        // Generate individual repository file per custom operation
+        const repositoryFileName = `${customName}.${moduleName}.ts`;
+        const repositoryFilePath = path.join(repositoryDir, repositoryFileName);
+        if (!appendMode || !(await fileExists({ filePath: repositoryFilePath }))) {
+          const parsedType = parsedTypes[customName] || { fields: [], hasId: false, hasPagination: false };
+          const repositoryContent = generateCustomRepositoryContent({
+            customName,
+            moduleName,
+            parsedType,
+          });
+          await writeFile({ filePath: repositoryFilePath, content: repositoryContent });
+          generatedFiles.push({
+            fileName: repositoryFileName,
+            filePath: repositoryFilePath,
+            content: repositoryContent,
+          });
+        }
       }
     }
   } else if (apiType.type === 'services' && apiType.serviceNames) {
@@ -552,7 +563,10 @@ export const generateCodeWithParsedTypes = async ({
 
     // Generate T3 router file with automatic operation merging
     const routerFileName = `${moduleName}.ts`;
-    const routersDir = path.join(modulePath, '..', 'routers');
+    const routersBaseDir = path.join(modulePath, '..', 'routers');
+    const routersDir = isTanstackFramework
+      ? path.join(routersBaseDir, moduleName)
+      : routersBaseDir;
     const routerFilePath = path.join(routersDir, routerFileName);
 
     // Ensure routers directory exists
@@ -586,10 +600,13 @@ export const generateCodeWithParsedTypes = async ({
     const allOperations = [...new Set([...existingOperations, ...newOperations])];
 
     // Generate router with merged operations
+    const inlineRouterImportPath = isTanstackFramework ? '../../index' : undefined;
     const routerContent = generateMergedT3RouterContent({
       moduleName,
       operations: allOperations,
       apiBasePath: t3ApiBasePath,
+      inlineProcedures: isTanstackFramework,
+      ...(inlineRouterImportPath && { inlineRouterImportPath }),
     });
 
     await writeFile({ filePath: routerFilePath, content: routerContent });

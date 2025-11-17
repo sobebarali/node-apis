@@ -32,14 +32,33 @@ export const getCrudHandlerFileNames = ({ moduleName }: { moduleName: string }):
   ];
 };
 
+const buildBusinessLogicBlock = ({
+  useRepositoryLayer,
+  invocation,
+  actionDescription,
+}: {
+  useRepositoryLayer: boolean;
+  invocation: string;
+  actionDescription: string;
+}): string => {
+  if (useRepositoryLayer) {
+    return `    const result = await ${invocation};`;
+  }
+
+  return `    // TODO: Implement your ${actionDescription} logic without the repository layer
+    const result = {} as typeResult;`;
+};
+
 export const generateCrudHandlerContent = ({
   operation,
   moduleName,
   parsedType,
+  useRepositoryLayer = true,
 }: {
   operation: string;
   moduleName: string;
   parsedType: ParsedTypePayload;
+  useRepositoryLayer?: boolean;
 }): string => {
   const naming = getModuleNaming(moduleName);
   const capitalizedOperation = operation.charAt(0).toUpperCase() + operation.slice(1);
@@ -47,17 +66,17 @@ export const generateCrudHandlerContent = ({
   // Generate operation-specific handler content
   switch (operation) {
     case 'create':
-      return generateTypedCreateHandlerContent(naming, capitalizedOperation, parsedType);
+      return generateTypedCreateHandlerContent(naming, capitalizedOperation, parsedType, useRepositoryLayer);
     case 'get':
-      return generateTypedGetHandlerContent(naming, capitalizedOperation, parsedType);
+      return generateTypedGetHandlerContent(naming, capitalizedOperation, parsedType, useRepositoryLayer);
     case 'list':
-      return generateTypedListHandlerContent(naming, capitalizedOperation, parsedType);
+      return generateTypedListHandlerContent(naming, capitalizedOperation, parsedType, useRepositoryLayer);
     case 'update':
-      return generateTypedUpdateHandlerContent(naming, capitalizedOperation, parsedType);
+      return generateTypedUpdateHandlerContent(naming, capitalizedOperation, parsedType, useRepositoryLayer);
     case 'delete':
-      return generateTypedDeleteHandlerContent(naming, capitalizedOperation, parsedType);
+      return generateTypedDeleteHandlerContent(naming, capitalizedOperation, parsedType, useRepositoryLayer);
     default:
-      return generateGenericHandlerContent(naming, capitalizedOperation, operation, parsedType);
+      return generateGenericHandlerContent(naming, capitalizedOperation, operation, parsedType, useRepositoryLayer);
   }
 };
 
@@ -67,11 +86,12 @@ export const generateCrudHandlerContent = ({
 const generateTypedCreateHandlerContent = (
   naming: ModuleNaming,
   _capitalizedOperation: string,
-  parsedType: ParsedTypePayload
+  parsedType: ParsedTypePayload,
+  useRepositoryLayer: boolean
 ): string => {
   const fieldDestructuring =
     parsedType.fields.length > 0
-      ? parsedType.fields.map(field => field.name).join(',\n  ')
+      ? parsedType.fields.map(field => `${field.name},`).join('\n  ')
       : '// No fields defined in typePayload';
 
   const fieldTypes =
@@ -88,8 +108,17 @@ const generateTypedCreateHandlerContent = (
         ).join(', ')} }`
       : '{}';
 
-  return `import create from "../repository/create.${naming.file}";
-import type { typeResult } from "../types/create.${naming.file}";
+  const repositoryImport = useRepositoryLayer
+    ? `import create from "../repository/create.${naming.file}";
+`
+    : '';
+  const businessLogic = buildBusinessLogicBlock({
+    useRepositoryLayer,
+    invocation: `create(${payloadObject})`,
+    actionDescription: `CREATE ${naming.constant}`,
+  });
+
+  return `${repositoryImport}import type { typeResult } from "../types/create.${naming.file}";
 
 export default async function create${naming.class}Handler({
   ${fieldDestructuring}
@@ -101,8 +130,8 @@ ${fieldTypes}
   try {
     console.info(\`\${requestId} [HANDLER] - CREATE ${naming.constant} started\`);
 
-    // Business logic here - direct repository call
-    const result = await create(${payloadObject});
+    // Business logic here - implement your data access
+${businessLogic}
 
     console.info(\`\${requestId} [HANDLER] - CREATE ${naming.constant} completed\`);
 
@@ -129,11 +158,12 @@ ${fieldTypes}
 const generateTypedGetHandlerContent = (
   naming: ModuleNaming,
   _capitalizedOperation: string,
-  parsedType: ParsedTypePayload
+  parsedType: ParsedTypePayload,
+  useRepositoryLayer: boolean
 ): string => {
   const fieldDestructuring =
     parsedType.fields.length > 0
-      ? parsedType.fields.map(field => field.name).join(',\n  ')
+      ? parsedType.fields.map(field => `${field.name},`).join('\n  ')
       : '// No fields defined in typePayload';
 
   const fieldTypes =
@@ -145,8 +175,17 @@ const generateTypedGetHandlerContent = (
   const idField = findIdField(parsedType, naming.variable);
   const idAccess = idField || 'id';
 
-  return `import get from "../repository/get.${naming.file}";
-import type { typeResult } from "../types/get.${naming.file}";
+  const repositoryImport = useRepositoryLayer
+    ? `import get from "../repository/get.${naming.file}";
+`
+    : '';
+  const businessLogic = buildBusinessLogicBlock({
+    useRepositoryLayer,
+    invocation: `get(${idAccess})`,
+    actionDescription: `GET ${naming.constant}`,
+  });
+
+  return `${repositoryImport}import type { typeResult } from "../types/get.${naming.file}";
 
 export default async function get${naming.class}Handler({
   ${fieldDestructuring}
@@ -158,8 +197,8 @@ ${fieldTypes}
   try {
     console.info(\`\${requestId} [HANDLER] - GET ${naming.constant} started with id: \${${idAccess}}\`);
 
-    // Business logic here - direct repository call
-    const result = await get(${idAccess});
+    // Business logic here - implement your data access
+${businessLogic}
 
     console.info(\`\${requestId} [HANDLER] - GET ${naming.constant} completed\`);
 
@@ -186,11 +225,12 @@ ${fieldTypes}
 const generateTypedListHandlerContent = (
   naming: ModuleNaming,
   _capitalizedOperation: string,
-  parsedType: ParsedTypePayload
+  parsedType: ParsedTypePayload,
+  useRepositoryLayer: boolean
 ): string => {
   const fieldDestructuring =
     parsedType.fields.length > 0
-      ? parsedType.fields.map(field => field.name).join(',\n  ')
+      ? parsedType.fields.map(field => `${field.name},`).join('\n  ')
       : '// No fields defined in typePayload';
 
   const fieldTypes =
@@ -207,8 +247,17 @@ const generateTypedListHandlerContent = (
         ).join(', ')} }`
       : '{}';
 
-  return `import list from "../repository/list.${naming.file}";
-import type { typeResult } from "../types/list.${naming.file}";
+  const repositoryImport = useRepositoryLayer
+    ? `import list from "../repository/list.${naming.file}";
+`
+    : '';
+  const businessLogic = buildBusinessLogicBlock({
+    useRepositoryLayer,
+    invocation: `list(${filtersObject})`,
+    actionDescription: `LIST ${naming.constant}`,
+  });
+
+  return `${repositoryImport}import type { typeResult } from "../types/list.${naming.file}";
 
 export default async function list${naming.class}sHandler({
   ${fieldDestructuring}
@@ -220,8 +269,8 @@ ${fieldTypes}
   try {
     console.info(\`\${requestId} [HANDLER] - LIST ${naming.constant} started\`);
 
-    // Business logic here - direct repository call
-    const result = await list(${filtersObject});
+    // Business logic here - implement your data access
+${businessLogic}
 
     console.info(\`\${requestId} [HANDLER] - LIST ${naming.constant} completed\`);
 
@@ -248,11 +297,12 @@ ${fieldTypes}
 const generateTypedUpdateHandlerContent = (
   naming: ModuleNaming,
   _capitalizedOperation: string,
-  parsedType: ParsedTypePayload
+  parsedType: ParsedTypePayload,
+  useRepositoryLayer: boolean
 ): string => {
   const fieldDestructuring =
     parsedType.fields.length > 0
-      ? parsedType.fields.map(field => field.name).join(',\n  ')
+      ? parsedType.fields.map(field => `${field.name},`).join('\n  ')
       : '// No fields defined in typePayload';
 
   const fieldTypes =
@@ -272,8 +322,17 @@ const generateTypedUpdateHandlerContent = (
       ).join(', ')} }`
     : '{}';
 
-  return `import update from "../repository/update.${naming.file}";
-import type { typeResult } from "../types/update.${naming.file}";
+  const repositoryImport = useRepositoryLayer
+    ? `import update from "../repository/update.${naming.file}";
+`
+    : '';
+  const businessLogic = buildBusinessLogicBlock({
+    useRepositoryLayer,
+    invocation: `update(${idAccess}, ${updateObject})`,
+    actionDescription: `UPDATE ${naming.constant}`,
+  });
+
+  return `${repositoryImport}import type { typeResult } from "../types/update.${naming.file}";
 
 export default async function update${naming.class}Handler({
   ${fieldDestructuring}
@@ -285,8 +344,8 @@ ${fieldTypes}
   try {
     console.info(\`\${requestId} [HANDLER] - UPDATE ${naming.constant} started with id: \${${idAccess}}\`);
 
-    // Business logic here - direct repository call
-    const result = await update(${idAccess}, ${updateObject});
+    // Business logic here - implement your data access
+${businessLogic}
 
     console.info(\`\${requestId} [HANDLER] - UPDATE ${naming.constant} completed\`);
 
@@ -313,11 +372,12 @@ ${fieldTypes}
 const generateTypedDeleteHandlerContent = (
   naming: ModuleNaming,
   _capitalizedOperation: string,
-  parsedType: ParsedTypePayload
+  parsedType: ParsedTypePayload,
+  useRepositoryLayer: boolean
 ): string => {
   const fieldDestructuring =
     parsedType.fields.length > 0
-      ? parsedType.fields.map(field => field.name).join(',\n  ')
+      ? parsedType.fields.map(field => `${field.name},`).join('\n  ')
       : '// No fields defined in typePayload';
 
   const fieldTypes =
@@ -329,8 +389,17 @@ const generateTypedDeleteHandlerContent = (
   const idField = findIdField(parsedType, naming.variable);
   const idAccess = idField || 'id';
 
-  return `import remove from "../repository/delete.${naming.file}";
-import type { typeResult } from "../types/delete.${naming.file}";
+  const repositoryImport = useRepositoryLayer
+    ? `import remove from "../repository/delete.${naming.file}";
+`
+    : '';
+  const businessLogic = buildBusinessLogicBlock({
+    useRepositoryLayer,
+    invocation: `remove(${idAccess})`,
+    actionDescription: `DELETE ${naming.constant}`,
+  });
+
+  return `${repositoryImport}import type { typeResult } from "../types/delete.${naming.file}";
 
 export default async function delete${naming.class}Handler({
   ${fieldDestructuring}
@@ -342,8 +411,8 @@ ${fieldTypes}
   try {
     console.info(\`\${requestId} [HANDLER] - DELETE ${naming.constant} started with id: \${${idAccess}}\`);
 
-    // Business logic here - direct repository call
-    const result = await remove(${idAccess});
+    // Business logic here - implement your data access
+${businessLogic}
 
     console.info(\`\${requestId} [HANDLER] - DELETE ${naming.constant} completed\`);
 
@@ -369,13 +438,14 @@ ${fieldTypes}
  */
 const generateGenericHandlerContent = (
   naming: ModuleNaming,
-  _capitalizedOperation: string,
+  capitalizedOperation: string,
   operation: string,
-  parsedType: ParsedTypePayload
+  parsedType: ParsedTypePayload,
+  useRepositoryLayer: boolean
 ): string => {
   const fieldDestructuring =
     parsedType.fields.length > 0
-      ? parsedType.fields.map(field => field.name).join(',\n  ')
+      ? parsedType.fields.map(field => `${field.name},`).join('\n  ')
       : '// No fields defined in typePayload';
 
   const fieldTypes =
@@ -388,7 +458,7 @@ const generateGenericHandlerContent = (
     if (operation === 'delete') {
       const idField = findIdField(parsedType, naming.variable);
       const idAccess = idField || 'id';
-      return `const result = await remove(${idAccess});`;
+      return `remove(${idAccess})`;
     } else if (operation === 'list') {
       const filtersObject =
         parsedType.fields.length > 0
@@ -398,7 +468,7 @@ const generateGenericHandlerContent = (
                 : field.name
             ).join(', ')} }`
           : '{}';
-      return `const result = await list(${filtersObject});`;
+      return `list(${filtersObject})`;
     } else if (operation === 'update') {
       const idField = findIdField(parsedType, naming.variable);
       const idAccess = idField || 'id';
@@ -410,16 +480,25 @@ const generateGenericHandlerContent = (
               : field.name
           ).join(', ')} }`
         : '{}';
-      return `const result = await update(${idAccess}, ${updateObject});`;
+      return `update(${idAccess}, ${updateObject})`;
     } else {
-      return `const result = await ${operation}({
+      return `${operation}({
       ${parsedType.fields.map(field => field.name).join(',\n      ')}
-    });`;
+    })`;
     }
   };
 
-  return `import ${operation} from "../repository/${operation}.${naming.file}";
-import type { typeResult } from "../types/${operation}.${naming.file}";
+  const repositoryImport = useRepositoryLayer
+    ? `import ${operation} from "../repository/${operation}.${naming.file}";
+`
+    : '';
+  const businessLogic = buildBusinessLogicBlock({
+    useRepositoryLayer,
+    invocation: getRepositoryCall(),
+    actionDescription: `${capitalizedOperation.toUpperCase()} ${naming.constant}`,
+  });
+
+  return `${repositoryImport}import type { typeResult } from "../types/${operation}.${naming.file}";
 
 export default async function ${operation}${naming.class}Handler({
   ${fieldDestructuring}
@@ -431,8 +510,8 @@ ${fieldTypes}
   try {
     console.info(\`\${requestId} [HANDLER] - ${operation.toUpperCase()} ${naming.constant} started\`);
 
-    // Business logic here - direct repository call
-    ${getRepositoryCall()}
+    // Business logic here - implement your data access
+${businessLogic}
 
     console.info(\`\${requestId} [HANDLER] - ${operation.toUpperCase()} ${naming.constant} completed\`);
 
