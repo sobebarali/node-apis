@@ -294,10 +294,19 @@ const handleTwoPhaseGeneration = async ({
 
     let testPath = 'tests';
     if (framework === 'tanstack') {
-      const moduleBaseDir = path.dirname(modulePath);
-      const tanstackApiRoot =
-        path.basename(moduleBaseDir) === 'src' ? path.dirname(moduleBaseDir) : moduleBaseDir;
-      // TanStack Start stores backend modules in packages/api, so mirror that base for tests
+      const resolveTanstackRoot = (startPath: string): string => {
+        let currentDir = path.dirname(startPath);
+        while (currentDir !== path.dirname(currentDir)) {
+          if (path.basename(currentDir) === 'src') {
+            return path.dirname(currentDir);
+          }
+          currentDir = path.dirname(currentDir);
+        }
+        return path.dirname(startPath);
+      };
+
+      const tanstackApiRoot = resolveTanstackRoot(modulePath);
+      // TanStack Start stores backend modules under packages/api/src/routers, tests live at packages/api/tests
       testPath = path.join(tanstackApiRoot, 'tests');
     }
     const testFiles = await generateTestFiles({

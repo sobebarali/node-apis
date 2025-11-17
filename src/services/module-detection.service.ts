@@ -67,7 +67,7 @@ export const getExistingModules = async ({
   if (effectiveFramework === 't3') {
     apisDir = path.join(baseDir, srcPath, 'server', 'api');
   } else if (effectiveFramework === 'tanstack') {
-    apisDir = path.join(baseDir, srcPath);
+    apisDir = path.join(baseDir, srcPath, 'routers');
   } else {
     apisDir = path.join(baseDir, srcPath, 'apis');
   }

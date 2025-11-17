@@ -528,7 +528,9 @@ export const generateCodeWithParsedTypes = async ({
   if (t3StyleFramework) {
     // Generate T3 utility files (constants and logger) - only once
     const sharedBaseDir =
-      framework === 'tanstack' ? path.join(modulePath, '..') : path.join(modulePath, '..', '..');
+      framework === 'tanstack'
+        ? path.join(modulePath, '..', '..')
+        : path.join(modulePath, '..', '..');
     const constantsDir = path.join(sharedBaseDir, 'constants');
     const utilsDir = path.join(sharedBaseDir, 'utils');
 
@@ -563,14 +565,11 @@ export const generateCodeWithParsedTypes = async ({
 
     // Generate T3 router file with automatic operation merging
     const routerFileName = `${moduleName}.ts`;
-    const routersBaseDir = path.join(modulePath, '..', 'routers');
-    const routersDir = isTanstackFramework
-      ? path.join(routersBaseDir, moduleName)
-      : routersBaseDir;
-    const routerFilePath = path.join(routersDir, routerFileName);
+    const routerDir = isTanstackFramework ? modulePath : path.join(modulePath, '..', 'routers');
+    const routerFilePath = path.join(routerDir, routerFileName);
 
-    // Ensure routers directory exists
-    await ensureDirectory({ dirPath: routersDir });
+    // Ensure routers directory exists (non-TanStack routers folder may not exist)
+    await ensureDirectory({ dirPath: routerDir });
 
     // Determine new operations to add
     let newOperations: string[] = [];

@@ -80,7 +80,7 @@ export const getModulePath = async ({
     }
 
     if (framework === 'tanstack') {
-      return path.join(base, srcPath, moduleName);
+      return path.join(base, srcPath, 'routers', moduleName);
     }
 
     return path.join(base, srcPath, 'apis', moduleName);
