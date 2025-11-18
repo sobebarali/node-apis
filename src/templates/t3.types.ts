@@ -225,12 +225,13 @@ const generateT3GenericTypeContent = (
   moduleName: string
 ): string => {
   return `export type typePayload = {
-  // Define payload for ${operation} ${moduleName}
-  id?: string;
+  // TODO: Define payload fields for ${operation} ${moduleName}
+  // Example: email: string; subject: string; message: string;
 };
 
 export type typeResult = {
-  // Define result data for ${operation} ${moduleName}
+  // TODO: Define result data for ${operation} ${moduleName}
+  // Example: success: boolean; messageId: string;
 };
 `;
 };
