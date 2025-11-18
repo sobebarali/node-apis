@@ -265,6 +265,7 @@ export const generateCodeWithParsedTypes = async ({
         fields: [],
         hasId: false,
         hasPagination: false,
+        isEmpty: true,
       };
 
       // Generate validator file (skip if typePayload is empty)
@@ -402,7 +403,7 @@ export const generateCodeWithParsedTypes = async ({
       const procedureFileName = `${customName}.${moduleName}.ts`;
 
       // Generate validator file with parsed types (skip if typePayload is empty)
-      const parsedType = parsedTypes[customName] || { fields: [], hasId: false, hasPagination: false };
+      const parsedType = parsedTypes[customName] || { fields: [], hasId: false, hasPagination: false, isEmpty: true };
       if (!parsedType.isEmpty) {
         const validatorFilePath = path.join(validatorsDir, validatorFileName);
         if (!appendMode || !(await fileExists({ filePath: validatorFilePath }))) {
@@ -474,7 +475,7 @@ export const generateCodeWithParsedTypes = async ({
         const handlerContent = handlerModule.generateTypedCustomHandlerContent({
           customName,
           moduleName,
-          parsedType: parsedTypes[customName] || { fields: [], hasId: false, hasPagination: false },
+          parsedType: parsedTypes[customName] || { fields: [], hasId: false, hasPagination: false, isEmpty: true },
           useRepositoryLayer: !isTanstackFramework,
         });
         await writeFile({ filePath: handlerFilePath, content: handlerContent });
@@ -490,7 +491,7 @@ export const generateCodeWithParsedTypes = async ({
         const repositoryFileName = `${customName}.${moduleName}.ts`;
         const repositoryFilePath = path.join(repositoryDir, repositoryFileName);
         if (!appendMode || !(await fileExists({ filePath: repositoryFilePath }))) {
-          const parsedType = parsedTypes[customName] || { fields: [], hasId: false, hasPagination: false };
+          const parsedType = parsedTypes[customName] || { fields: [], hasId: false, hasPagination: false, isEmpty: true };
           const repositoryContent = generateCustomRepositoryContent({
             customName,
             moduleName,

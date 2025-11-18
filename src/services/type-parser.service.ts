@@ -78,7 +78,7 @@ export const parseTypePayload = async (filePath: string): Promise<ParsedTypePayl
     return { fields, hasId, hasPagination, isEmpty };
   } catch (error) {
     console.error(`Error parsing type file ${filePath}:`, error);
-    return { fields: [], hasId: false, hasPagination: false };
+    return { fields: [], hasId: false, hasPagination: false, isEmpty: true };
   }
 };
 
