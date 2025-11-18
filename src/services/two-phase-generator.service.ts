@@ -221,6 +221,19 @@ export const generateCodeWithParsedTypes = async ({
   // Parse the type files to get actual field names
   const parsedTypes = await parseModuleTypes(modulePath);
 
+  // Debug: Log parsed types to help users understand what was detected
+  if (process.env.DEBUG || process.env.NODE_ENV === 'development') {
+    console.log('\n🔍 DEBUG: Parsed type information:');
+    for (const [operation, parsedType] of Object.entries(parsedTypes)) {
+      if (parsedType.fields.length > 0) {
+        console.log(`   ${operation}: ${parsedType.fields.length} field(s) - ${parsedType.fields.map(f => f.name).join(', ')}`);
+      } else if (parsedType.isEmpty) {
+        console.log(`   ${operation}: Empty typePayload (no fields defined)`);
+      }
+    }
+    console.log('');
+  }
+
   // Convert empty typePayloads to Record<string, never>
   await Promise.all(
     Object.entries(parsedTypes).map(async ([operation, parsedType]) => {
@@ -270,6 +283,8 @@ export const generateCodeWithParsedTypes = async ({
             content: validatorContent,
           });
         }
+      } else {
+        console.log(`   ⊘ Skipping validator for ${operation} - empty typePayload (no fields defined)`);
       }
 
       // Generate controller or procedure file based on style
@@ -403,6 +418,8 @@ export const generateCodeWithParsedTypes = async ({
             content: validatorContent,
           });
         }
+      } else {
+        console.log(`   ⊘ Skipping validator for ${customName} - empty typePayload (no fields defined)`);
       }
 
       // Generate controller or procedure file based on framework

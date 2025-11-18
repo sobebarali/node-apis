@@ -11,6 +11,7 @@ import {
   generateTypeFilesOnly,
   generateCodeWithParsedTypes,
 } from '../../services/two-phase-generator.service';
+import { parseModuleTypes } from '../../services/type-parser.service';
 import { generateTestFiles } from '../../services/file-generator.service';
 // import { generateCompleteTestSetup } from '../../services/test-config-generator.service';
 import {
@@ -262,6 +263,42 @@ const handleTwoPhaseGeneration = async ({
       }
 
       displayTypeReviewComplete();
+
+      // Validate that fields were actually added to typePayload
+      console.log('\n🔍 Validating type definitions...');
+      const parsedTypes = await parseModuleTypes(modulePath);
+
+      let hasAnyFields = false;
+      const emptyOperations: string[] = [];
+
+      for (const operation of operations) {
+        const parsedType = parsedTypes[operation];
+        if (parsedType && parsedType.fields.length > 0) {
+          hasAnyFields = true;
+          console.log(`   ✓ ${operation}: ${parsedType.fields.length} field(s) detected`);
+        } else if (parsedType && parsedType.isEmpty) {
+          emptyOperations.push(operation);
+          console.log(`   ⚠ ${operation}: No fields defined (empty typePayload)`);
+        }
+      }
+
+      if (!hasAnyFields && emptyOperations.length > 0) {
+        console.log('\n⚠️  Warning: No fields were detected in any typePayload definitions.');
+        console.log('   This will result in:');
+        console.log('   - No validator files generated');
+        console.log('   - Handlers with only requestId parameter');
+        console.log('\n   Example of correct typePayload format:');
+        console.log('   export type typePayload = {');
+        console.log('     email: string;');
+        console.log('     subject: string;');
+        console.log('     message: string;');
+        console.log('   };');
+        console.log('\n   You can edit the type files and run the command again with --force flag.');
+      } else if (emptyOperations.length > 0) {
+        console.log(`\n   Note: ${emptyOperations.length} operation(s) have empty typePayload.`);
+      }
+
+      console.log(''); // Empty line for spacing
     }
 
     // Phase 2: Create remaining directories and generate services/repositories with framework support
