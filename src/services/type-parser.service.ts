@@ -29,14 +29,18 @@ export const parseTypePayload = async (filePath: string): Promise<ParsedTypePayl
   try {
     const content = await fs.promises.readFile(filePath, 'utf-8');
 
-    // Find the typePayload interface with proper brace matching
-    const interfaceStart = content.indexOf('export type typePayload = {');
-    if (interfaceStart === -1) {
+    // Find the typePayload definition (supports `type` or `interface` syntax with flexible spacing)
+    const typeDefinitionRegex = /export\s+(?:type|interface)\s+typePayload\s*(?:=\s*)?{/i;
+    const definitionMatch = typeDefinitionRegex.exec(content);
+    if (!definitionMatch) {
       return { fields: [], hasId: false, hasPagination: false };
     }
 
-    // Find the matching closing brace
-    const startBrace = content.indexOf('{', interfaceStart);
+    // Find the position of the opening brace for the type/interface body
+    const startBrace = content.indexOf('{', definitionMatch.index);
+    if (startBrace === -1) {
+      return { fields: [], hasId: false, hasPagination: false };
+    }
     let braceCount = 1;
     let endBrace = startBrace + 1;
 
