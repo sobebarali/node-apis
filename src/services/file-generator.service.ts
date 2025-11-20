@@ -244,20 +244,10 @@ export const generateTestFiles = async ({
 }): Promise<GeneratedFile[]> => {
   const generatedFiles: GeneratedFile[] = [];
   const t3StyleFramework = isT3StyleFramework(framework);
-  
-  // Check if there's a "server" directory in the root
-  const hasServerDir = await fileExists({ filePath: path.join(testPath, '..', 'server') });
-  let moduleTestDir: string;
-  
-  if (!hasServerDir) {
-    // Use tests directory in the root
-    const testsDir = path.join(testPath, '..', 'tests');
-    await ensureDirectory({ dirPath: testsDir });
-    moduleTestDir = path.join(testsDir, moduleName);
-  } else {
-    // Use tests directory relative to testPath (this might be inside server/)
-    moduleTestDir = path.join(testPath, moduleName);
-  }
+
+  // Use the provided testPath directly (already configured via getTestsPath)
+  await ensureDirectory({ dirPath: testPath });
+  const moduleTestDir = path.join(testPath, moduleName);
 
   if (apiType.type === 'crud') {
     const crudOperations = ['create', 'get', 'list', 'update', 'delete'];

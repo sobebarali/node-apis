@@ -22,8 +22,11 @@ export interface PreferencesConfig {
 }
 
 export interface PathsConfig {
-  srcDir?: string;              // Default: 'src'
+  srcDir?: string;              // Default: 'src' - Base source directory
   fallbackPaths?: string[];     // Fallback paths to check: ['apps/server/src', 'packages/api/src']
+  apisDir?: string;             // Default: 'src/apis' - API modules directory (relative to project root)
+  testsDir?: string;            // Default: 'tests' - Test files directory (relative to project root)
+  frameworkPaths?: Partial<Record<SupportedFramework, string>>; // Framework-specific API directory overrides
 }
 
 export interface Config {

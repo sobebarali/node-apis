@@ -21,6 +21,8 @@ export const main = async (): Promise<void> => {
     .option('--init-config', 'initialize configuration file')
     .option('--set-framework <framework>', 'set default framework in config (express|hono|t3|tanstack)')
     .option('--set-api-style <style>', 'set default API style in config (rest|trpc)')
+    .option('--set-apis-dir <path>', 'set APIs directory path in config (e.g., src/apis)')
+    .option('--set-tests-dir <path>', 'set tests directory path in config (e.g., tests)')
     .option(
       '--target-dir <dir>',
       'target directory for generated files (default: current directory)'

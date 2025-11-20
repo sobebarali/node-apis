@@ -245,6 +245,123 @@ export const setDatabaseConfig = async ({
 };
 
 /**
+ * Gets the configured APIs directory with framework-specific support
+ */
+export const getApisDir = async ({
+  framework,
+  configPath,
+}: {
+  framework?: SupportedFramework;
+  configPath?: string;
+} = {}): Promise<string> => {
+  const config = await loadConfig(configPath ? { configPath } : {});
+
+  // Check for framework-specific override first
+  if (framework && config?.paths?.frameworkPaths?.[framework]) {
+    return config.paths.frameworkPaths[framework];
+  }
+
+  // Then check for general apisDir configuration
+  if (config?.paths?.apisDir) {
+    return config.paths.apisDir;
+  }
+
+  // Fall back to framework-specific defaults
+  if (framework === 't3') {
+    return path.join('src', 'server', 'api');
+  }
+
+  if (framework === 'tanstack') {
+    return path.join('src', 'routers');
+  }
+
+  // Default to src/apis
+  return path.join('src', 'apis');
+};
+
+/**
+ * Gets the configured tests directory
+ */
+export const getTestsDir = async ({
+  configPath,
+}: {
+  configPath?: string;
+} = {}): Promise<string> => {
+  const config = await loadConfig(configPath ? { configPath } : {});
+
+  // Return configured path or default to 'tests'
+  return config?.paths?.testsDir || 'tests';
+};
+
+/**
+ * Sets the APIs directory in config
+ */
+export const setApisDir = async ({
+  apisDir,
+  configPath,
+}: {
+  apisDir: string;
+  configPath?: string;
+}): Promise<void> => {
+  // Check if config exists, if not create a default one first
+  const exists = await configExists(configPath ? { configPath } : {});
+
+  const config = await loadConfig(configPath ? { configPath } : {});
+  const updatedPaths = {
+    ...config?.paths,
+    apisDir,
+  };
+
+  if (!exists) {
+    // Create default config with the specified APIs directory
+    await initializeConfig({
+      ...(configPath && { configPath }),
+    });
+  }
+
+  // Update config with new APIs directory
+  await saveConfig({
+    config: { paths: updatedPaths },
+    ...(configPath && { configPath }),
+    options: { merge: true, validate: true },
+  });
+};
+
+/**
+ * Sets the tests directory in config
+ */
+export const setTestsDir = async ({
+  testsDir,
+  configPath,
+}: {
+  testsDir: string;
+  configPath?: string;
+}): Promise<void> => {
+  // Check if config exists, if not create a default one first
+  const exists = await configExists(configPath ? { configPath } : {});
+
+  const config = await loadConfig(configPath ? { configPath } : {});
+  const updatedPaths = {
+    ...config?.paths,
+    testsDir,
+  };
+
+  if (!exists) {
+    // Create default config with the specified tests directory
+    await initializeConfig({
+      ...(configPath && { configPath }),
+    });
+  }
+
+  // Update config with new tests directory
+  await saveConfig({
+    config: { paths: updatedPaths },
+    ...(configPath && { configPath }),
+    options: { merge: true, validate: true },
+  });
+};
+
+/**
  * Initializes a new config file
  */
 export const initializeConfig = async ({
@@ -266,6 +383,15 @@ export const initializeConfig = async ({
       autoFormat: true,
       generateTests: true,
       skipConfirmation: false,
+    },
+    paths: {
+      srcDir: 'src',
+      apisDir: path.join('src', 'apis'),
+      testsDir: 'tests',
+      fallbackPaths: [
+        path.join('apps', 'server', 'src'),
+        path.join('packages', 'api', 'src'),
+      ],
     },
   };
 
@@ -332,6 +458,12 @@ export const validateConfig = ({ config }: { config: any }): ConfigValidationRes
     if (paths.srcDir !== undefined && typeof paths.srcDir !== 'string') {
       errors.push('paths.srcDir must be a string');
     }
+    if (paths.apisDir !== undefined && typeof paths.apisDir !== 'string') {
+      errors.push('paths.apisDir must be a string');
+    }
+    if (paths.testsDir !== undefined && typeof paths.testsDir !== 'string') {
+      errors.push('paths.testsDir must be a string');
+    }
     if (paths.fallbackPaths !== undefined) {
       if (!Array.isArray(paths.fallbackPaths)) {
         errors.push('paths.fallbackPaths must be an array');
@@ -339,6 +471,23 @@ export const validateConfig = ({ config }: { config: any }): ConfigValidationRes
         for (let i = 0; i < paths.fallbackPaths.length; i++) {
           if (typeof paths.fallbackPaths[i] !== 'string') {
             errors.push(`paths.fallbackPaths[${i}] must be a string`);
+          }
+        }
+      }
+    }
+    if (paths.frameworkPaths !== undefined) {
+      if (typeof paths.frameworkPaths !== 'object' || Array.isArray(paths.frameworkPaths)) {
+        errors.push('paths.frameworkPaths must be an object');
+      } else {
+        const validFrameworks = ['express', 'hono', 't3', 'tanstack'];
+        for (const [framework, frameworkPath] of Object.entries(paths.frameworkPaths)) {
+          if (!validFrameworks.includes(framework)) {
+            errors.push(
+              `Invalid framework in paths.frameworkPaths: ${framework}. Must be one of: ${validFrameworks.join(', ')}`
+            );
+          }
+          if (typeof frameworkPath !== 'string') {
+            errors.push(`paths.frameworkPaths.${framework} must be a string`);
           }
         }
       }
@@ -357,6 +506,67 @@ export const validateConfig = ({ config }: { config: any }): ConfigValidationRes
     errors,
     warnings,
   };
+};
+
+/**
+ * Migrates an old config file to the new format with path fields
+ */
+export const migrateConfig = async ({
+  configPath,
+}: {
+  configPath?: string;
+} = {}): Promise<Config> => {
+  try {
+    // Load existing config
+    const config = await loadConfig(configPath ? { configPath } : {});
+
+    if (!config) {
+      throw new Error('No config file found to migrate');
+    }
+
+    // Check if migration is needed
+    if (config.paths && config.paths.apisDir && config.paths.testsDir) {
+      console.log('✅ Config is already up to date');
+      return config;
+    }
+
+    console.log('🔄 Migrating config to new format...');
+
+    // Detect existing structure
+    const { detectExistingApiStructure, suggestPathConfiguration } = await import(
+      './module-detection.service'
+    );
+    const detected = await detectExistingApiStructure({ baseDir: process.cwd() });
+    const suggested = suggestPathConfiguration(detected);
+
+    // Merge with existing config
+    const migratedConfig: Config = {
+      ...config,
+      paths: {
+        ...config.paths,
+        ...suggested,
+      },
+    };
+
+    // Save migrated config
+    await saveConfig({
+      config: migratedConfig,
+      ...(configPath && { configPath }),
+      options: { validate: true },
+    });
+
+    console.log('✅ Config migrated successfully');
+    if (detected.apisDir) {
+      console.log(`   APIs directory: ${suggested.apisDir}`);
+    }
+    if (detected.testsDir) {
+      console.log(`   Tests directory: ${suggested.testsDir}`);
+    }
+
+    return migratedConfig;
+  } catch (error: any) {
+    throw new Error(`Failed to migrate config: ${error.message}`);
+  }
 };
 
 /**

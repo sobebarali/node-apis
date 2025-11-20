@@ -5,7 +5,8 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import { ModulePathInput, ApiType } from '../types/common.types';
-import { loadConfig } from '../services/config.service';
+import { SupportedFramework } from '../types/config.types';
+import { loadConfig, getApisDir, getTestsDir } from '../services/config.service';
 
 /**
  * Detects the correct source directory path for the project
@@ -71,19 +72,13 @@ export const getModulePath = async ({
   baseDir = process.cwd(),
   targetDir,
   framework,
-}: ModulePathInput & { targetDir?: string; framework?: string }): Promise<string> => {
+}: ModulePathInput & { targetDir?: string; framework?: SupportedFramework }): Promise<string> => {
   const resolveBasePath = async (base: string) => {
-    const srcPath = await detectSourcePath(base);
+    // Get configured APIs directory (with framework-specific support)
+    const apisDir = await getApisDir(framework ? { framework } : {});
 
-    if (framework === 't3') {
-      return path.join(base, srcPath, 'server', 'api', moduleName);
-    }
-
-    if (framework === 'tanstack') {
-      return path.join(base, srcPath, 'routers', moduleName);
-    }
-
-    return path.join(base, srcPath, 'apis', moduleName);
+    // Join with base directory and module name
+    return path.join(base, apisDir, moduleName);
   };
 
   if (targetDir) {
@@ -96,6 +91,21 @@ export const getModulePath = async ({
   }
 
   return resolveBasePath(baseDir);
+};
+
+/**
+ * Gets the configured tests directory path
+ */
+export const getTestsPath = async ({
+  baseDir = process.cwd(),
+}: {
+  baseDir?: string;
+} = {}): Promise<string> => {
+  // Get configured tests directory
+  const testsDir = await getTestsDir({});
+
+  // Join with base directory
+  return path.join(baseDir, testsDir);
 };
 
 /**

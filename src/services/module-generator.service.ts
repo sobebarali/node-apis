@@ -4,6 +4,7 @@
 
 import { GenerationInput, GenerationResult } from '../types/generation.types';
 import { GeneratedFile, ApiType } from '../types/common.types';
+import { SupportedFramework } from '../types/config.types';
 import { validateModuleName, EnhancedValidationResult } from '../validators/module-name.validator';
 import { getModulePath, getModuleSubdirectories } from '../filesystem/path.utils';
 import {
@@ -99,7 +100,7 @@ export const generateModuleStructurePhase1 = async ({
   moduleName,
   options = {},
   framework,
-}: Omit<GenerationInput, 'apiType'> & { framework?: string }): Promise<GenerationResult> => {
+}: Omit<GenerationInput, 'apiType'> & { framework?: SupportedFramework }): Promise<GenerationResult> => {
   const { baseDir = process.cwd(), force = false, appendMode = false, targetDir } = options;
 
   try {

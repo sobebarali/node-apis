@@ -14,6 +14,8 @@ export interface CommandOptions {
   initConfig?: boolean;
   setFramework?: string;
   setApiStyle?: string;
+  setApisDir?: string;
+  setTestsDir?: string;
   targetDir?: string;
   trpcStyle?: boolean; // Deprecated, use apiStyle instead
   setTrpcStyle?: string; // Deprecated, use setApiStyle instead

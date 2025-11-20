@@ -1,4 +1,3 @@
-import * as path from 'path';
 import { CommandOptions } from '../../types/cli.types';
 import { ApiType } from '../../types/common.types';
 import { validateTargetLocation } from '../../validators/location.validator';
@@ -21,12 +20,15 @@ import {
 } from '../prompts/type-review.prompts';
 
 import { getExistingModules, detectExistingModule } from '../../services/module-detection.service';
+import { getTestsPath } from '../../filesystem/path.utils';
 import {
   getEffectiveFramework,
   getEffectiveApiStyle,
   initializeConfig,
   setFramework,
   setApiStyle,
+  setApisDir,
+  setTestsDir,
   configExists,
 } from '../../services/config.service';
 import { SupportedFramework, SupportedApiStyle } from '../../types/config.types';
@@ -72,6 +74,16 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
       return;
     }
 
+    if (options.setApisDir) {
+      await handleSetApisDir(options);
+      return;
+    }
+
+    if (options.setTestsDir) {
+      await handleSetTestsDir(options);
+      return;
+    }
+
     if (options.setTrpcStyle) {
       await handleSetTrpcStyle(options);
       return;
@@ -95,7 +107,7 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
       // Only get framework from config/CLI if explicitly provided
       // Don't use default yet - let interactive flow prompt if needed
       const hasConfig = await configExists();
-      const framework = options.framework || (hasConfig ? await getEffectiveFramework({
+      const framework: SupportedFramework | undefined = options.framework as SupportedFramework | undefined || (hasConfig ? await getEffectiveFramework({
         ...(options.framework && { cliFramework: options.framework }),
       }) : undefined);
 
@@ -145,7 +157,7 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
       }
 
       // Get effective framework and API style from config, CLI option, or prompt user
-      const framework = await getEffectiveFramework({
+      const framework: SupportedFramework = await getEffectiveFramework({
         ...(options.framework && { cliFramework: options.framework }),
       });
 
@@ -213,7 +225,7 @@ const handleTwoPhaseGeneration = async ({
 }: {
   moduleName: string;
   apiType: ApiType;
-  framework: string;
+  framework: SupportedFramework;
   options: { force: boolean; appendMode: boolean; targetDir?: string; trpcStyle?: boolean };
   interactive: boolean;
 }) => {
@@ -329,23 +341,8 @@ const handleTwoPhaseGeneration = async ({
     // Phase 3: Generate test files
     console.log('🧪 Phase 3: Generating comprehensive test suite...\n');
 
-    let testPath = 'tests';
-    if (framework === 'tanstack') {
-      const resolveTanstackRoot = (startPath: string): string => {
-        let currentDir = path.dirname(startPath);
-        while (currentDir !== path.dirname(currentDir)) {
-          if (path.basename(currentDir) === 'src') {
-            return path.dirname(currentDir);
-          }
-          currentDir = path.dirname(currentDir);
-        }
-        return path.dirname(startPath);
-      };
-
-      const tanstackApiRoot = resolveTanstackRoot(modulePath);
-      // TanStack Start stores backend modules under packages/api/src/routers, tests live at packages/api/tests
-      testPath = path.join(tanstackApiRoot, 'tests');
-    }
+    // Get configured test path
+    const testPath = await getTestsPath({ baseDir: process.cwd() });
     const testFiles = await generateTestFiles({
       moduleName: normalizedModuleName,
       testPath,
@@ -412,7 +409,7 @@ const parseCommandLineApiType = (options: CommandOptions): ApiType | undefined =
  */
 const handleInteractiveFlow = async (
   initialModuleName?: string,
-  framework?: string,
+  framework?: SupportedFramework,
   initialApiType?: ApiType
 ): Promise<{
   success: boolean;
@@ -670,6 +667,50 @@ const handleSetApiStyle = async (options: CommandOptions): Promise<void> => {
     console.log('📁 Updated: node-apis.config.json');
   } catch (error: any) {
     displayError(`Failed to set API style: ${error.message}`);
+    process.exit(1);
+  }
+};
+
+/**
+ * Handles --set-apis-dir command
+ */
+const handleSetApisDir = async (options: CommandOptions): Promise<void> => {
+  try {
+    const apisDir = options.setApisDir;
+
+    if (!apisDir || apisDir.trim() === '') {
+      displayError('APIs directory path cannot be empty');
+      process.exit(1);
+    }
+
+    await setApisDir({ apisDir: apisDir.trim() });
+
+    console.log(`✅ APIs directory set to: ${apisDir}`);
+    console.log('📁 Updated: node-apis.config.json');
+  } catch (error: any) {
+    displayError(`Failed to set APIs directory: ${error.message}`);
+    process.exit(1);
+  }
+};
+
+/**
+ * Handles --set-tests-dir command
+ */
+const handleSetTestsDir = async (options: CommandOptions): Promise<void> => {
+  try {
+    const testsDir = options.setTestsDir;
+
+    if (!testsDir || testsDir.trim() === '') {
+      displayError('Tests directory path cannot be empty');
+      process.exit(1);
+    }
+
+    await setTestsDir({ testsDir: testsDir.trim() });
+
+    console.log(`✅ Tests directory set to: ${testsDir}`);
+    console.log('📁 Updated: node-apis.config.json');
+  } catch (error: any) {
+    displayError(`Failed to set tests directory: ${error.message}`);
     process.exit(1);
   }
 };

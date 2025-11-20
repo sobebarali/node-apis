@@ -4,8 +4,9 @@
 
 import inquirer from 'inquirer';
 import { InquirerAnswers, PromptResult } from '../../types/cli.types';
-import { SupportedFramework, SupportedApiStyle } from '../../types/config.types';
+import { SupportedFramework, SupportedApiStyle, PathsConfig } from '../../types/config.types';
 import { validateModuleName } from '../../validators/module-name.validator';
+import { DetectedPaths } from '../../services/module-detection.service';
 
 /**
  * Prompts user to choose between creating new or adding to existing module
@@ -494,6 +495,115 @@ export const promptConfirmation = async (
     ])) as InquirerAnswers;
 
     return { success: true, data: answer.confirm };
+  } catch (error) {
+    return { success: false, cancelled: true };
+  }
+};
+
+/**
+ * Prompts user for path configuration with detected defaults
+ */
+export const promptForPathConfiguration = async (
+  detected?: DetectedPaths
+): Promise<PromptResult<PathsConfig>> => {
+  try {
+    console.log('\n📁 Configure API and Test Directories\n');
+
+    if (detected) {
+      if (detected.apisDir) {
+        console.log(`   Detected APIs directory: ${detected.apisDir}`);
+      }
+      if (detected.testsDir) {
+        console.log(`   Detected tests directory: ${detected.testsDir}`);
+      }
+      console.log('');
+    }
+
+    const answers = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'apisDir',
+        message: 'APIs directory path (relative to project root):',
+        default: detected?.apisDir || 'src/apis',
+        validate: (input: string) => {
+          if (!input || input.trim() === '') {
+            return 'APIs directory cannot be empty';
+          }
+          return true;
+        },
+      },
+      {
+        type: 'input',
+        name: 'testsDir',
+        message: 'Tests directory path (relative to project root):',
+        default: detected?.testsDir || 'tests',
+        validate: (input: string) => {
+          if (!input || input.trim() === '') {
+            return 'Tests directory cannot be empty';
+          }
+          return true;
+        },
+      },
+    ]);
+
+    const config: PathsConfig = {
+      srcDir: detected?.srcDir || 'src',
+      apisDir: answers.apisDir.trim(),
+      testsDir: answers.testsDir.trim(),
+      fallbackPaths: ['apps/server/src', 'packages/api/src'],
+    };
+
+    return { success: true, data: config };
+  } catch (error) {
+    return { success: false, cancelled: true };
+  }
+};
+
+/**
+ * Prompts user for path configuration on first run (when no config exists)
+ */
+export const promptPathConfigurationOnFirstRun = async (): Promise<PromptResult<PathsConfig>> => {
+  try {
+    console.log('\n🎯 First-time Setup: Configure Project Paths\n');
+    console.log('   Let\'s detect your project structure and configure paths...\n');
+
+    // Import detection service
+    const { detectExistingApiStructure, suggestPathConfiguration } = await import(
+      '../../services/module-detection.service'
+    );
+
+    // Detect existing structure
+    const detected = await detectExistingApiStructure({ baseDir: process.cwd() });
+
+    // Suggest configuration
+    const suggested = suggestPathConfiguration(detected);
+
+    if (detected.apisDir || detected.testsDir) {
+      console.log('   ✅ Detected existing project structure:\n');
+      if (detected.apisDir) {
+        console.log(`      APIs directory: ${detected.apisDir}`);
+      }
+      if (detected.testsDir) {
+        console.log(`      Tests directory: ${detected.testsDir}`);
+      }
+      console.log('');
+
+      const useDetected = await inquirer.prompt([
+        {
+          type: 'confirm',
+          name: 'confirm',
+          message: 'Use detected paths?',
+          default: true,
+        },
+      ]);
+
+      if (useDetected.confirm) {
+        return { success: true, data: suggested };
+      }
+    }
+
+    // Prompt for custom paths
+    return await promptForPathConfiguration(detected);
   } catch (error) {
     return { success: false, cancelled: true };
   }
