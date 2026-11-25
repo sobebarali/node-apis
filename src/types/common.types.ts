@@ -19,7 +19,6 @@ export interface ModuleNaming {
 
 export interface ApiType {
   type: 'crud' | 'custom' | 'services';
-  framework?: 'express' | 'hono' | 't3' | 'tanstack';
   customNames?: string[];
   serviceNames?: string[];
 }

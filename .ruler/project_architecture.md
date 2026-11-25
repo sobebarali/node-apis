@@ -1,46 +1,25 @@
-# Node.js API Generator Architecture
+# node-apis Architecture
 
-This is a Node.js/TypeScript CLI tool for generating production-ready API modules with clean architecture, comprehensive testing, and automatic formatting.
+This is a Node.js/TypeScript CLI tool that generates framework-agnostic modules: types, Zod validators, handlers and repositories with one consistent `{ data, error }` shape.
 
 ## Project Overview
 
 - **Type**: CLI Code Generator
-- **Target**: Node.js API modules
-- **Frameworks**: Express.js and Hono support
+- **Target**: TypeScript modules for any backend (oRPC, tRPC, Hono, Express, workers)
+- **Frameworks**: None. Generated code never imports a web framework or router
 - **Language**: TypeScript with strict type safety
-- **Architecture**: Clean Architecture (Controllers → Handlers → Repository)
-- **Testing**: Vitest with comprehensive test generation
-- **Validation**: Zod schemas for type-safe validation
+- **Architecture**: Handlers → Repository, called from the user's own router
+- **Validation**: Zod schemas generated from `typePayload`
+- **Not in scope**: project scaffolding, routes, controllers, test generation
 
 ## Technology Stack
 
-### Core Technologies
-
-- **TypeScript**: Strict type safety and modern JavaScript features
+- **TypeScript**: Strict type safety
 - **Node.js 16+**: Runtime environment
-- **Commander.js**: CLI framework for command-line interface
-- **Inquirer.js**: Interactive command-line prompts
-
-### Generated Code Stack
-
-- **Express.js**: Default web framework for generated APIs
-- **Hono**: Alternative lightweight web framework support
-- **Zod**: Schema validation for type-safe input validation
-- **Vitest**: Modern testing framework with TypeScript support
-
-### Code Generation
-
-- **Template Engine**: Custom template system for code generation
-- **Type Parser**: Analyzes TypeScript types for intelligent code generation
-- **File System Operations**: Safe file creation and modification
-- **Prettier Integration**: Automatic code formatting
-
-### Development Tools
-
-- **ESLint + Prettier**: Code linting and formatting
-- **Vitest**: Testing framework for generated code
-- **TypeScript Compiler**: Strict type checking
-- **ts-node**: TypeScript execution for development
+- **Commander.js**: CLI framework
+- **Inquirer.js**: Interactive prompts
+- **Zod**: Imported by the generated validators (provided by the target project)
+- **Prettier**: Used to format generated files only when the target project has it installed
 
 ## Available Scripts
 
@@ -48,9 +27,6 @@ This is a Node.js/TypeScript CLI tool for generating production-ready API module
 - `npm run start` - Run the CLI in interactive mode
 - `npm run dev` - Run CLI with ts-node for development
 - `npm run format` - Format code with Prettier
-- `npm run test:run` - Run generated tests with Vitest
-- `npm run test:watch` - Run tests in watch mode
-- `npm run test:coverage` - Run tests with coverage report
 
 ## CLI Usage
 
@@ -64,10 +40,13 @@ npm run start -- --name user --crud
 # Generate custom operations
 npm run start -- --name user --custom "sendEmail,resetPassword"
 
-# Specify framework
-npm run start -- --name user --crud --framework hono
+# Generate third-party service wrappers
+npm run start -- --name payment --services "charge,refund"
 
-# Force overwrite existing files
+# Handlers without a repository layer
+npm run start -- --name user --crud --no-repository
+
+# Regenerate code from the edited type files
 npm run start -- --name user --crud --force
 ```
 
@@ -76,16 +55,25 @@ npm run start -- --name user --crud --force
 ### Core Components
 
 1. **CLI Layer** (`src/cli/`): Command-line interface and user interaction
-2. **Templates** (`src/templates/`): Code generation templates for different patterns
-3. **Services** (`src/services/`): Business logic for file generation and formatting
-4. **Core** (`src/core/`): Framework adapters and pipeline management
+2. **Templates** (`src/templates/`): Code generation templates
+3. **Services** (`src/services/`): Two-phase generation, type parsing, config, formatting
+4. **Filesystem** (`src/filesystem/`): File and directory operations
 5. **Types** (`src/types/`): TypeScript definitions for the generator itself
 
-### Template System
+### Two-Phase Process
 
-- **Template Engine**: Custom template system for generating consistent code
-- **Framework Adapters**: Support for Express.js and Hono frameworks
-- **Type-Driven Generation**: Uses TypeScript types to generate intelligent code
-- **Two-Phase Process**: Type definition → Code generation
-- `npm run lint` - Run ESLint
-- `npm run format` - Format code with Prettier
+1. **Types**: write `types/operation.moduleName.ts` for each operation. Existing type files are never overwritten; they are hand-edited and are the source of truth.
+2. **Code**: parse each `typePayload` and generate validators, handlers and repositories (or services) from it. `--force` rewrites these files.
+
+### The Envelope
+
+Every handler and service takes one object (payload fields plus `requestId`) and returns:
+
+```typescript
+export type typeResult = {
+  data: null | typeResultData;
+  error: null | typeResultError;
+};
+```
+
+Handlers do not throw. A repository error named `NotFoundError` maps to `NOT_FOUND` (404); any other error maps to `INTERNAL_ERROR` (500).

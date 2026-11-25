@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.0] - 2026-11-25
+
+### Breaking: framework-agnostic module generator
+
+node-apis now only generates modules. It no longer knows about any web framework.
+
+#### Removed
+
+- `--framework` and `--api-style` options, and the `framework` / `trpcStyle` config keys (old config files still load; unknown keys are ignored)
+- Express, Hono, tRPC, T3 and TanStack output: controllers, routes and procedures
+- Test generation and the test configuration files
+
+#### Changed
+
+- A module is `types/`, `validators/`, `handlers/` and `repository/` (services: `types/` and `services/`)
+- Handlers and services take the payload fields plus `requestId` and return `{ data, error }`
+- Existing type files are never overwritten; `--force` regenerates only the code derived from them
+- Non-interactive runs must pass `--crud`, `--custom` or `--services`
+- Generated files are formatted only when the target project has Prettier installed
+- `--version` reads the version from `package.json`
+- Without a configured modules directory, generation stops when the project has no `src/` folder instead of creating a stray `src/apis`
+- `--target-dir` is used for the config file and for existing-module detection too
+- `--set-apis-dir` rejects blank, absolute and `..` paths and never replaces a config file it cannot read
+- A field ending in `Id` is no longer guessed to be the record ID; only `<module>Id` or `id` is
+
+#### Added
+
+- `--no-repository` to generate handlers without a repository layer
+
 ## [3.6.1] - 2025-01-13
 
 ### 🛡️ Enhanced Error Handling & Type Safety

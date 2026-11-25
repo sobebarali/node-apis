@@ -1,94 +1,84 @@
 # Folder Structure Guidelines
 
-This document defines the comprehensive folder structure and organization patterns for the Node.js API Generator project, ensuring scalability, maintainability, and clear separation of concerns.
+This document defines the folder structure of the node-apis module generator and of the modules it generates.
 
 ## Core Architecture Principles
 
-- **Clean Architecture**: Clear separation between controllers, handlers, and repository layers
-- **Generated Structure**: Consistent organization for all generated API modules
-- **Type-First Development**: TypeScript types drive code generation
+- **Framework Agnostic**: Generated code never imports a web framework; handlers are plain async functions
+- **Generated Structure**: Consistent organization for all generated modules
+- **Type-First Development**: The `typePayload` in each type file drives code generation
 - **Template-Based**: All code follows established template patterns
-- **Framework Agnostic**: Business logic independent of web framework
+- **One Envelope**: Every handler and service returns `{ data, error }`
 
 ## Project Root Structure
 
 ```
-nodejs-api/
-├── src/                           # Source code
-│   ├── apis/                      # Generated API modules
-│   ├── cli/                       # CLI commands and prompts
-│   ├── core/                      # Core framework adapters
-│   ├── filesystem/                # File system operations
-│   ├── services/                  # Code generation services
-│   ├── shared/                    # Shared utilities and errors
-│   ├── templates/                 # Code generation templates
-│   ├── types/                     # TypeScript type definitions
-│   ├── validators/                # Input validation utilities
-│   └── index.ts                   # CLI entry point
-├── tests/                         # Generated test files
+node-apis/
+├── src/                           # Generator source code
 ├── dist/                          # Compiled JavaScript output
 ├── bin/                           # CLI executable
 ├── .ruler/                        # Project documentation & guidelines
-├── .augment/                      # Augment AI configuration
+├── node-apis.config.json          # Generator configuration (paths.apisDir)
 ├── package.json                   # Dependencies and scripts
 ├── tsconfig.json                  # TypeScript configuration
-├── vitest.config.ts              # Testing configuration
 └── README.md                      # Project documentation
 ```
 
 ## Code Generator Structure (`src/`)
 
-### Core Generator Components
-
 ```
 src/
 ├── cli/                           # Command-line interface
-│   ├── commands/                  # CLI command implementations
+│   ├── commands/
 │   │   └── generate.command.ts    # Main generation command
-│   ├── output/                    # Output formatting utilities
+│   ├── output/
 │   │   └── formatter.ts           # Console output formatting
-│   └── prompts/                   # Interactive prompts
+│   └── prompts/
 │       ├── interactive.prompts.ts # Main interactive flow
 │       └── type-review.prompts.ts # Type review prompts
-├── core/                          # Core framework adapters
-│   ├── cli/                       # CLI core functionality
-│   ├── errors/                    # Error handling
-│   ├── frameworks/                # Framework adapters (Express, Hono)
-│   ├── pipeline/                  # Generation pipeline
-│   ├── services/                  # Core services
-│   ├── templates/                 # Template base classes
-│   ├── types/                     # Core type definitions
-│   └── validators/                # Core validation
 ├── filesystem/                    # File system operations
 │   ├── directory.operations.ts    # Directory management
 │   ├── file.operations.ts         # File read/write operations
-│   └── path.utils.ts              # Path utilities
-├── services/                      # Business logic services
-│   ├── file-generator.service.ts  # File generation orchestration
-│   ├── formatter.service.ts       # Code formatting service
-│   ├── module-detection.service.ts # Module detection logic
-│   ├── module-generator.service.ts # Module generation logic
-│   ├── test-config-generator.service.ts # Test configuration
-│   ├── two-phase-generator.service.ts # Two-phase generation
-│   └── type-parser.service.ts     # TypeScript type parsing
-├── shared/                        # Shared utilities
-│   ├── errors/                    # Error classes
-│   │   └── index.ts               # Custom error definitions
-│   └── middleware/                # Shared middleware
-│       └── errorHandler.ts        # Error handling middleware
+│   └── path.utils.ts              # Module path resolution
+├── services/                      # Generation logic
+│   ├── config.service.ts          # node-apis.config.json handling
+│   ├── formatter.service.ts       # Optional Prettier formatting
+│   ├── module-detection.service.ts # Existing module detection
+│   ├── module-generator.service.ts # Module directory creation
+│   ├── two-phase-generator.service.ts # Types first, then code
+│   └── type-parser.service.ts     # typePayload parsing
+├── shared/
+│   └── utils/
+│       └── naming.utils.ts        # Module name casing
 ├── templates/                     # Code generation templates
-│   ├── crud.*.ts                  # CRUD operation templates
-│   ├── custom.*.ts                # Custom API templates
-│   ├── routes.templates.ts        # Route generation
-│   ├── repository.templates.ts    # Repository templates
-│   ├── typed-*.ts                 # Typed template variants
-│   └── test.config.ts             # Test configuration template
+│   ├── crud.templates.ts          # CRUD type files
+│   ├── custom.templates.ts        # Custom operation type files
+│   ├── services.templates.ts      # Service type files and services
+│   ├── typed-crud.handlers.ts     # CRUD handlers
+│   ├── typed-crud.validators.ts   # CRUD validators
+│   ├── typed-custom.handlers.ts   # Custom handlers
+│   ├── typed-custom.validators.ts # Custom validators
+│   └── typed-repository.templates.ts # Repositories
 ├── types/                         # Generator type definitions
-│   ├── cli.types.ts               # CLI-specific types
-│   ├── common.types.ts            # Common type definitions
-│   └── generation.types.ts        # Generation-specific types
+│   ├── cli.types.ts
+│   ├── common.types.ts
+│   ├── config.types.ts
+│   └── generation.types.ts
 ├── validators/                    # Input validation
 │   ├── location.validator.ts      # Path validation
 │   └── module-name.validator.ts   # Module name validation
 └── index.ts                       # CLI entry point
 ```
+
+## Generated Module Structure
+
+```
+<apisDir>/                         # default: src/apis
+└── {module-name}/
+    ├── types/                     # operation.moduleName.ts
+    ├── validators/                # operation.moduleName.ts
+    ├── handlers/                  # operation.moduleName.ts
+    └── repository/                # operation.moduleName.ts (skipped with --no-repository)
+```
+
+A services module contains `types/` and `services/` only.

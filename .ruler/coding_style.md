@@ -17,17 +17,16 @@ This document outlines the coding style and quality standards for the Node.js AP
 The following template structures are PROTECTED and must NEVER be changed unless the user explicitly asks for template modifications:
 
 ### 🔒 Protected Template Files:
-- `src/templates/crud.*.ts` - All CRUD operation templates
-- `src/templates/custom.*.ts` - All custom API templates
-- `src/templates/routes.templates.ts` - Route generation templates
-- `src/templates/repository.templates.ts` - Repository templates
-- `src/templates/*.tests.ts` - All test generation templates
-- `src/templates/typed-*.ts` - All typed template files
+- `src/templates/crud.templates.ts` - CRUD type file templates
+- `src/templates/custom.templates.ts` - Custom operation type file templates
+- `src/templates/services.templates.ts` - Service templates
+- `src/templates/typed-*.ts` - Handler, validator and repository templates
 
 ### 🔒 Protected Template Patterns:
 - **File naming conventions**: `operation.moduleName.ts` format
 - **Directory structures**: Current folder organization in generated APIs
-- **Test folder structure**: `tests/moduleName/operation/` pattern
+- **Result envelope**: handlers and services return `{ data, error }` and take `requestId`
+- **Framework agnostic output**: generated code never imports a web framework or router
 - **Function parameter patterns**: Object destructuring `async({ params }: Type)`
 - **Type definitions**: `typePayload`, `typeResult`, `typeResultData`, `typeResultError`
 - **Import/export patterns**: Current module import/export structure
@@ -75,35 +74,24 @@ The following template structures are PROTECTED and must NEVER be changed unless
 
 Generated files follow specific patterns that must be preserved:
 
-- **Operation files**: `operation.moduleName.ts` (e.g., `create.user.ts`, `get.product.ts`)
-- **Type files**: `operation.moduleName.ts` in `types/` directory
-- **Validator files**: `operation.moduleName.ts` in `validators/` directory
-- **Controller files**: `operation.moduleName.ts` in `controllers/` directory
-- **Handler files**: `operation.moduleName.ts` in `handlers/` directory
-- **Repository files**: `moduleName.repository.ts`
-- **Route files**: `moduleName.routes.ts`
+- **Type files**: `operation.moduleName.ts` in `types/` (e.g., `create.user.ts`, `get.product.ts`)
+- **Validator files**: `operation.moduleName.ts` in `validators/`
+- **Handler files**: `operation.moduleName.ts` in `handlers/`
+- **Repository files**: `operation.moduleName.ts` in `repository/`
+- **Service files**: `operation.moduleName.ts` in `services/`
 
 ### Generated Directory Structure
 
 ```
-src/apis/
-└── {moduleName}/
-    ├── controllers/
-    ├── handlers/
-    ├── repository/
+<apisDir>/                # default: src/apis
+└── {module-name}/
     ├── types/
     ├── validators/
-    └── {moduleName}.routes.ts
-
-tests/
-└── {moduleName}/
-    ├── create/
-    ├── get/
-    ├── list/
-    ├── update/
-    ├── delete/
-    └── shared/
+    ├── handlers/
+    └── repository/       # skipped with --no-repository
 ```
+
+A services module contains `types/` and `services/` only.
 
 ## Generated Function Parameter Patterns
 
@@ -112,11 +100,16 @@ tests/
 All generated functions use object destructuring for parameters:
 
 ```typescript
-// ✅ Generated Pattern: Object destructuring in handlers
-export default async function createUserHandler(
-  payload: typePayload,
-  requestId: string
-): Promise<typeResult> {
+// ✅ Generated Pattern: handlers take the payload fields plus requestId
+export default async function createUserHandler({
+  name,
+  email,
+  requestId,
+}: {
+  name: string;
+  email: string;
+  requestId: string;
+}): Promise<typeResult> {
   // Implementation
 }
 
@@ -124,20 +117,13 @@ export default async function createUserHandler(
 export default async function create({
   name,
   email,
-  password,
-  role,
-  is_active,
-}: CreatePayload) {
-  // Implementation
-}
-
-// ✅ Generated Pattern: Controllers with Express req/res
-export default async function createUserController(req: Request, res: Response): Promise<void> {
+}: {
+  name: string;
+  email: string;
+}): Promise<typeResultData> {
   // Implementation
 }
 ```
-
-**Note**: See `folder_structure.md` for detailed interface patterns and comprehensive service examples.
 
 ### Benefits of Interface-Based Parameters
 
@@ -397,17 +383,6 @@ export default async function createUserController(req: Request, res: Response):
 - Use Array.isArray() instead of instanceof Array.
 - Make sure to use the digits argument with Number#toFixed().
 - Make sure to use the "use strict" directive in script files.
-
-### Express.js Specific Rules
-
-- Always use error-handling middleware as the last middleware
-- Use async/await with proper error handling in route handlers
-- Set appropriate CORS headers for API endpoints
-- Use body-parser or express.json() for parsing request bodies
-- Implement request validation middleware before route handlers
-- Use router instances for modular route organization
-- Set security headers using helmet middleware
-- Implement request logging with appropriate middleware
 
 ### Testing Best Practices
 

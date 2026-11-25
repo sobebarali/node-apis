@@ -1,6 +1,7 @@
 /**
  * Custom API operation templates
  */
+import { getModuleNaming } from '../shared/utils/naming.utils';
 
 /**
  * Gets custom API file names for a module
@@ -12,7 +13,8 @@ export const getCustomFileNames = ({
   customNames: string[];
   moduleName: string;
 }): string[] => {
-  return customNames.map(customName => `${customName}.${moduleName}.ts`);
+  const naming = getModuleNaming(moduleName);
+  return customNames.map(customName => `${customName}.${naming.file}.ts`);
 };
 
 /**

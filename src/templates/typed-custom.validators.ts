@@ -25,30 +25,33 @@ const typeToZodSchema = (field: { name: string; type: string; optional: boolean 
   const { type, optional } = field;
   const fieldName = field.name.toLowerCase();
 
+  const isString = type === 'string';
+  const isNumber = type === 'number';
+
   let baseSchema: string;
 
   // Field name-based intelligent validation
-  if (fieldName.includes('email')) {
+  if (isString && (fieldName.includes('email'))) {
     baseSchema = 'z.string().email().min(3).max(255)';
-  } else if (fieldName.includes('url') || fieldName.includes('link')) {
+  } else if (isString && (fieldName.includes('url') || fieldName.includes('link'))) {
     baseSchema = 'z.string().url().min(3).max(2048)';
-  } else if (fieldName.includes('phone') || fieldName.includes('mobile')) {
+  } else if (isString && (fieldName.includes('phone') || fieldName.includes('mobile'))) {
     baseSchema = 'z.string().min(10).max(20)';
   } else if ((fieldName.includes('id') || fieldName.endsWith('id')) && type === 'string') {
     baseSchema = 'z.string().min(1).max(255)'; // Customize based on your ID format (UUID, nanoid, etc.)
-  } else if (fieldName.includes('name') || fieldName.includes('title')) {
+  } else if (isString && (fieldName.includes('name') || fieldName.includes('title'))) {
     baseSchema = 'z.string().min(1).max(255)';
-  } else if (fieldName.includes('description') || fieldName.includes('content') || fieldName.includes('text')) {
+  } else if (isString && (fieldName.includes('description') || fieldName.includes('content') || fieldName.includes('text'))) {
     baseSchema = 'z.string().min(1).max(5000)';
-  } else if (fieldName.includes('code') || fieldName.includes('slug') || fieldName.includes('key')) {
+  } else if (isString && (fieldName.includes('code') || fieldName.includes('slug') || fieldName.includes('key'))) {
     baseSchema = 'z.string().min(1).max(100)';
-  } else if (fieldName.includes('password')) {
+  } else if (isString && (fieldName.includes('password'))) {
     baseSchema = 'z.string().min(8).max(255)';
-  } else if (fieldName.includes('age')) {
+  } else if (isNumber && fieldName === 'age') {
     baseSchema = 'z.number().int().min(0).max(150)';
-  } else if (fieldName.includes('price') || fieldName.includes('amount') || fieldName.includes('cost')) {
+  } else if (isNumber && (fieldName.includes('price') || fieldName.includes('amount') || fieldName.includes('cost'))) {
     baseSchema = 'z.number().min(0).max(999999999)';
-  } else if (fieldName.includes('quantity') || fieldName.includes('count')) {
+  } else if (isNumber && (fieldName.includes('quantity') || fieldName.includes('count'))) {
     baseSchema = 'z.number().int().min(0).max(999999999)';
   } else if (type === 'string') {
     baseSchema = 'z.string().min(1).max(500)'; // Customize length limits as needed

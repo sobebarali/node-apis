@@ -17,9 +17,9 @@ export const displayWelcomeMessage = (): void => {
  */
 export const displayExistingModules = (modules: string[]): void => {
   console.log(chalk.cyan('\n🔍 Found existing modules:'));
-  modules.forEach(module => {
+  for (const module of modules) {
     console.log(chalk.gray(`   • ${module}`));
-  });
+  }
 };
 
 /**
@@ -27,9 +27,9 @@ export const displayExistingModules = (modules: string[]): void => {
  */
 export const displayExistingFiles = (moduleName: string, files: string[]): void => {
   console.log(chalk.cyan(`\n📄 Existing files in ${moduleName}:`));
-  files.forEach(file => {
+  for (const file of files) {
     console.log(chalk.gray(`   • ${file}`));
-  });
+  }
 };
 
 /**
@@ -51,7 +51,7 @@ export const displayGenerationSummary = ({
   console.log(chalk.blue('\n📋 Generation Summary:'));
   console.log(chalk.gray(`   Module name: ${moduleName}`));
   console.log(chalk.gray(`   Target path: ${targetPath}`));
-  console.log(chalk.gray(`   Force overwrite: ${forceOverwrite ? 'Yes' : 'No'}`));
+  console.log(chalk.gray(`   Regenerate existing code: ${forceOverwrite ? 'Yes' : 'No'}`));
 
   if (apiType && operationNames) {
     console.log(chalk.gray(`   API type: ${apiType}`));
@@ -63,26 +63,27 @@ export const displayGenerationSummary = ({
  * Displays generation result
  */
 export const displayGenerationResult = (result: GenerationResult): void => {
-  if (result.success) {
-    console.log(chalk.green(result.message));
-
-    // Show generated files if any
-    if (result.generatedFiles && result.generatedFiles.length > 0) {
-      console.log(chalk.cyan('\n📄 Generated TypeScript Files:'));
-      result.generatedFiles.forEach(file => {
-        console.log(chalk.gray(`   ✓ ${file.fileName}`));
-      });
-    }
-
-    // Show next steps
-    console.log(chalk.cyan('\n📝 Next Steps:'));
-    console.log(chalk.gray('   1. Navigate to your new module directory'));
-    console.log(chalk.gray('   2. Review and customize the generated type definitions'));
-    console.log(chalk.gray('   3. Start implementing your API logic'));
-    console.log(chalk.gray('   4. Add your route handlers, controllers, and schemas'));
-  } else {
+  if (!result.success) {
     console.error(chalk.red('\n❌ Error:'), result.error);
+    return;
   }
+
+  console.log(chalk.green(`\n✅ Module generated at ${result.modulePath}`));
+
+  const generatedFiles = result.generatedFiles ?? [];
+  if (generatedFiles.length > 0) {
+    console.log(chalk.cyan('\n📄 Generated files:'));
+    for (const file of generatedFiles) {
+      console.log(chalk.gray(`   ✓ ${file.fileName}`));
+    }
+  } else {
+    console.log(chalk.gray('\n   No new files: everything already exists.'));
+  }
+
+  console.log(chalk.cyan('\n📝 Next Steps:'));
+  console.log(chalk.gray('   1. Fill in typeResultData in the type files'));
+  console.log(chalk.gray('   2. Implement the TODOs in the generated code'));
+  console.log(chalk.gray('   3. Call the handlers from your own router (oRPC, tRPC, REST, ...)'));
 };
 
 /**
@@ -97,11 +98,4 @@ export const displayError = (message: string): void => {
  */
 export const displayCancellation = (): void => {
   console.log(chalk.yellow('\n⏹️  Generation cancelled by user'));
-};
-
-/**
- * Displays generation progress
- */
-export const displayProgress = (): void => {
-  console.log(chalk.blue('\n⚙️  Generating module structure...'));
 };

@@ -9,38 +9,25 @@ export interface CommandOptions {
   crud?: boolean;
   custom?: string;
   services?: string;
-  framework?: string;
-  apiStyle?: string;
+  /** Set to false by --no-repository */
+  repository?: boolean;
   initConfig?: boolean;
-  setFramework?: string;
-  setApiStyle?: string;
   setApisDir?: string;
-  setTestsDir?: string;
   targetDir?: string;
-  trpcStyle?: boolean; // Deprecated, use apiStyle instead
-  setTrpcStyle?: string; // Deprecated, use setApiStyle instead
 }
 
 export interface InquirerAnswers {
   moduleName: string;
   confirm: boolean;
-  apiType: 'crud' | 'custom' | 'services';
   apiTypeNumber: string;
   customNames: string;
   serviceNames: string;
   moduleChoice: 'new' | 'existing';
   existingModule: string;
-  operationMode: 'replace' | 'append';
-  framework: 'express' | 'hono' | 't3' | 'tanstack';
-  apiStyle: 'rest' | 'trpc';
-  saveToConfig: boolean;
-  action: 'overwrite' | 'append' | 'cancel' | 'view' | 'update' | 'reset';
-  configAction: 'view' | 'update' | 'reset' | 'cancel';
-  confirmReset: boolean;
-  trpcStyle: boolean;
+  action: 'overwrite' | 'append' | 'cancel';
 }
 
-export interface PromptResult<T = any> {
+export interface PromptResult<T = unknown> {
   success: boolean;
   data?: T;
   cancelled?: boolean;

@@ -2,7 +2,9 @@
  * Service operation templates for third-party integrations
  */
 
+import { ParsedTypePayload } from '../services/type-parser.service';
 import { getModuleNaming } from '../shared/utils/naming.utils';
+import { buildPayloadObject } from './typed-crud.handlers';
 
 /**
  * Gets the list of service operation file names for a module
@@ -61,97 +63,56 @@ export type typeResult = {
 export const generateServiceContent = ({
   serviceName,
   moduleName,
-  apiBasePath = '~/server/api',
+  parsedType,
 }: {
   serviceName: string;
   moduleName: string;
-  apiBasePath?: string;
+  parsedType: ParsedTypePayload;
 }): string => {
   const naming = getModuleNaming(moduleName);
-  const capitalizedService = serviceName.charAt(0).toUpperCase() + serviceName.slice(1);
+  const { fields } = parsedType;
   const functionName = `${serviceName}${naming.class}`;
+  const logLabel = `${serviceName.toUpperCase()} ${naming.constant}`;
 
-  return `import { TRPC_ERROR_CODES, ERROR_MESSAGES } from "${apiBasePath}/constants/errors";
-import { createScopedLogger } from "${apiBasePath}/utils/logger";
-import type { typeResult, typeResultData } from "../types/${serviceName}.${naming.file}";
+  const fieldDestructuring =
+    fields.length > 0
+      ? fields.map(field => `${field.name},`).join('\n  ')
+      : '// No fields defined in typePayload';
 
-/**
- * ${capitalizedService} service for ${naming.variable}
- */
+  const fieldTypes =
+    fields.length > 0
+      ? fields.map(field => `  ${field.name}${field.optional ? '?' : ''}: ${field.type};`).join('\n')
+      : '  // No fields defined in typePayload';
+
+  return `import type { typeResult, typeResultData } from "../types/${serviceName}.${naming.file}";
+
 export const ${functionName} = async ({
-  // Destructure your payload fields here
+  ${fieldDestructuring}
   requestId,
 }: {
-  // Add your specific fields here
+${fieldTypes}
   requestId: string;
 }): Promise<typeResult> => {
-  const log = createScopedLogger({ requestId, feature: "${naming.constant}" });
-
   try {
-    const startTime = Date.now();
-    log.info({}, "${capitalizedService} service started");
+    console.info(\`\${requestId} [SERVICE] - ${logLabel} started\`);
 
-    // TODO: Replace with your third-party API call
-    // Example using fetch:
-    // const response = await fetch('https://api.example.com/endpoint', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Authorization': \`Bearer \${process.env.API_KEY}\`,
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify({
-    //     // Your request data
-    //   }),
-    // });
+    // TODO: Replace with your third-party API call and return the real result
+    const payload = ${buildPayloadObject(fields)};
+    const data = payload as unknown as typeResultData;
 
-    // if (!response.ok) {
-    //   const error = await response.json();
-    //   log.error({ statusCode: response.status, error }, "API request failed");
-    //   return {
-    //     data: null,
-    //     error: {
-    //       code: TRPC_ERROR_CODES.INTERNAL_SERVER_ERROR,
-    //       message: error.message || '${capitalizedService} failed',
-    //       statusCode: response.status,
-    //       requestId,
-    //       details: error,
-    //     },
-    //   };
-    // }
+    console.info(\`\${requestId} [SERVICE] - ${logLabel} completed\`);
 
-    // const data = await response.json();
-
-    // TODO: Remove this placeholder and implement your logic
-    const mockResult: typeResultData = {
-      success: true,
-      message: '${capitalizedService} completed successfully',
-    } as typeResultData;
-
-    const duration = Date.now() - startTime;
-    log.info({ duration: \`\${duration}ms\` }, "${capitalizedService} service completed successfully");
-
-    return {
-      data: mockResult,
-      error: null,
-    };
-  } catch (err) {
-    const error = err as Error;
-    log.error(
-      {
-        error: error.message,
-        stack: error.stack,
-      },
-      "${capitalizedService} service error",
-    );
+    return { data, error: null };
+  } catch (error) {
+    console.error(\`\${requestId} [SERVICE] - ${logLabel} error:\`, error);
 
     return {
       data: null,
       error: {
-        code: TRPC_ERROR_CODES.INTERNAL_SERVER_ERROR,
-        message: error.message || ERROR_MESSAGES.INTERNAL_ERROR,
+        code: 'INTERNAL_ERROR',
+        message: error instanceof Error ? error.message : 'Failed to execute ${serviceName} service for ${naming.variable}',
         statusCode: 500,
         requestId,
-        details: error,
       },
     };
   }

@@ -2,61 +2,17 @@
  * Configuration type definitions
  */
 
-export type SupportedFramework = 'express' | 'hono' | 't3' | 'tanstack';
-
-export type SupportedApiStyle = 'rest' | 'trpc';
-
-export type SupportedORM = 'prisma' | 'typeorm' | 'drizzle';
-
-export type SupportedDatabase = 'postgresql' | 'mysql' | 'sqlite';
-
-export interface DatabaseConfig {
-  orm?: SupportedORM;
-  type?: SupportedDatabase;
-}
-
-export interface PreferencesConfig {
-  autoFormat?: boolean;
-  generateTests?: boolean;
-  skipConfirmation?: boolean;
-}
-
 export interface PathsConfig {
-  srcDir?: string;              // Default: 'src' - Base source directory
-  fallbackPaths?: string[];     // Fallback paths to check: ['apps/server/src', 'packages/api/src']
-  apisDir?: string;             // Default: 'src/apis' - API modules directory (relative to project root)
-  testsDir?: string;            // Default: 'tests' - Test files directory (relative to project root)
-  frameworkPaths?: Partial<Record<SupportedFramework, string>>; // Framework-specific API directory overrides
+  /** Directory that holds the generated modules, relative to the project root. Default: 'src/apis' */
+  apisDir?: string;
 }
 
 export interface Config {
-  framework?: SupportedFramework;
-  apiStyle?: SupportedApiStyle;
-  database?: DatabaseConfig;
-  preferences?: PreferencesConfig;
-  paths?: PathsConfig;
-  trpcStyle?: boolean; // Deprecated, use apiStyle instead
   version?: string;
+  paths?: PathsConfig;
 }
 
 export interface ConfigValidationResult {
   isValid: boolean;
   errors: string[];
-  warnings: string[];
-}
-
-export interface ConfigServiceOptions {
-  configPath?: string;
-  createIfMissing?: boolean;
-}
-
-export interface InitConfigOptions {
-  framework?: SupportedFramework;
-  force?: boolean;
-  interactive?: boolean;
-}
-
-export interface ConfigUpdateOptions {
-  merge?: boolean;
-  validate?: boolean;
 }

@@ -36,14 +36,3 @@ export interface ValidationLocationResult {
 export interface ValidationLocationInput {
   baseDir?: string;
 }
-
-export interface FileGenerationInput {
-  moduleName: string;
-  modulePath: string;
-  apiType: ApiType;
-}
-
-export interface SuccessMessageInput {
-  moduleName: string;
-  modulePath: string;
-}

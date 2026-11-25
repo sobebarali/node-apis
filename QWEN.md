@@ -20,17 +20,16 @@ This document outlines the coding style and quality standards for the Node.js AP
 The following template structures are PROTECTED and must NEVER be changed unless the user explicitly asks for template modifications:
 
 ### 🔒 Protected Template Files:
-- `src/templates/crud.*.ts` - All CRUD operation templates
-- `src/templates/custom.*.ts` - All custom API templates
-- `src/templates/routes.templates.ts` - Route generation templates
-- `src/templates/repository.templates.ts` - Repository templates
-- `src/templates/*.tests.ts` - All test generation templates
-- `src/templates/typed-*.ts` - All typed template files
+- `src/templates/crud.templates.ts` - CRUD type file templates
+- `src/templates/custom.templates.ts` - Custom operation type file templates
+- `src/templates/services.templates.ts` - Service templates
+- `src/templates/typed-*.ts` - Handler, validator and repository templates
 
 ### 🔒 Protected Template Patterns:
 - **File naming conventions**: `operation.moduleName.ts` format
 - **Directory structures**: Current folder organization in generated APIs
-- **Test folder structure**: `tests/moduleName/operation/` pattern
+- **Result envelope**: handlers and services return `{ data, error }` and take `requestId`
+- **Framework agnostic output**: generated code never imports a web framework or router
 - **Function parameter patterns**: Object destructuring `async({ params }: Type)`
 - **Type definitions**: `typePayload`, `typeResult`, `typeResultData`, `typeResultError`
 - **Import/export patterns**: Current module import/export structure
@@ -78,35 +77,24 @@ The following template structures are PROTECTED and must NEVER be changed unless
 
 Generated files follow specific patterns that must be preserved:
 
-- **Operation files**: `operation.moduleName.ts` (e.g., `create.user.ts`, `get.product.ts`)
-- **Type files**: `operation.moduleName.ts` in `types/` directory
-- **Validator files**: `operation.moduleName.ts` in `validators/` directory
-- **Controller files**: `operation.moduleName.ts` in `controllers/` directory
-- **Handler files**: `operation.moduleName.ts` in `handlers/` directory
-- **Repository files**: `moduleName.repository.ts`
-- **Route files**: `moduleName.routes.ts`
+- **Type files**: `operation.moduleName.ts` in `types/` (e.g., `create.user.ts`, `get.product.ts`)
+- **Validator files**: `operation.moduleName.ts` in `validators/`
+- **Handler files**: `operation.moduleName.ts` in `handlers/`
+- **Repository files**: `operation.moduleName.ts` in `repository/`
+- **Service files**: `operation.moduleName.ts` in `services/`
 
 ### Generated Directory Structure
 
 ```
-src/apis/
-└── {moduleName}/
-    ├── controllers/
-    ├── handlers/
-    ├── repository/
+<apisDir>/                # default: src/apis
+└── {module-name}/
     ├── types/
     ├── validators/
-    └── {moduleName}.routes.ts
-
-tests/
-└── {moduleName}/
-    ├── create/
-    ├── get/
-    ├── list/
-    ├── update/
-    ├── delete/
-    └── shared/
+    ├── handlers/
+    └── repository/       # skipped with --no-repository
 ```
+
+A services module contains `types/` and `services/` only.
 
 ## Generated Function Parameter Patterns
 
@@ -115,11 +103,16 @@ tests/
 All generated functions use object destructuring for parameters:
 
 ```typescript
-// ✅ Generated Pattern: Object destructuring in handlers
-export default async function createUserHandler(
-  payload: typePayload,
-  requestId: string
-): Promise<typeResult> {
+// ✅ Generated Pattern: handlers take the payload fields plus requestId
+export default async function createUserHandler({
+  name,
+  email,
+  requestId,
+}: {
+  name: string;
+  email: string;
+  requestId: string;
+}): Promise<typeResult> {
   // Implementation
 }
 
@@ -127,20 +120,13 @@ export default async function createUserHandler(
 export default async function create({
   name,
   email,
-  password,
-  role,
-  is_active,
-}: CreatePayload) {
-  // Implementation
-}
-
-// ✅ Generated Pattern: Controllers with Express req/res
-export default async function createUserController(req: Request, res: Response): Promise<void> {
+}: {
+  name: string;
+  email: string;
+}): Promise<typeResultData> {
   // Implementation
 }
 ```
-
-**Note**: See `folder_structure.md` for detailed interface patterns and comprehensive service examples.
 
 ### Benefits of Interface-Based Parameters
 
@@ -401,17 +387,6 @@ export default async function createUserController(req: Request, res: Response):
 - Make sure to use the digits argument with Number#toFixed().
 - Make sure to use the "use strict" directive in script files.
 
-### Express.js Specific Rules
-
-- Always use error-handling middleware as the last middleware
-- Use async/await with proper error handling in route handlers
-- Set appropriate CORS headers for API endpoints
-- Use body-parser or express.json() for parsing request bodies
-- Implement request validation middleware before route handlers
-- Use router instances for modular route organization
-- Set security headers using helmet middleware
-- Implement request logging with appropriate middleware
-
 ### Testing Best Practices
 
 - Don't use export or module.exports in test files.
@@ -450,145 +425,114 @@ Source: .ruler/folder_structure.md
 ---
 # Folder Structure Guidelines
 
-This document defines the comprehensive folder structure and organization patterns for the Node.js API Generator project, ensuring scalability, maintainability, and clear separation of concerns.
+This document defines the folder structure of the node-apis module generator and of the modules it generates.
 
 ## Core Architecture Principles
 
-- **Clean Architecture**: Clear separation between controllers, handlers, and repository layers
-- **Generated Structure**: Consistent organization for all generated API modules
-- **Type-First Development**: TypeScript types drive code generation
+- **Framework Agnostic**: Generated code never imports a web framework; handlers are plain async functions
+- **Generated Structure**: Consistent organization for all generated modules
+- **Type-First Development**: The `typePayload` in each type file drives code generation
 - **Template-Based**: All code follows established template patterns
-- **Framework Agnostic**: Business logic independent of web framework
+- **One Envelope**: Every handler and service returns `{ data, error }`
 
 ## Project Root Structure
 
 ```
-nodejs-api/
-├── src/                           # Source code
-│   ├── apis/                      # Generated API modules
-│   ├── cli/                       # CLI commands and prompts
-│   ├── core/                      # Core framework adapters
-│   ├── filesystem/                # File system operations
-│   ├── services/                  # Code generation services
-│   ├── shared/                    # Shared utilities and errors
-│   ├── templates/                 # Code generation templates
-│   ├── types/                     # TypeScript type definitions
-│   ├── validators/                # Input validation utilities
-│   └── index.ts                   # CLI entry point
-├── tests/                         # Generated test files
+node-apis/
+├── src/                           # Generator source code
 ├── dist/                          # Compiled JavaScript output
 ├── bin/                           # CLI executable
 ├── .ruler/                        # Project documentation & guidelines
-├── .augment/                      # Augment AI configuration
+├── node-apis.config.json          # Generator configuration (paths.apisDir)
 ├── package.json                   # Dependencies and scripts
 ├── tsconfig.json                  # TypeScript configuration
-├── vitest.config.ts              # Testing configuration
 └── README.md                      # Project documentation
 ```
 
 ## Code Generator Structure (`src/`)
 
-### Core Generator Components
-
 ```
 src/
 ├── cli/                           # Command-line interface
-│   ├── commands/                  # CLI command implementations
+│   ├── commands/
 │   │   └── generate.command.ts    # Main generation command
-│   ├── output/                    # Output formatting utilities
+│   ├── output/
 │   │   └── formatter.ts           # Console output formatting
-│   └── prompts/                   # Interactive prompts
+│   └── prompts/
 │       ├── interactive.prompts.ts # Main interactive flow
 │       └── type-review.prompts.ts # Type review prompts
-├── core/                          # Core framework adapters
-│   ├── cli/                       # CLI core functionality
-│   ├── errors/                    # Error handling
-│   ├── frameworks/                # Framework adapters (Express, Hono)
-│   ├── pipeline/                  # Generation pipeline
-│   ├── services/                  # Core services
-│   ├── templates/                 # Template base classes
-│   ├── types/                     # Core type definitions
-│   └── validators/                # Core validation
 ├── filesystem/                    # File system operations
 │   ├── directory.operations.ts    # Directory management
 │   ├── file.operations.ts         # File read/write operations
-│   └── path.utils.ts              # Path utilities
-├── services/                      # Business logic services
-│   ├── file-generator.service.ts  # File generation orchestration
-│   ├── formatter.service.ts       # Code formatting service
-│   ├── module-detection.service.ts # Module detection logic
-│   ├── module-generator.service.ts # Module generation logic
-│   ├── test-config-generator.service.ts # Test configuration
-│   ├── two-phase-generator.service.ts # Two-phase generation
-│   └── type-parser.service.ts     # TypeScript type parsing
-├── shared/                        # Shared utilities
-│   ├── errors/                    # Error classes
-│   │   └── index.ts               # Custom error definitions
-│   └── middleware/                # Shared middleware
-│       └── errorHandler.ts        # Error handling middleware
+│   └── path.utils.ts              # Module path resolution
+├── services/                      # Generation logic
+│   ├── config.service.ts          # node-apis.config.json handling
+│   ├── formatter.service.ts       # Optional Prettier formatting
+│   ├── module-detection.service.ts # Existing module detection
+│   ├── module-generator.service.ts # Module directory creation
+│   ├── two-phase-generator.service.ts # Types first, then code
+│   └── type-parser.service.ts     # typePayload parsing
+├── shared/
+│   └── utils/
+│       └── naming.utils.ts        # Module name casing
 ├── templates/                     # Code generation templates
-│   ├── crud.*.ts                  # CRUD operation templates
-│   ├── custom.*.ts                # Custom API templates
-│   ├── routes.templates.ts        # Route generation
-│   ├── repository.templates.ts    # Repository templates
-│   ├── typed-*.ts                 # Typed template variants
-│   └── test.config.ts             # Test configuration template
+│   ├── crud.templates.ts          # CRUD type files
+│   ├── custom.templates.ts        # Custom operation type files
+│   ├── services.templates.ts      # Service type files and services
+│   ├── typed-crud.handlers.ts     # CRUD handlers
+│   ├── typed-crud.validators.ts   # CRUD validators
+│   ├── typed-custom.handlers.ts   # Custom handlers
+│   ├── typed-custom.validators.ts # Custom validators
+│   └── typed-repository.templates.ts # Repositories
 ├── types/                         # Generator type definitions
-│   ├── cli.types.ts               # CLI-specific types
-│   ├── common.types.ts            # Common type definitions
-│   └── generation.types.ts        # Generation-specific types
+│   ├── cli.types.ts
+│   ├── common.types.ts
+│   ├── config.types.ts
+│   └── generation.types.ts
 ├── validators/                    # Input validation
 │   ├── location.validator.ts      # Path validation
 │   └── module-name.validator.ts   # Module name validation
 └── index.ts                       # CLI entry point
 ```
 
+## Generated Module Structure
+
+```
+<apisDir>/                         # default: src/apis
+└── {module-name}/
+    ├── types/                     # operation.moduleName.ts
+    ├── validators/                # operation.moduleName.ts
+    ├── handlers/                  # operation.moduleName.ts
+    └── repository/                # operation.moduleName.ts (skipped with --no-repository)
+```
+
+A services module contains `types/` and `services/` only.
+
 ---
 Source: .ruler/project_architecture.md
 ---
-# Node.js API Generator Architecture
+# node-apis Architecture
 
-This is a Node.js/TypeScript CLI tool for generating production-ready API modules with clean architecture, comprehensive testing, and automatic formatting.
+This is a Node.js/TypeScript CLI tool that generates framework-agnostic modules: types, Zod validators, handlers and repositories with one consistent `{ data, error }` shape.
 
 ## Project Overview
 
 - **Type**: CLI Code Generator
-- **Target**: Node.js API modules
-- **Frameworks**: Express.js and Hono support
+- **Target**: TypeScript modules for any backend (oRPC, tRPC, Hono, Express, workers)
+- **Frameworks**: None. Generated code never imports a web framework or router
 - **Language**: TypeScript with strict type safety
-- **Architecture**: Clean Architecture (Controllers → Handlers → Repository)
-- **Testing**: Vitest with comprehensive test generation
-- **Validation**: Zod schemas for type-safe validation
+- **Architecture**: Handlers → Repository, called from the user's own router
+- **Validation**: Zod schemas generated from `typePayload`
+- **Not in scope**: project scaffolding, routes, controllers, test generation
 
 ## Technology Stack
 
-### Core Technologies
-
-- **TypeScript**: Strict type safety and modern JavaScript features
+- **TypeScript**: Strict type safety
 - **Node.js 16+**: Runtime environment
-- **Commander.js**: CLI framework for command-line interface
-- **Inquirer.js**: Interactive command-line prompts
-
-### Generated Code Stack
-
-- **Express.js**: Default web framework for generated APIs
-- **Hono**: Alternative lightweight web framework support
-- **Zod**: Schema validation for type-safe input validation
-- **Vitest**: Modern testing framework with TypeScript support
-
-### Code Generation
-
-- **Template Engine**: Custom template system for code generation
-- **Type Parser**: Analyzes TypeScript types for intelligent code generation
-- **File System Operations**: Safe file creation and modification
-- **Prettier Integration**: Automatic code formatting
-
-### Development Tools
-
-- **ESLint + Prettier**: Code linting and formatting
-- **Vitest**: Testing framework for generated code
-- **TypeScript Compiler**: Strict type checking
-- **ts-node**: TypeScript execution for development
+- **Commander.js**: CLI framework
+- **Inquirer.js**: Interactive prompts
+- **Zod**: Imported by the generated validators (provided by the target project)
+- **Prettier**: Used to format generated files only when the target project has it installed
 
 ## Available Scripts
 
@@ -596,9 +540,6 @@ This is a Node.js/TypeScript CLI tool for generating production-ready API module
 - `npm run start` - Run the CLI in interactive mode
 - `npm run dev` - Run CLI with ts-node for development
 - `npm run format` - Format code with Prettier
-- `npm run test:run` - Run generated tests with Vitest
-- `npm run test:watch` - Run tests in watch mode
-- `npm run test:coverage` - Run tests with coverage report
 
 ## CLI Usage
 
@@ -612,10 +553,13 @@ npm run start -- --name user --crud
 # Generate custom operations
 npm run start -- --name user --custom "sendEmail,resetPassword"
 
-# Specify framework
-npm run start -- --name user --crud --framework hono
+# Generate third-party service wrappers
+npm run start -- --name payment --services "charge,refund"
 
-# Force overwrite existing files
+# Handlers without a repository layer
+npm run start -- --name user --crud --no-repository
+
+# Regenerate code from the edited type files
 npm run start -- --name user --crud --force
 ```
 
@@ -624,16 +568,25 @@ npm run start -- --name user --crud --force
 ### Core Components
 
 1. **CLI Layer** (`src/cli/`): Command-line interface and user interaction
-2. **Templates** (`src/templates/`): Code generation templates for different patterns
-3. **Services** (`src/services/`): Business logic for file generation and formatting
-4. **Core** (`src/core/`): Framework adapters and pipeline management
+2. **Templates** (`src/templates/`): Code generation templates
+3. **Services** (`src/services/`): Two-phase generation, type parsing, config, formatting
+4. **Filesystem** (`src/filesystem/`): File and directory operations
 5. **Types** (`src/types/`): TypeScript definitions for the generator itself
 
-### Template System
+### Two-Phase Process
 
-- **Template Engine**: Custom template system for generating consistent code
-- **Framework Adapters**: Support for Express.js and Hono frameworks
-- **Type-Driven Generation**: Uses TypeScript types to generate intelligent code
-- **Two-Phase Process**: Type definition → Code generation
-- `npm run lint` - Run ESLint
-- `npm run format` - Format code with Prettier
+1. **Types**: write `types/operation.moduleName.ts` for each operation. Existing type files are never overwritten; they are hand-edited and are the source of truth.
+2. **Code**: parse each `typePayload` and generate validators, handlers and repositories (or services) from it. `--force` rewrites these files.
+
+### The Envelope
+
+Every handler and service takes one object (payload fields plus `requestId`) and returns:
+
+```typescript
+export type typeResult = {
+  data: null | typeResultData;
+  error: null | typeResultError;
+};
+```
+
+Handlers do not throw. A repository error named `NotFoundError` maps to `NOT_FOUND` (404); any other error maps to `INTERNAL_ERROR` (500).

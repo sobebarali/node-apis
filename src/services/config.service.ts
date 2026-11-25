@@ -4,69 +4,83 @@
 
 import * as path from 'path';
 import * as fs from 'fs-extra';
-import {
-  Config,
-  SupportedFramework,
-  SupportedApiStyle,
-  DatabaseConfig,
-  ConfigValidationResult,
-  InitConfigOptions,
-  ConfigUpdateOptions,
-} from '../types/config.types';
+import { Config, ConfigValidationResult } from '../types/config.types';
 
 const DEFAULT_CONFIG_FILENAME = 'node-apis.config.json';
-const CONFIG_VERSION = '1.0.0';
+const CONFIG_VERSION = '2.0.0';
+const DEFAULT_APIS_DIR = path.join('src', 'apis');
+
+const errorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : 'Unknown error';
+
+const warnedPaths = new Set<string>();
+
+/** A config is read several times per run, so report a broken one only once */
+const warnOnce = (filePath: string, message: string): void => {
+  if (!warnedPaths.has(filePath)) {
+    warnedPaths.add(filePath);
+    console.warn(message);
+  }
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
 
 /**
  * Gets the config file path
  */
-export const getConfigPath = ({
-  configPath,
-  baseDir = process.cwd(),
-}: { configPath?: string; baseDir?: string } = {}): string => {
-  if (configPath) {
-    return configPath;
-  }
-  return path.join(baseDir, DEFAULT_CONFIG_FILENAME);
-};
+export const getConfigPath = ({ baseDir = process.cwd() }: { baseDir?: string } = {}): string =>
+  path.join(baseDir, DEFAULT_CONFIG_FILENAME);
 
 /**
  * Checks if config file exists
  */
-export const configExists = async ({
-  configPath,
-}: { configPath?: string } = {}): Promise<boolean> => {
-  const filePath = getConfigPath(configPath ? { configPath } : {});
-  return await fs.pathExists(filePath);
+export const configExists = async ({ baseDir }: { baseDir?: string } = {}): Promise<boolean> =>
+  fs.pathExists(getConfigPath({ ...(baseDir && { baseDir }) }));
+
+/**
+ * Validates configuration object. Unknown keys (for example the `framework`
+ * setting of older versions) are ignored.
+ */
+export const validateConfig = ({ config }: { config: unknown }): ConfigValidationResult => {
+  if (!isRecord(config)) {
+    return { isValid: false, errors: ['Config must be an object'] };
+  }
+
+  const errors: string[] = [];
+  const { paths } = config;
+
+  if (paths !== undefined && !isRecord(paths)) {
+    errors.push('paths must be an object');
+  } else if (paths?.apisDir !== undefined && typeof paths.apisDir !== 'string') {
+    errors.push('paths.apisDir must be a string');
+  }
+
+  return { isValid: errors.length === 0, errors };
 };
 
 /**
- * Loads configuration from file
+ * Loads configuration from file. Returns null when there is no usable config.
  */
-export const loadConfig = async ({
-  configPath,
-}: { configPath?: string } = {}): Promise<Config | null> => {
-  try {
-    const filePath = getConfigPath(configPath ? { configPath } : {});
-    const exists = await configExists(configPath ? { configPath } : {});
+export const loadConfig = async ({ baseDir }: { baseDir?: string } = {}): Promise<Config | null> => {
+  const filePath = getConfigPath({ ...(baseDir && { baseDir }) });
 
-    if (!exists) {
+  if (!(await fs.pathExists(filePath))) {
+    return null;
+  }
+
+  try {
+    const config: unknown = JSON.parse(await fs.readFile(filePath, 'utf8'));
+    const validation = validateConfig({ config });
+
+    if (!validation.isValid) {
+      warnOnce(filePath, `⚠️  Ignoring ${DEFAULT_CONFIG_FILENAME}: ${validation.errors.join(', ')}`);
       return null;
     }
 
-    const configContent = await fs.readFile(filePath, 'utf8');
-    const config = JSON.parse(configContent) as Config;
-
-    // Validate the loaded config
-    const validation = validateConfig({ config });
-    if (!validation.isValid) {
-      console.warn('⚠️  Config file has validation errors:', validation.errors.join(', '));
-      // Return the config anyway, but with warnings
-    }
-
-    return config;
-  } catch (error: any) {
-    console.warn(`⚠️  Failed to load config: ${error.message}`);
+    return config as Config;
+  } catch (error) {
+    warnOnce(filePath, `⚠️  Failed to load config: ${errorMessage(error)}`);
     return null;
   }
 };
@@ -76,288 +90,77 @@ export const loadConfig = async ({
  */
 export const saveConfig = async ({
   config,
-  configPath,
-  options = {},
+  baseDir,
 }: {
   config: Config;
-  configPath?: string;
-  options?: ConfigUpdateOptions;
+  baseDir?: string;
 }): Promise<void> => {
-  try {
-    const filePath = getConfigPath(configPath ? { configPath } : {});
+  const validation = validateConfig({ config });
 
-    let finalConfig = config;
-
-    // Merge with existing config if requested
-    if (options.merge) {
-      const existingConfig = await loadConfig(configPath ? { configPath } : {});
-      if (existingConfig) {
-        finalConfig = { ...existingConfig, ...config };
-      }
-    }
-
-    // Add version if not present
-    if (!finalConfig.version) {
-      finalConfig.version = CONFIG_VERSION;
-    }
-
-    // Validate if requested
-    if (options.validate !== false) {
-      const validation = validateConfig({ config: finalConfig });
-      if (!validation.isValid) {
-        throw new Error(`Config validation failed: ${validation.errors.join(', ')}`);
-      }
-    }
-
-    const configContent = JSON.stringify(finalConfig, null, 2);
-    await fs.writeFile(filePath, configContent, 'utf8');
-  } catch (error: any) {
-    throw new Error(`Failed to save config: ${error.message}`);
-  }
-};
-
-/**
- * Gets the configured framework
- */
-export const getFramework = async ({
-  configPath,
-}: { configPath?: string } = {}): Promise<SupportedFramework | null> => {
-  const config = await loadConfig(configPath ? { configPath } : {});
-  return config?.framework || null;
-};
-
-/**
- * Gets the configured API style
- */
-export const getApiStyle = async ({
-  configPath,
-}: { configPath?: string } = {}): Promise<SupportedApiStyle | null> => {
-  const config = await loadConfig(configPath ? { configPath } : {});
-  return config?.apiStyle || null;
-};
-
-/**
- * Sets the framework in config
- */
-export const setFramework = async ({
-  framework,
-  configPath,
-}: {
-  framework: SupportedFramework;
-  configPath?: string;
-}): Promise<void> => {
-  // Check if config exists, if not create a default one first
-  const exists = await configExists(configPath ? { configPath } : {});
-
-  if (!exists) {
-    // Create default config with the specified framework
-    await initializeConfig({
-      framework,
-      ...(configPath && { configPath }),
-    });
-  } else {
-    // Update existing config
-    await saveConfig({
-      config: { framework },
-      ...(configPath && { configPath }),
-      options: { merge: true, validate: true },
-    });
-  }
-};
-
-/**
- * Sets the API style in config
- */
-export const setApiStyle = async ({
-  apiStyle,
-  configPath,
-}: {
-  apiStyle: SupportedApiStyle;
-  configPath?: string;
-}): Promise<void> => {
-  // Check if config exists, if not create a default one first
-  const exists = await configExists(configPath ? { configPath } : {});
-
-  if (!exists) {
-    // Create default config with the specified API style
-    await initializeConfig({
-      ...(configPath && { configPath }),
-    });
-    // Then update with API style
-    await saveConfig({
-      config: { apiStyle },
-      ...(configPath && { configPath }),
-      options: { merge: true, validate: true },
-    });
-  } else {
-    // Update existing config
-    await saveConfig({
-      config: { apiStyle },
-      ...(configPath && { configPath }),
-      options: { merge: true, validate: true },
-    });
-  }
-};
-
-/**
- * Sets the default tRPC style preference in config (deprecated - use setApiStyle)
- */
-export const setTrpcStyle = async ({
-  trpcStyle,
-  configPath,
-}: {
-  trpcStyle: boolean;
-  configPath?: string;
-}): Promise<void> => {
-  // Deprecated: Convert to new API style format
-  const apiStyle: SupportedApiStyle = trpcStyle ? 'trpc' : 'rest';
-  await setApiStyle({ 
-    apiStyle, 
-    ...(configPath && { configPath }) 
-  });
-};
-
-/**
- * Gets database configuration
- */
-export const getDatabaseConfig = async ({
-  configPath,
-}: { configPath?: string } = {}): Promise<DatabaseConfig | null> => {
-  const config = await loadConfig(configPath ? { configPath } : {});
-  return config?.database || null;
-};
-
-/**
- * Sets database configuration
- */
-export const setDatabaseConfig = async ({
-  databaseConfig,
-  configPath,
-}: {
-  databaseConfig: DatabaseConfig;
-  configPath?: string;
-}): Promise<void> => {
-  await saveConfig({
-    config: { database: databaseConfig },
-    ...(configPath && { configPath }),
-    options: { merge: true, validate: true },
-  });
-};
-
-/**
- * Gets the configured APIs directory with framework-specific support
- */
-export const getApisDir = async ({
-  framework,
-  configPath,
-}: {
-  framework?: SupportedFramework;
-  configPath?: string;
-} = {}): Promise<string> => {
-  const config = await loadConfig(configPath ? { configPath } : {});
-
-  // Check for framework-specific override first
-  if (framework && config?.paths?.frameworkPaths?.[framework]) {
-    return config.paths.frameworkPaths[framework];
+  if (!validation.isValid) {
+    throw new Error(`Config validation failed: ${validation.errors.join(', ')}`);
   }
 
-  // Then check for general apisDir configuration
-  if (config?.paths?.apisDir) {
-    return config.paths.apisDir;
-  }
-
-  // Fall back to framework-specific defaults
-  if (framework === 't3') {
-    return path.join('src', 'server', 'api');
-  }
-
-  if (framework === 'tanstack') {
-    return path.join('src', 'routers');
-  }
-
-  // Default to src/apis
-  return path.join('src', 'apis');
+  await fs.writeFile(
+    getConfigPath({ ...(baseDir && { baseDir }) }),
+    `${JSON.stringify(config, null, 2)}\n`,
+    'utf8'
+  );
 };
 
 /**
- * Gets the configured tests directory
+ * Gets the directory that holds the generated modules
  */
-export const getTestsDir = async ({
-  configPath,
-}: {
-  configPath?: string;
-} = {}): Promise<string> => {
-  const config = await loadConfig(configPath ? { configPath } : {});
-
-  // Return configured path or default to 'tests'
-  return config?.paths?.testsDir || 'tests';
+export const getApisDir = async ({ baseDir }: { baseDir?: string } = {}): Promise<string> => {
+  const config = await loadConfig({ ...(baseDir && { baseDir }) });
+  return config?.paths?.apisDir ?? DEFAULT_APIS_DIR;
 };
 
 /**
- * Sets the APIs directory in config
+ * Tells whether the project has chosen its modules directory in config
+ */
+export const hasConfiguredApisDir = async ({
+  baseDir,
+}: { baseDir?: string } = {}): Promise<boolean> => {
+  const config = await loadConfig({ ...(baseDir && { baseDir }) });
+  return config?.paths?.apisDir !== undefined;
+};
+
+/**
+ * Sets the modules directory in config, creating the config when missing
  */
 export const setApisDir = async ({
   apisDir,
-  configPath,
+  baseDir,
 }: {
   apisDir: string;
-  configPath?: string;
+  baseDir?: string;
 }): Promise<void> => {
-  // Check if config exists, if not create a default one first
-  const exists = await configExists(configPath ? { configPath } : {});
+  const normalized = path.normalize(apisDir.trim());
 
-  const config = await loadConfig(configPath ? { configPath } : {});
-  const updatedPaths = {
-    ...config?.paths,
-    apisDir,
-  };
-
-  if (!exists) {
-    // Create default config with the specified APIs directory
-    await initializeConfig({
-      ...(configPath && { configPath }),
-    });
+  if (apisDir.trim().length === 0 || normalized === '.') {
+    throw new Error('The modules directory cannot be empty.');
   }
 
-  // Update config with new APIs directory
-  await saveConfig({
-    config: { paths: updatedPaths },
-    ...(configPath && { configPath }),
-    options: { merge: true, validate: true },
-  });
-};
-
-/**
- * Sets the tests directory in config
- */
-export const setTestsDir = async ({
-  testsDir,
-  configPath,
-}: {
-  testsDir: string;
-  configPath?: string;
-}): Promise<void> => {
-  // Check if config exists, if not create a default one first
-  const exists = await configExists(configPath ? { configPath } : {});
-
-  const config = await loadConfig(configPath ? { configPath } : {});
-  const updatedPaths = {
-    ...config?.paths,
-    testsDir,
-  };
-
-  if (!exists) {
-    // Create default config with the specified tests directory
-    await initializeConfig({
-      ...(configPath && { configPath }),
-    });
+  if (path.isAbsolute(normalized) || normalized.split(path.sep).includes('..')) {
+    throw new Error('The modules directory must be a path inside the project, for example src/apis.');
   }
 
-  // Update config with new tests directory
+  const scope = { ...(baseDir && { baseDir }) };
+  const config = await loadConfig(scope);
+
+  // Never replace a config we could not read: it may hold settings worth keeping
+  if (config === null && (await configExists(scope))) {
+    throw new Error(`${DEFAULT_CONFIG_FILENAME} could not be read. Fix or delete it, then try again.`);
+  }
+
   await saveConfig({
-    config: { paths: updatedPaths },
-    ...(configPath && { configPath }),
-    options: { merge: true, validate: true },
+    config: {
+      ...config,
+      version: CONFIG_VERSION,
+      paths: { ...config?.paths, apisDir: normalized },
+    },
+    ...scope,
   });
 };
 
@@ -365,256 +168,18 @@ export const setTestsDir = async ({
  * Initializes a new config file
  */
 export const initializeConfig = async ({
-  framework,
   force = false,
-  configPath,
-}: InitConfigOptions & { configPath?: string } = {}): Promise<Config> => {
-  const exists = await configExists(configPath ? { configPath } : {});
-
-  if (exists && !force) {
+  baseDir,
+}: { force?: boolean; baseDir?: string } = {}): Promise<Config> => {
+  if ((await configExists({ ...(baseDir && { baseDir }) })) && !force) {
     throw new Error('Config file already exists. Use --force to overwrite.');
   }
 
-  const defaultConfig: Config = {
+  const config: Config = {
     version: CONFIG_VERSION,
-    framework: framework || 'express',
-    database: {},
-    preferences: {
-      autoFormat: true,
-      generateTests: true,
-      skipConfirmation: false,
-    },
-    paths: {
-      srcDir: 'src',
-      apisDir: path.join('src', 'apis'),
-      testsDir: 'tests',
-      fallbackPaths: [
-        path.join('apps', 'server', 'src'),
-        path.join('packages', 'api', 'src'),
-      ],
-    },
+    paths: { apisDir: DEFAULT_APIS_DIR },
   };
 
-  await saveConfig({
-    config: defaultConfig,
-    ...(configPath && { configPath }),
-    options: { validate: true },
-  });
-  return defaultConfig;
-};
-
-/**
- * Validates configuration object
- */
-export const validateConfig = ({ config }: { config: any }): ConfigValidationResult => {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-
-  if (!config || typeof config !== 'object') {
-    errors.push('Config must be an object');
-    return { isValid: false, errors, warnings };
-  }
-
-  // Validate framework
-  if (config.framework && !['express', 'hono', 't3', 'tanstack'].includes(config.framework)) {
-    errors.push(`Invalid framework: ${config.framework}. Must be 'express', 'hono', 't3', or 'tanstack'`);
-  }
-
-  // Validate API style
-  if (config.apiStyle && !['rest', 'trpc'].includes(config.apiStyle)) {
-    errors.push(`Invalid API style: ${config.apiStyle}. Must be 'rest' or 'trpc'`);
-  }
-
-  // Validate database config
-  if (config.database && typeof config.database === 'object') {
-    if (config.database.orm && !['prisma', 'typeorm', 'drizzle'].includes(config.database.orm)) {
-      errors.push(`Invalid ORM: ${config.database.orm}. Must be 'prisma', 'typeorm', or 'drizzle'`);
-    }
-
-    if (config.database.type && !['postgresql', 'mysql', 'sqlite'].includes(config.database.type)) {
-      errors.push(
-        `Invalid database type: ${config.database.type}. Must be 'postgresql', 'mysql', or 'sqlite'`
-      );
-    }
-  }
-
-  // Validate preferences
-  if (config.preferences && typeof config.preferences === 'object') {
-    const prefs = config.preferences;
-    if (prefs.autoFormat !== undefined && typeof prefs.autoFormat !== 'boolean') {
-      errors.push('preferences.autoFormat must be a boolean');
-    }
-    if (prefs.generateTests !== undefined && typeof prefs.generateTests !== 'boolean') {
-      errors.push('preferences.generateTests must be a boolean');
-    }
-    if (prefs.skipConfirmation !== undefined && typeof prefs.skipConfirmation !== 'boolean') {
-      errors.push('preferences.skipConfirmation must be a boolean');
-    }
-  }
-
-  // Validate paths config
-  if (config.paths && typeof config.paths === 'object') {
-    const paths = config.paths;
-    if (paths.srcDir !== undefined && typeof paths.srcDir !== 'string') {
-      errors.push('paths.srcDir must be a string');
-    }
-    if (paths.apisDir !== undefined && typeof paths.apisDir !== 'string') {
-      errors.push('paths.apisDir must be a string');
-    }
-    if (paths.testsDir !== undefined && typeof paths.testsDir !== 'string') {
-      errors.push('paths.testsDir must be a string');
-    }
-    if (paths.fallbackPaths !== undefined) {
-      if (!Array.isArray(paths.fallbackPaths)) {
-        errors.push('paths.fallbackPaths must be an array');
-      } else {
-        for (let i = 0; i < paths.fallbackPaths.length; i++) {
-          if (typeof paths.fallbackPaths[i] !== 'string') {
-            errors.push(`paths.fallbackPaths[${i}] must be a string`);
-          }
-        }
-      }
-    }
-    if (paths.frameworkPaths !== undefined) {
-      if (typeof paths.frameworkPaths !== 'object' || Array.isArray(paths.frameworkPaths)) {
-        errors.push('paths.frameworkPaths must be an object');
-      } else {
-        const validFrameworks = ['express', 'hono', 't3', 'tanstack'];
-        for (const [framework, frameworkPath] of Object.entries(paths.frameworkPaths)) {
-          if (!validFrameworks.includes(framework)) {
-            errors.push(
-              `Invalid framework in paths.frameworkPaths: ${framework}. Must be one of: ${validFrameworks.join(', ')}`
-            );
-          }
-          if (typeof frameworkPath !== 'string') {
-            errors.push(`paths.frameworkPaths.${framework} must be a string`);
-          }
-        }
-      }
-    }
-  }
-
-  // Version warnings
-  if (!config.version) {
-    warnings.push('Config version not specified, assuming latest');
-  } else if (config.version !== CONFIG_VERSION) {
-    warnings.push(`Config version ${config.version} differs from current ${CONFIG_VERSION}`);
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors,
-    warnings,
-  };
-};
-
-/**
- * Migrates an old config file to the new format with path fields
- */
-export const migrateConfig = async ({
-  configPath,
-}: {
-  configPath?: string;
-} = {}): Promise<Config> => {
-  try {
-    // Load existing config
-    const config = await loadConfig(configPath ? { configPath } : {});
-
-    if (!config) {
-      throw new Error('No config file found to migrate');
-    }
-
-    // Check if migration is needed
-    if (config.paths && config.paths.apisDir && config.paths.testsDir) {
-      console.log('✅ Config is already up to date');
-      return config;
-    }
-
-    console.log('🔄 Migrating config to new format...');
-
-    // Detect existing structure
-    const { detectExistingApiStructure, suggestPathConfiguration } = await import(
-      './module-detection.service'
-    );
-    const detected = await detectExistingApiStructure({ baseDir: process.cwd() });
-    const suggested = suggestPathConfiguration(detected);
-
-    // Merge with existing config
-    const migratedConfig: Config = {
-      ...config,
-      paths: {
-        ...config.paths,
-        ...suggested,
-      },
-    };
-
-    // Save migrated config
-    await saveConfig({
-      config: migratedConfig,
-      ...(configPath && { configPath }),
-      options: { validate: true },
-    });
-
-    console.log('✅ Config migrated successfully');
-    if (detected.apisDir) {
-      console.log(`   APIs directory: ${suggested.apisDir}`);
-    }
-    if (detected.testsDir) {
-      console.log(`   Tests directory: ${suggested.testsDir}`);
-    }
-
-    return migratedConfig;
-  } catch (error: any) {
-    throw new Error(`Failed to migrate config: ${error.message}`);
-  }
-};
-
-/**
- * Gets the effective framework (from config, CLI option, or default)
- */
-export const getEffectiveFramework = async ({
-  cliFramework,
-  configPath,
-}: {
-  cliFramework?: string;
-  configPath?: string;
-} = {}): Promise<SupportedFramework> => {
-  // CLI option takes precedence
-  if (cliFramework && ['express', 'hono', 't3', 'tanstack'].includes(cliFramework)) {
-    return cliFramework as SupportedFramework;
-  }
-
-  // Then check config file
-  const configFramework = await getFramework(configPath ? { configPath } : {});
-  if (configFramework) {
-    return configFramework;
-  }
-
-  // Default to express
-  return 'express';
-};
-
-/**
- * Gets the effective API style (from config, CLI option, or default)
- */
-export const getEffectiveApiStyle = async ({
-  cliApiStyle,
-  configPath,
-}: {
-  cliApiStyle?: string;
-  configPath?: string;
-} = {}): Promise<SupportedApiStyle> => {
-  // CLI option takes precedence
-  if (cliApiStyle && ['rest', 'trpc'].includes(cliApiStyle)) {
-    return cliApiStyle as SupportedApiStyle;
-  }
-
-  // Then check config file
-  const configApiStyle = await getApiStyle(configPath ? { configPath } : {});
-  if (configApiStyle) {
-    return configApiStyle;
-  }
-
-  // Default to rest
-  return 'rest';
+  await saveConfig({ config, ...(baseDir && { baseDir }) });
+  return config;
 };
