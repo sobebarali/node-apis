@@ -4,7 +4,7 @@
 
 import { ParsedTypePayload } from '../services/type-parser.service';
 import { getModuleNaming } from '../shared/utils/naming.utils';
-import { buildPayloadObject } from './typed-crud.handlers';
+import { buildFieldTypes, buildNotImplemented } from './typed-crud.handlers';
 
 /**
  * Gets the list of service operation file names for a module
@@ -74,35 +74,19 @@ export const generateServiceContent = ({
   const functionName = `${serviceName}${naming.class}`;
   const logLabel = `${serviceName.toUpperCase()} ${naming.constant}`;
 
-  const fieldDestructuring =
-    fields.length > 0
-      ? fields.map(field => `${field.name},`).join('\n  ')
-      : '// No fields defined in typePayload';
+  const parameterNames = [...fields.map(field => field.name), 'requestId'];
+  const fieldTypes = [buildFieldTypes(fields), '  requestId: string;'].filter(Boolean).join('\n');
 
-  const fieldTypes =
-    fields.length > 0
-      ? fields.map(field => `  ${field.name}${field.optional ? '?' : ''}: ${field.type};`).join('\n')
-      : '  // No fields defined in typePayload';
-
-  return `import type { typeResult, typeResultData } from "../types/${serviceName}.${naming.file}";
+  return `import type { typeResult } from '../types/${serviceName}.${naming.file}';
 
 export const ${functionName} = async ({
-  ${fieldDestructuring}
-  requestId,
+${parameterNames.map(name => `  ${name},`).join('\n')}
 }: {
 ${fieldTypes}
-  requestId: string;
 }): Promise<typeResult> => {
   try {
-    console.info(\`\${requestId} [SERVICE] - ${logLabel} started\`);
-
-    // TODO: Replace with your third-party API call and return the real result
-    const payload = ${buildPayloadObject(fields)};
-    const data = payload as unknown as typeResultData;
-
-    console.info(\`\${requestId} [SERVICE] - ${logLabel} completed\`);
-
-    return { data, error: null };
+    // TODO: Call the third-party API here and return { data, error: null }
+${buildNotImplemented({ label: `${logLabel} service`, fields, indent: '    ' })}
   } catch (error) {
     console.error(\`\${requestId} [SERVICE] - ${logLabel} error:\`, error);
 
@@ -110,7 +94,7 @@ ${fieldTypes}
       data: null,
       error: {
         code: 'INTERNAL_ERROR',
-        message: error instanceof Error ? error.message : 'Failed to execute ${serviceName} service for ${naming.variable}',
+        message: 'Failed to execute ${serviceName} service for ${naming.variable}',
         statusCode: 500,
         requestId,
       },

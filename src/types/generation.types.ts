@@ -24,6 +24,8 @@ export interface GenerationResult {
   modulePath?: string;
   createdDirectories?: string[];
   generatedFiles?: GeneratedFile[];
+  /** Existing files left untouched because they were edited by hand */
+  keptFiles?: string[];
   message?: string;
 }
 

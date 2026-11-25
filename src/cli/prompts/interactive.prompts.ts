@@ -236,7 +236,7 @@ export const promptExistingModuleAction = async (
         message: `Module "${moduleName}" already exists. What would you like to do?`,
         choices: [
           {
-            name: '🔄 Regenerate the module code (type files are kept)',
+            name: '🔄 Regenerate the untouched code (type files and edited files are kept)',
             value: 'overwrite',
             short: 'Regenerate',
           },

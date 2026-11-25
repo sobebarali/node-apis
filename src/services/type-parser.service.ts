@@ -20,7 +20,27 @@ export interface ParsedTypePayload {
   hasId: boolean;
   hasPagination: boolean;
   isEmpty?: boolean; // True if typePayload is empty (no fields)
+  /** Literal codes declared in typeResultError, for example ['NOT_FOUND', 'INTERNAL_ERROR'] */
+  errorCodes?: string[];
 }
+
+const ERROR_TYPE_REGEX = /export\s+(?:type|interface)\s+typeResultError\s*(?:=\s*)?{([^}]*)}/;
+const ERROR_CODE_LINE_REGEX = /\bcode\??:\s*([^;\n]+)/;
+const QUOTED_LITERAL_REGEX = /['"]([^'"]+)['"]/g;
+
+/**
+ * Reads the literal error codes a type file declares in typeResultError
+ */
+export const parseErrorCodes = (content: string): string[] => {
+  const body = ERROR_TYPE_REGEX.exec(content)?.[1];
+  const codeType = body ? ERROR_CODE_LINE_REGEX.exec(body)?.[1] : undefined;
+
+  if (!codeType) {
+    return [];
+  }
+
+  return Array.from(codeType.matchAll(QUOTED_LITERAL_REGEX), match => match[1] ?? '');
+};
 
 /**
  * Parses a typePayload interface from a TypeScript file
@@ -67,7 +87,7 @@ export const parseTypePayload = async (filePath: string): Promise<ParsedTypePayl
 
       // Check for special fields
       if (field.name === 'id') hasId = true;
-      if (['page', 'limit', 'sort_by', 'sort_order'].includes(field.name)) {
+      if (['page', 'limit', 'sortBy', 'sortOrder', 'sort_by', 'sort_order'].includes(field.name)) {
         hasPagination = true;
       }
     }
@@ -75,7 +95,7 @@ export const parseTypePayload = async (filePath: string): Promise<ParsedTypePayl
     // Check if typePayload is empty (no fields defined)
     const isEmpty = fields.length === 0;
 
-    return { fields, hasId, hasPagination, isEmpty };
+    return { fields, hasId, hasPagination, isEmpty, errorCodes: parseErrorCodes(content) };
   } catch (error) {
     console.error(`Error parsing type file ${filePath}:`, error);
     return { fields: [], hasId: false, hasPagination: false, isEmpty: true };
@@ -222,57 +242,6 @@ const parseNestedObjectField = (
     },
     nextIndex: endIndex,
   };
-};
-
-/**
- * Generates field destructuring pattern for function parameters
- */
-export const generateFieldDestructuring = (fields: ParsedField[]): string => {
-  if (fields.length === 0) {
-    return '// No fields defined in typePayload';
-  }
-
-  const fieldLines = fields.map(field => {
-    if (field.defaultValue) {
-      return `  ${field.name} = ${field.defaultValue},`;
-    }
-
-    // Handle nested objects
-    if (field.isNested && field.nestedFields && field.nestedFields.length > 0) {
-      const nestedDestructuring = field.nestedFields.map(nf => nf.name).join(', ');
-      return `  ${field.name}: { ${nestedDestructuring} },`;
-    }
-
-    return `  ${field.name},`;
-  });
-
-  return fieldLines.join('\n');
-};
-
-/**
- * Generates field object for passing to repository functions
- */
-export const generateFieldObject = (
-  fields: ParsedField[],
-  excludeFields: string[] = []
-): string => {
-  const filteredFields = fields.filter(field => !excludeFields.includes(field.name));
-
-  if (filteredFields.length === 0) {
-    return '// No fields to pass';
-  }
-
-  const fieldLines = filteredFields.map(field => {
-    // Handle nested objects
-    if (field.isNested && field.nestedFields && field.nestedFields.length > 0) {
-      const nestedFields = field.nestedFields.map(nf => `${nf.name}`).join(', ');
-      return `      ${field.name}: { ${nestedFields} },`;
-    }
-
-    return `      ${field.name},`;
-  });
-
-  return fieldLines.join('\n');
 };
 
 /**

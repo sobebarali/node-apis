@@ -50,7 +50,7 @@ export const createModuleDirectory = async ({
     if ((await directoryExists({ dirPath: modulePath })) && !force && !appendMode) {
       return {
         success: false,
-        error: `Module directory already exists: ${modulePath}\nUse --force to regenerate its code (type files are kept), or pick the module in interactive mode to add operations.`,
+        error: `Module directory already exists: ${modulePath}\nUse --force to regenerate its untouched code (type files and edited files are kept), or pick the module in interactive mode to add operations.`,
       };
     }
 

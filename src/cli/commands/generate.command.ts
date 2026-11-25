@@ -327,7 +327,7 @@ const handleTwoPhaseGeneration = async ({
       : `🚀 Phase 2: Generating validators${useRepository ? ', handlers and repositories' : ' and handlers'}...\n`
   );
 
-  const codeFiles = await generateCodeWithParsedTypes({
+  const { generatedFiles: codeFiles, keptFiles } = await generateCodeWithParsedTypes({
     moduleName: normalizedModuleName,
     modulePath,
     apiType,
@@ -341,6 +341,7 @@ const handleTwoPhaseGeneration = async ({
     modulePath,
     createdDirectories: structure.createdDirectories ?? [],
     generatedFiles: [...typeFiles, ...codeFiles],
+    keptFiles,
   });
 };
 

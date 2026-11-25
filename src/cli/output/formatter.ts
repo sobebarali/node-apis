@@ -51,7 +51,7 @@ export const displayGenerationSummary = ({
   console.log(chalk.blue('\n📋 Generation Summary:'));
   console.log(chalk.gray(`   Module name: ${moduleName}`));
   console.log(chalk.gray(`   Target path: ${targetPath}`));
-  console.log(chalk.gray(`   Regenerate existing code: ${forceOverwrite ? 'Yes' : 'No'}`));
+  console.log(chalk.gray(`   Regenerate untouched code: ${forceOverwrite ? 'Yes' : 'No'}`));
 
   if (apiType && operationNames) {
     console.log(chalk.gray(`   API type: ${apiType}`));
@@ -76,8 +76,18 @@ export const displayGenerationResult = (result: GenerationResult): void => {
     for (const file of generatedFiles) {
       console.log(chalk.gray(`   ✓ ${file.fileName}`));
     }
-  } else {
+  }
+
+  const keptFiles = result.keptFiles ?? [];
+  if (generatedFiles.length === 0 && keptFiles.length === 0) {
     console.log(chalk.gray('\n   No new files: everything already exists.'));
+  }
+  if (keptFiles.length > 0) {
+    console.log(chalk.yellow('\n✋ Kept as they are (edited by hand, or generated before 4.1.0):'));
+    for (const file of keptFiles) {
+      console.log(chalk.gray(`   • ${file}`));
+    }
+    console.log(chalk.gray('   To regenerate one, delete the file and run the command again.'));
   }
 
   console.log(chalk.cyan('\n📝 Next Steps:'));

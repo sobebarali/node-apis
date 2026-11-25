@@ -91,8 +91,8 @@ export const displayTypeInstructions = (moduleName: string, operations: string[]
         console.log('      Add pagination and filter fields:');
         console.log('      • page?: number');
         console.log('      • limit?: number');
-        console.log('      • sort_by?: string');
-        console.log('      • sort_order?: "asc" | "desc"');
+        console.log('      • sortBy?: string');
+        console.log('      • sortOrder?: "asc" | "desc"');
         console.log('      • search?: string');
         console.log('      • category?: string (custom filters)');
         break;

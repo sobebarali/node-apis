@@ -68,8 +68,8 @@ export type typeResultData = {
   name: string;
   description?: string;
   status?: string;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
   // Add more ${moduleName} specific fields here
 };
 
@@ -105,15 +105,15 @@ export type typeResultData = {
   name: string;
   description?: string;
   status?: string;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
   // Add more ${moduleName} specific fields here
 };
 
 export type typeResultError = {
-  code: 'NOT_FOUND' | 'UNAUTHORIZED' | 'INTERNAL_ERROR';
+  code: 'NOT_FOUND' | 'INTERNAL_ERROR';
   message: string;
-  statusCode: 404 | 401 | 500;
+  statusCode: 404 | 500;
   requestId: string;
 };
 
@@ -135,8 +135,8 @@ const generateListContent = (
   return `export type typePayload = {
   page?: number;
   limit?: number;
-  sort_by?: string;
-  sort_order?: 'asc' | 'desc';
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
   search?: string;
   status?: string;
   // Add more ${moduleName} specific filters here
@@ -148,17 +148,17 @@ export type typeResultData = {
     name: string;
     description?: string;
     status?: string;
-    created_at: string;
-    updated_at: string;
+    createdAt: string;
+    updatedAt: string;
     // Add more ${moduleName} specific fields here
   }[];
-  _metadata: {
+  pagination: {
     page: number;
     limit: number;
-    total_count: number;
-    total_pages: number;
-    has_next: boolean;
-    has_prev: boolean;
+    totalCount: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
   };
 };
 
@@ -198,15 +198,15 @@ export type typeResultData = {
   name: string;
   description?: string;
   status?: string;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
   // Add more ${moduleName} specific fields here
 };
 
 export type typeResultError = {
-  code: 'VALIDATION_ERROR' | 'NOT_FOUND' | 'UNAUTHORIZED' | 'INTERNAL_ERROR';
+  code: 'VALIDATION_ERROR' | 'NOT_FOUND' | 'DUPLICATE_ENTRY' | 'INTERNAL_ERROR';
   message: string;
-  statusCode: 400 | 404 | 401 | 500;
+  statusCode: 400 | 404 | 409 | 500;
   requestId: string;
   field?: string;
 };
@@ -231,13 +231,13 @@ const generateDeleteContent = (
 };
 
 export type typeResultData = {
-  deleted_at: string;
+  deletedAt: string;
 };
 
 export type typeResultError = {
-  code: 'NOT_FOUND' | 'UNAUTHORIZED' | 'INTERNAL_ERROR';
+  code: 'NOT_FOUND' | 'INTERNAL_ERROR';
   message: string;
-  statusCode: 404 | 401 | 500;
+  statusCode: 404 | 500;
   requestId: string;
 };
 
@@ -266,9 +266,9 @@ export type typeResultData = {
 };
 
 export type typeResultError = {
-  code: 'VALIDATION_ERROR' | 'NOT_FOUND' | 'UNAUTHORIZED' | 'INTERNAL_ERROR';
+  code: 'VALIDATION_ERROR' | 'NOT_FOUND' | 'INTERNAL_ERROR';
   message: string;
-  statusCode: 400 | 404 | 401 | 500;
+  statusCode: 400 | 404 | 500;
   requestId: string;
   field?: string;
 };

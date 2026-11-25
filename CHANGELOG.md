@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.0] - 2026-11-25
+
+### Changed
+
+- `--force` no longer overwrites files edited by hand. Fingerprints of generated files are stored in `<module>/.node-apis.json`; edited files are kept and reported, and reformatting does not count as an edit. Modules generated with 4.0.0 have no fingerprints, so their existing files are kept: delete a file to regenerate it
+- Repositories, services and `--no-repository` handlers are stubs that throw "not implemented" instead of returning mock data
+- Repositories take one object (`get({ id })`, `update({ id, name })`) instead of positional parameters
+- Type templates use camelCase everywhere: `createdAt`, `updatedAt`, `deletedAt`, `sortBy`, `sortOrder`, and `pagination` (`totalCount`, `totalPages`, `hasNext`, `hasPrev`) instead of `_metadata`
+- A repository error named `DuplicateError` maps to `DUPLICATE_ENTRY` / 409, next to `NotFoundError` → `NOT_FOUND` / 404. A code is mapped only when the type file declares it
+- `INTERNAL_ERROR` responses carry a fixed message; the real error is logged once and no longer sent to the caller
+- Validators follow the type exactly (update no longer makes every field optional) and end with `satisfies z.ZodType<typePayload>`, so a validator that drifts from its type stops compiling
+- Generated code is formatted without Prettier: single quotes, multi-line payloads, lines within 100 columns
+
+### Removed
+
+- `as unknown as typeResultData` and `as typePayload` casts
+- `console.info` logging in handlers and services
+- `UNAUTHORIZED` / 401 from the type templates (authentication belongs to the router)
+- Redundant validator rules such as `.positive().min(1)` and array `.min(0)`
+- Repository `try/catch` blocks that rethrew a new error and lost the original stack
+
 ## [4.0.0] - 2026-11-25
 
 ### Breaking: framework-agnostic module generator

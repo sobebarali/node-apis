@@ -1,6 +1,6 @@
 {
   "name": "node-apis",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "description": "Framework-agnostic TypeScript module generator. Turns a typePayload into types, Zod validators, handlers and repositories with one consistent { data, error } shape.",
   "main": "dist/index.js",
   "bin": {

@@ -576,7 +576,7 @@ npm run start -- --name user --crud --force
 ### Two-Phase Process
 
 1. **Types**: write `types/operation.moduleName.ts` for each operation. Existing type files are never overwritten; they are hand-edited and are the source of truth.
-2. **Code**: parse each `typePayload` and generate validators, handlers and repositories (or services) from it. `--force` rewrites these files.
+2. **Code**: parse each `typePayload` and generate validators, handlers and repositories (or services) from it. `--force` regenerates only the files that were not edited by hand; fingerprints of generated files live in `<module>/.node-apis.json`.
 
 ### The Envelope
 
@@ -589,4 +589,12 @@ export type typeResult = {
 };
 ```
 
-Handlers do not throw. A repository error named `NotFoundError` maps to `NOT_FOUND` (404); any other error maps to `INTERNAL_ERROR` (500).
+Handlers do not throw. A repository error named `NotFoundError` maps to `NOT_FOUND` (404) and `DuplicateError` maps to `DUPLICATE_ENTRY` (409), each only when the type file declares that code; any other error is logged once and maps to `INTERNAL_ERROR` (500) with a fixed message.
+
+### Generated Code Rules
+
+- Repositories, services and `--no-repository` handlers are stubs that throw "not implemented"; they never return made-up data
+- Every repository takes one object, never positional parameters
+- Field names are camelCase (`createdAt`, `sortBy`, `pagination.totalCount`)
+- Validators end with `satisfies z.ZodType<typePayload>` and are never cast
+- Templates emit formatted code (single quotes, 2 spaces, 100 columns) without relying on Prettier

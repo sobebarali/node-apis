@@ -14,7 +14,10 @@ export const main = async (): Promise<void> => {
     )
     .version(version)
     .option('-n, --name <name>', 'module name (skips interactive prompt)')
-    .option('-f, --force', 'regenerate the code of an existing module (type files are kept)')
+    .option(
+      '-f, --force',
+      'regenerate the untouched code of an existing module (type files and edited files are kept)'
+    )
     .option('--no-interactive', 'disable interactive mode')
     .option('--crud', 'generate CRUD operations (create, get, list, delete, update)')
     .option('--custom <names>', 'generate custom operations (comma-separated names)')
