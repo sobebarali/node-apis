@@ -62,7 +62,6 @@ const generateGenericCustomContent = (
 ): string => {
   return `export type typePayload = {
   // Define payload for ${customName} ${moduleName}
-  id?: string;
 };
 
 export type typeResultData = {

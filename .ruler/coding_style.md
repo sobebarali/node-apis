@@ -105,22 +105,17 @@ export default async function createUserHandler({
   name,
   email,
   requestId,
-}: {
-  name: string;
-  email: string;
-  requestId: string;
-}): Promise<typeResult> {
+}: typePayload & { requestId: string }): Promise<typeResult> {
   // Implementation
 }
 
 // ✅ Generated Pattern: Object destructuring in repository
-export default async function create({
-  name,
-  email,
-}: {
-  name: string;
-  email: string;
-}): Promise<typeResultData> {
+export default async function create({ name, email }: typePayload): Promise<typeResultData> {
+  // Implementation
+}
+
+// ✅ Generated Pattern: get and delete repositories take only the ID
+export default async function get({ id }: Pick<typePayload, 'id'>): Promise<typeResultData> {
   // Implementation
 }
 ```

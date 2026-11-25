@@ -91,9 +91,10 @@ export const displayGenerationResult = (result: GenerationResult): void => {
   }
 
   console.log(chalk.cyan('\n📝 Next Steps:'));
-  console.log(chalk.gray('   1. Fill in typeResultData in the type files'));
-  console.log(chalk.gray('   2. Implement the TODOs in the generated code'));
-  console.log(chalk.gray('   3. Call the handlers from your own router (oRPC, tRPC, REST, ...)'));
+  console.log(chalk.gray('   1. Fill in typePayload and typeResultData in the type files'));
+  console.log(chalk.gray('   2. Run the same command with --force to rebuild the code from them'));
+  console.log(chalk.gray('   3. Implement the TODOs in the generated code'));
+  console.log(chalk.gray('   4. Call the handlers from your own router (oRPC, tRPC, REST, ...)'));
 };
 
 /**

@@ -2,7 +2,13 @@
  * Typed validator templates: a Zod schema built from the parsed typePayload
  */
 
-import { ParsedTypePayload, ParsedField } from '../services/type-parser.service';
+import {
+  ParsedTypePayload,
+  ParsedField,
+  parseObjectMembers,
+  splitTopLevel,
+  unwrapBrackets,
+} from '../services/type-parser.service';
 import { getModuleNaming } from '../shared/utils/naming.utils';
 
 /**
@@ -19,118 +25,201 @@ export const getCrudValidatorFileNames = ({ moduleName }: { moduleName: string }
   ];
 };
 
-const ID_NAME_REGEX = /(^id|Id|ID|_id)$/;
 const STRING_LITERAL_REGEX = /^(['"])([^'"]*)\1$/;
 const NUMBER_LITERAL_REGEX = /^-?\d+(\.\d+)?$/;
-const WRAPPING_PARENS_REGEX = /^\((.*)\)$/;
 const DOUBLE_QUOTE_REGEX = /"/g;
+const ARRAY_GENERIC_REGEX = /^(?:Readonly)?Array<([\s\S]+)>$/;
+const RECORD_GENERIC_REGEX = /^Record<([\s\S]+)>$/;
+const EMAIL_NAME_REGEX = /(^email|Email)$/;
+const URL_NAME_REGEX = /(^url|Url|URL)$/;
 
-/** Limits for string fields, chosen by what the field name says it holds */
-const STRING_RULES: Array<{ keywords: string[]; schema: string }> = [
-  { keywords: ['email'], schema: 'z.string().email().max(255)' },
-  { keywords: ['url', 'link'], schema: 'z.string().url().max(2048)' },
-  { keywords: ['phone', 'mobile'], schema: 'z.string().min(10).max(20)' },
-  { keywords: ['password'], schema: 'z.string().min(8).max(255)' },
-  { keywords: ['name', 'title'], schema: 'z.string().min(1).max(255)' },
-  { keywords: ['description', 'content', 'text'], schema: 'z.string().min(1).max(5000)' },
-  { keywords: ['code', 'slug', 'key'], schema: 'z.string().min(1).max(100)' },
-];
+const MAX_LINE_LENGTH = 100;
+/** Room kept on a line for what follows a schema: `.nullable().optional(),` */
+const SUFFIX_ROOM = 24;
 
-const NUMBER_RULES: Array<{ keywords: string[]; schema: string }> = [
-  { keywords: ['price', 'amount', 'cost'], schema: 'z.number().min(0).max(999999999)' },
-  { keywords: ['quantity', 'count'], schema: 'z.number().int().min(0).max(999999999)' },
-];
+const PRIMITIVE_SCHEMAS = new Map([
+  ['number', 'z.number()'],
+  ['boolean', 'z.boolean()'],
+  ['Date', 'z.date()'],
+  ['null', 'z.null()'],
+  ['unknown', 'z.unknown()'],
+  ['any', 'z.any()'],
+  ['true', 'z.literal(true)'],
+  ['false', 'z.literal(false)'],
+]);
 
+/**
+ * A string schema. The type file cannot say "this is an email", so the two
+ * unambiguous field names are the only ones that add a format check. No length
+ * limits are guessed: add those by hand.
+ */
 const stringSchema = (name: string): string => {
-  if (ID_NAME_REGEX.test(name)) {
-    return 'z.string().min(1).max(255)';
+  if (EMAIL_NAME_REGEX.test(name)) {
+    return 'z.string().email()';
   }
 
-  const lowerName = name.toLowerCase();
-  const rule = STRING_RULES.find(({ keywords }) => keywords.some(word => lowerName.includes(word)));
+  if (URL_NAME_REGEX.test(name)) {
+    return 'z.string().url()';
+  }
 
-  return rule?.schema ?? 'z.string().min(1).max(500)';
+  return 'z.string().min(1)';
 };
 
-const numberSchema = (name: string): string => {
-  if (name === 'page') {
-    return 'z.number().int().min(1).max(1000000)';
+/**
+ * Writes `open` + items + `close` on one line when it fits, otherwise one item per line.
+ * `indent` is the indentation of the line the schema starts on.
+ */
+const wrapItems = ({
+  open,
+  items,
+  close,
+  indent,
+}: {
+  open: string;
+  items: string[];
+  close: string;
+  indent: string;
+}): string => {
+  const oneLine = `${open}${items.join(', ')}${close}`;
+  const fits = indent.length + oneLine.length + SUFFIX_ROOM <= MAX_LINE_LENGTH;
+
+  if (fits && !oneLine.includes('\n')) {
+    return oneLine;
   }
 
-  if (name === 'limit') {
-    return 'z.number().int().min(1).max(100)';
-  }
-
-  if (name === 'age') {
-    return 'z.number().int().min(0).max(150)';
-  }
-
-  const lowerName = name.toLowerCase();
-  const rule = NUMBER_RULES.find(({ keywords }) => keywords.some(word => lowerName.includes(word)));
-
-  return rule?.schema ?? 'z.number().min(-999999999).max(999999999)';
+  return `${open}\n${items.map(item => `${indent}  ${item},`).join('\n')}\n${indent}${close}`;
 };
 
-const unionSchema = (name: string, members: string[]): string => {
-  const literals = members.map(member => STRING_LITERAL_REGEX.exec(member)?.[2]);
+const objectSchema = (body: string, indent: string): string => {
+  const { fields, complete } = parseObjectMembers(body);
 
-  if (literals.every(literal => literal !== undefined)) {
-    return `z.enum([${literals.map(literal => `'${literal}'`).join(', ')}])`;
+  if (!complete) {
+    return 'z.any()';
   }
 
-  const schemas = members.map(member =>
-    NUMBER_LITERAL_REGEX.test(member) ? `z.literal(${member})` : baseSchema(name, member)
+  if (fields.length === 0) {
+    return 'z.object({})';
+  }
+
+  const lines = fields.map(
+    field => `${indent}  ${field.name}: ${fieldSchema(field, `${indent}  `)},`
   );
 
-  return schemas.includes('z.any()') ? 'z.any()' : `z.union([${schemas.join(', ')}])`;
+  return `z.object({\n${lines.join('\n')}\n${indent}})`;
+};
+
+const arraySchema = (element: string, indent: string): string => {
+  const inner = toSchema({ name: '', rawType: element, indent: `${indent}  ` });
+
+  return inner.includes('\n') ? `z.array(\n${indent}  ${inner}\n${indent})` : `z.array(${inner})`;
+};
+
+const unionSchema = ({
+  name,
+  members,
+  indent,
+}: {
+  name: string;
+  members: string[];
+  indent: string;
+}): string => {
+  const defined = members.filter(member => member !== 'null');
+  const nullable = defined.length < members.length ? '.nullable()' : '';
+  const literals = defined.map(member => STRING_LITERAL_REGEX.exec(member)?.[2]);
+  const [only] = defined;
+
+  if (only === undefined) {
+    return 'z.null()';
+  }
+
+  if (defined.length === 1) {
+    return `${toSchema({ name, rawType: only, indent })}${nullable}`;
+  }
+
+  if (literals.every(literal => literal !== undefined)) {
+    const items = literals.map(literal => `'${literal}'`);
+
+    return `${wrapItems({ open: 'z.enum([', items, close: '])', indent })}${nullable}`;
+  }
+
+  // Union members sit one level deeper when the union is written over several lines
+  const items = defined.map(member =>
+    toSchema({ name: '', rawType: member, indent: `${indent}  ` })
+  );
+
+  if (items.includes('z.any()')) {
+    return 'z.any()';
+  }
+
+  return `${wrapItems({ open: 'z.union([', items, close: '])', indent })}${nullable}`;
 };
 
 /**
  * Converts a TypeScript type to a Zod schema. Types it cannot read become z.any().
  */
-const baseSchema = (name: string, rawType: string): string => {
-  const type = rawType.trim();
+const toSchema = ({
+  name,
+  rawType,
+  indent,
+}: {
+  name: string;
+  rawType: string;
+  indent: string;
+}): string => {
+  const trimmed = rawType.trim();
+  const type = unwrapBrackets(trimmed, '(', ')') ?? trimmed;
 
   // `string | string[]` is a union with an array member; `(string | number)[]` is an array
-  const element = type.slice(0, -2).trim();
-  const isArray =
-    type.endsWith('[]') && (!element.includes('|') || WRAPPING_PARENS_REGEX.test(element));
+  const members = splitTopLevel(type, ['|']);
 
-  if (isArray) {
-    return `z.array(${baseSchema('', element.replace(WRAPPING_PARENS_REGEX, '$1'))}).max(1000)`;
+  if (members.length > 1) {
+    return unionSchema({ name, members, indent });
   }
 
-  if (type.includes('|')) {
-    const members = type.split('|').map(member => member.trim());
-    const withoutNull = members.filter(member => member !== 'null');
-    const inner =
-      withoutNull.length === 1
-        ? baseSchema(name, withoutNull[0] ?? '')
-        : unionSchema(name, withoutNull);
+  // Intersections are not read: `A & B[]` is not an array
+  if (splitTopLevel(type, ['&']).length > 1) {
+    return 'z.any()';
+  }
 
-    return withoutNull.length < members.length ? `${inner}.nullable()` : inner;
+  if (type.endsWith('[]')) {
+    return arraySchema(type.slice(0, -2), indent);
+  }
+
+  const arrayElement = ARRAY_GENERIC_REGEX.exec(type)?.[1];
+
+  if (arrayElement !== undefined) {
+    return arraySchema(arrayElement, indent);
+  }
+
+  const [recordKey, recordValue, ...rest] = splitTopLevel(
+    RECORD_GENERIC_REGEX.exec(type)?.[1] ?? '',
+    [',']
+  );
+
+  if (recordKey === 'string' && recordValue !== undefined && rest.length === 0) {
+    return `z.record(z.string(), ${toSchema({ name: '', rawType: recordValue, indent })})`;
+  }
+
+  const objectBody = unwrapBrackets(type, '{', '}');
+
+  if (objectBody !== null) {
+    return objectSchema(objectBody, indent);
   }
 
   if (STRING_LITERAL_REGEX.test(type) || NUMBER_LITERAL_REGEX.test(type)) {
     return `z.literal(${type.replace(DOUBLE_QUOTE_REGEX, "'")})`;
   }
 
-  switch (type) {
-    case 'string':
-      return stringSchema(name);
-    case 'number':
-      return numberSchema(name);
-    case 'boolean':
-      return 'z.boolean()';
-    case 'Date':
-      return 'z.date()';
-    default:
-      return 'z.any()';
+  if (type === 'string') {
+    return stringSchema(name);
   }
+
+  return PRIMITIVE_SCHEMAS.get(type) ?? 'z.any()';
 };
 
-export const typeToZodSchema = (field: ParsedField): string => {
-  const schema = baseSchema(field.name, field.type);
+const fieldSchema = (field: ParsedField, indent: string): string => {
+  const schema = toSchema({ name: field.name, rawType: field.type, indent });
+
   return field.optional ? `${schema}.optional()` : schema;
 };
 
@@ -147,7 +236,7 @@ export const buildValidatorContent = ({
 }): string => {
   const schemaBody =
     fields.length > 0
-      ? `{\n${fields.map(field => `  ${field.name}: ${typeToZodSchema(field)},`).join('\n')}\n}`
+      ? `{\n${fields.map(field => `  ${field.name}: ${fieldSchema(field, '  ')},`).join('\n')}\n}`
       : '{}';
 
   return `import { z } from 'zod';

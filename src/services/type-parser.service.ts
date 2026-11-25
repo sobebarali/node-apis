@@ -8,11 +8,9 @@ import * as path from 'path';
 
 export interface ParsedField {
   name: string;
+  /** The type as written in the type file, on one line: `string[]`, `{ key: string }` */
   type: string;
   optional: boolean;
-  defaultValue?: string;
-  isNested?: boolean;
-  nestedFields?: ParsedField[];
 }
 
 export interface ParsedTypePayload {
@@ -22,6 +20,8 @@ export interface ParsedTypePayload {
   isEmpty?: boolean; // True if typePayload is empty (no fields)
   /** Literal codes declared in typeResultError, for example ['NOT_FOUND', 'INTERNAL_ERROR'] */
   errorCodes?: string[];
+  /** Members of typePayload that are not a plain `name: type` field and were left out */
+  unreadMembers?: string[];
 }
 
 const ERROR_TYPE_REGEX = /export\s+(?:type|interface)\s+typeResultError\s*(?:=\s*)?{([^}]*)}/;
@@ -42,60 +42,221 @@ export const parseErrorCodes = (content: string): string[] => {
   return Array.from(codeType.matchAll(QUOTED_LITERAL_REGEX), match => match[1] ?? '');
 };
 
+const OPENING_BRACKETS = '{[(<';
+const CLOSING_BRACKETS = '}])>';
+const QUOTES = '\'"`';
+const MEMBER_SEPARATORS = [';', ',', '\n'];
+const LINE_BREAK_AFTER_OPERATOR_REGEX = /([:|&])\s*\n\s*/g;
+const LINE_BREAK_BEFORE_OPERATOR_REGEX = /\s*\n\s*([|&])/g;
+const WHITESPACE_RUN_REGEX = /\s+/g;
+const MEMBER_REGEX = /^(?:readonly\s+)?(\w+)(\?)?\s*:\s*([\s\S]+)$/;
+const TYPE_PAYLOAD_REGEX = /export\s+(?:type|interface)\s+typePayload\s*(?:=\s*)?{/;
+const PAGINATION_FIELDS = ['page', 'limit', 'sortBy', 'sortOrder'];
+
 /**
- * Parses a typePayload interface from a TypeScript file
+ * Removes comments. A `//` or `/*` inside a string literal is not a comment.
+ */
+export const stripComments = (source: string): string => {
+  let result = '';
+  let quote = '';
+  let index = 0;
+
+  while (index < source.length) {
+    const char = source[index] ?? '';
+    const pair = source.slice(index, index + 2);
+
+    if (quote) {
+      quote = char === quote ? '' : quote;
+      result += char;
+      index += 1;
+    } else if (pair === '//') {
+      const lineEnd = source.indexOf('\n', index);
+      index = lineEnd === -1 ? source.length : lineEnd;
+    } else if (pair === '/*') {
+      const commentEnd = source.indexOf('*/', index + 2);
+      index = commentEnd === -1 ? source.length : commentEnd + 2;
+    } else {
+      quote = QUOTES.includes(char) ? char : '';
+      result += char;
+      index += 1;
+    }
+  }
+
+  return result;
+};
+
+/**
+ * Splits text at the separators that sit outside brackets and string literals.
+ * `a | { b: 'x' | 'y' }` split at `|` gives two parts, not three.
+ */
+export const splitTopLevel = (source: string, separators: string[]): string[] => {
+  const parts: string[] = [];
+  let current = '';
+  let depth = 0;
+  let quote = '';
+
+  for (const [index, char] of Array.from(source).entries()) {
+    if (quote) {
+      quote = char === quote ? '' : quote;
+      current += char;
+    } else if (QUOTES.includes(char)) {
+      quote = char;
+      current += char;
+    } else if (depth === 0 && separators.includes(char)) {
+      parts.push(current);
+      current = '';
+    } else {
+      // The `>` of an arrow (`=>`) does not close a bracket
+      const closesBracket = CLOSING_BRACKETS.includes(char) && source[index - 1] !== '=';
+
+      if (OPENING_BRACKETS.includes(char)) {
+        depth += 1;
+      } else if (closesBracket) {
+        depth -= 1;
+      }
+
+      current += char;
+    }
+  }
+
+  parts.push(current);
+
+  return parts.map(part => part.trim()).filter(part => part.length > 0);
+};
+
+/**
+ * Returns the text inside `open` and `close` when they wrap the whole type:
+ * `{ a: string }` gives `a: string`, `{ a: string } & { b: string }` gives null.
+ */
+export const unwrapBrackets = (type: string, open: string, close: string): string | null => {
+  if (!(type.startsWith(open) && type.endsWith(close))) {
+    return null;
+  }
+
+  const chars = Array.from(type);
+  let depth = 0;
+  let quote = '';
+
+  for (const [index, char] of chars.entries()) {
+    if (quote) {
+      quote = char === quote ? '' : quote;
+    } else if (QUOTES.includes(char)) {
+      quote = char;
+    } else if (char === open) {
+      depth += 1;
+    } else if (char === close) {
+      depth -= 1;
+    }
+
+    // The first bracket closed before the end, so it does not wrap the whole type
+    if (depth === 0 && index < chars.length - 1) {
+      return null;
+    }
+  }
+
+  return type.slice(1, -1).trim();
+};
+
+/**
+ * Parses the members of an object type body (the text between its braces).
+ * `unread` lists the members that are not a plain `name: type` field.
+ */
+export const parseObjectMembers = (
+  body: string
+): { fields: ParsedField[]; complete: boolean; unread: string[] } => {
+  const joined = stripComments(body)
+    .replace(LINE_BREAK_AFTER_OPERATOR_REGEX, '$1 ')
+    .replace(LINE_BREAK_BEFORE_OPERATOR_REGEX, ' $1');
+
+  const fields: ParsedField[] = [];
+  const unread: string[] = [];
+
+  for (const member of splitTopLevel(joined, MEMBER_SEPARATORS)) {
+    const match = MEMBER_REGEX.exec(member);
+    const name = match?.[1];
+    const rawType = match?.[3];
+
+    if (name === undefined || rawType === undefined) {
+      unread.push(member.replace(WHITESPACE_RUN_REGEX, ' '));
+    } else {
+      // `name: string | undefined` is treated like `name?: string`
+      const members = splitTopLevel(rawType.replace(WHITESPACE_RUN_REGEX, ' '), ['|']);
+      const defined = members.filter(part => part !== 'undefined');
+
+      fields.push({
+        name,
+        type: defined.join(' | '),
+        optional: match?.[2] === '?' || defined.length < members.length,
+      });
+    }
+  }
+
+  return { fields, complete: unread.length === 0, unread };
+};
+
+/**
+ * Finds the body of `typePayload` (the text between its braces)
+ */
+const findTypePayloadBody = (content: string): string | null => {
+  const definition = TYPE_PAYLOAD_REGEX.exec(content);
+
+  if (!definition) {
+    return null;
+  }
+
+  const start = definition.index + definition[0].length;
+  let depth = 1;
+  let quote = '';
+  let end = start;
+
+  // Braces inside string literals do not count
+  while (end < content.length && depth > 0) {
+    const char = content[end] ?? '';
+
+    if (quote) {
+      quote = char === quote ? '' : quote;
+    } else if (QUOTES.includes(char)) {
+      quote = char;
+    } else if (char === '{') {
+      depth += 1;
+    } else if (char === '}') {
+      depth -= 1;
+    }
+
+    end += 1;
+  }
+
+  return depth === 0 ? content.slice(start, end - 1) : null;
+};
+
+/**
+ * Parses the typePayload of a type file
  */
 export const parseTypePayload = async (filePath: string): Promise<ParsedTypePayload> => {
   try {
     const content = await fs.promises.readFile(filePath, 'utf-8');
+    const body = findTypePayloadBody(stripComments(content));
 
-    // Find the typePayload definition (supports `type` or `interface` syntax with flexible spacing)
-    const typeDefinitionRegex = /export\s+(?:type|interface)\s+typePayload\s*(?:=\s*)?{/i;
-    const definitionMatch = typeDefinitionRegex.exec(content);
-    if (!definitionMatch) {
-      return { fields: [], hasId: false, hasPagination: false };
+    // `typePayload = Record<string, never>` has no body, but its error codes still count
+    if (body === null) {
+      return {
+        fields: [],
+        hasId: false,
+        hasPagination: false,
+        errorCodes: parseErrorCodes(content),
+      };
     }
 
-    // Find the position of the opening brace for the type/interface body
-    const startBrace = content.indexOf('{', definitionMatch.index);
-    if (startBrace === -1) {
-      return { fields: [], hasId: false, hasPagination: false };
-    }
-    let braceCount = 1;
-    let endBrace = startBrace + 1;
+    const { fields, unread } = parseObjectMembers(body);
 
-    while (endBrace < content.length && braceCount > 0) {
-      if (content[endBrace] === '{') braceCount++;
-      if (content[endBrace] === '}') braceCount--;
-      endBrace++;
-    }
-
-    if (braceCount !== 0) {
-      return { fields: [], hasId: false, hasPagination: false };
-    }
-
-    const interfaceBody = content.substring(startBrace + 1, endBrace - 1);
-    const fields: ParsedField[] = [];
-    let hasId = false;
-    let hasPagination = false;
-
-    // Parse fields with support for nested objects
-    const parsedFields = parseInterfaceFields(interfaceBody);
-
-    for (const field of parsedFields) {
-      fields.push(field);
-
-      // Check for special fields
-      if (field.name === 'id') hasId = true;
-      if (['page', 'limit', 'sortBy', 'sortOrder', 'sort_by', 'sort_order'].includes(field.name)) {
-        hasPagination = true;
-      }
-    }
-
-    // Check if typePayload is empty (no fields defined)
-    const isEmpty = fields.length === 0;
-
-    return { fields, hasId, hasPagination, isEmpty, errorCodes: parseErrorCodes(content) };
+    return {
+      fields,
+      hasId: fields.some(field => field.name === 'id'),
+      hasPagination: fields.some(field => PAGINATION_FIELDS.includes(field.name)),
+      isEmpty: fields.length === 0,
+      errorCodes: parseErrorCodes(content),
+      ...(unread.length > 0 && { unreadMembers: unread }),
+    };
   } catch (error) {
     console.error(`Error parsing type file ${filePath}:`, error);
     return { fields: [], hasId: false, hasPagination: false, isEmpty: true };
@@ -126,122 +287,6 @@ export const parseModuleTypes = async (
   }
 
   return result;
-};
-
-/**
- * Parses interface fields with support for nested objects
- */
-const parseInterfaceFields = (interfaceBody: string): ParsedField[] => {
-  const fields: ParsedField[] = [];
-  let i = 0;
-  const lines = interfaceBody.split('\n');
-
-  while (i < lines.length) {
-    const line = lines[i].trim();
-
-    // Skip empty lines and comments
-    if (!line || line.startsWith('//') || line.startsWith('*')) {
-      i++;
-      continue;
-    }
-
-    // Check if this line starts a nested object
-    if (line.includes(': {')) {
-      const field = parseNestedObjectField(lines, i);
-      if (field) {
-        fields.push(field.field);
-        i = field.nextIndex;
-        continue;
-      }
-    }
-
-    // Parse regular field
-    const fieldMatch = line.match(/^(\w+)(\?)?:\s*([^;]+);?/);
-    if (fieldMatch) {
-      const [, name, optionalMarker, type] = fieldMatch;
-
-      // Extract default value if present
-      let defaultValue: string | undefined;
-      const defaultMatch = type.match(/^([^=]+)\s*=\s*(.+)$/);
-      let cleanType = type.trim();
-
-      if (defaultMatch) {
-        cleanType = defaultMatch[1].trim();
-        defaultValue = defaultMatch[2].trim();
-      }
-
-      // Check if field is optional using different syntaxes
-      const isOptionalMarker = !!optionalMarker;
-      const isUnionWithUndefined =
-        cleanType.includes('| undefined') || cleanType.includes('|undefined');
-      const hasDefaultValue = !!defaultValue;
-      const isOptional = isOptionalMarker || isUnionWithUndefined || hasDefaultValue;
-
-      // Clean up union with undefined syntax
-      if (isUnionWithUndefined) {
-        cleanType = cleanType.replace(/\s*\|\s*undefined/g, '').trim();
-      }
-
-      fields.push({
-        name,
-        type: cleanType,
-        optional: isOptional,
-        ...(defaultValue && { defaultValue }),
-      });
-    }
-
-    i++;
-  }
-
-  return fields;
-};
-
-/**
- * Parses a nested object field starting from a specific line
- */
-const parseNestedObjectField = (
-  lines: string[],
-  startIndex: number
-): { field: ParsedField; nextIndex: number } | null => {
-  const startLine = lines[startIndex].trim();
-  const fieldMatch = startLine.match(/^(\w+)(\?)?:\s*\{/);
-
-  if (!fieldMatch) return null;
-
-  const [, name, optionalMarker] = fieldMatch;
-  const isOptional = !!optionalMarker;
-
-  // Find the closing brace
-  let braceCount = 1;
-  let endIndex = startIndex + 1;
-  const nestedLines: string[] = [];
-
-  while (endIndex < lines.length && braceCount > 0) {
-    const line = lines[endIndex].trim();
-
-    if (line.includes('{')) braceCount++;
-    if (line.includes('}')) braceCount--;
-
-    if (braceCount > 0) {
-      nestedLines.push(line);
-    }
-
-    endIndex++;
-  }
-
-  // Parse nested fields
-  const nestedFields = parseInterfaceFields(nestedLines.join('\n'));
-
-  return {
-    field: {
-      name,
-      type: 'object',
-      optional: isOptional,
-      isNested: true,
-      nestedFields,
-    },
-    nextIndex: endIndex,
-  };
 };
 
 /**

@@ -66,7 +66,7 @@ A services module has two folders instead: `types/` and `services/`.
 
 ## Workflow
 
-1. **Generate.** `node-apis --name user --crud` writes the type files and a first version of the code.
+1. **Generate.** `node-apis --name user --crud` writes the type files and a first version of the code. New type files hold only the ID and pagination fields an operation needs; the rest is yours to add.
 2. **Edit the types.** Open `types/*.ts` and describe the real payload and result:
 
    ```ts
@@ -108,10 +108,7 @@ A code is only mapped when the type file's `typeResultError` declares it. The re
 export default async function getUserHandler({
   id,
   requestId,
-}: {
-  id: string;
-  requestId: string;
-}): Promise<typeResult> {
+}: typePayload & { requestId: string }): Promise<typeResult> {
   try {
     const data = await get({ id });
     return { data, error: null };
@@ -140,7 +137,7 @@ const { data, error } = await createUserHandler({ ...parsed.data, requestId });
 Repositories, services and `--no-repository` handlers are generated as stubs that throw `... is not implemented` until you write them, so made-up data can never reach a caller. Every repository takes one object:
 
 ```ts
-export default async function get({ id }: { id: string }): Promise<typeResultData> {
+export default async function get({ id }: Pick<typePayload, 'id'>): Promise<typeResultData> {
   const user = await db.user.findUnique({ where: { id } });
 
   if (!user) {
@@ -151,7 +148,9 @@ export default async function get({ id }: { id: string }): Promise<typeResultDat
 }
 ```
 
-Each validator ends with `satisfies z.ZodType<typePayload>`, so a validator that no longer matches its type file stops compiling.
+Handlers, services and repositories take their parameter type from the type file, and each validator ends with `satisfies z.ZodType<typePayload>`. Code that no longer matches its type file stops compiling.
+
+Validators check shape, not limits. A string becomes `z.string().min(1)`, a number `z.number()`, and nested objects, arrays, unions and `Record<string, T>` become the matching Zod schema. The only rule read from a field name is the format of `email` / `...Email` and `url` / `...Url`. Add limits such as `.max(255)` by hand; an edited validator is kept on `--force` and still has to satisfy the type.
 
 ## Configuration
 
@@ -176,9 +175,11 @@ The generated code is already formatted (single quotes, 2 spaces, 100 columns). 
 
 ## Limits
 
-- Nested object fields in `typePayload` are validated as `z.any()` and typed as `object` in handlers. Tighten those by hand.
+- Types the generator cannot read (named types, intersections, generics other than `Array` and `Record<string, T>`) are validated as `z.any()`. Tighten those by hand.
 - `typePayload` must be declared inline in the type file; imported or aliased types are not followed.
-- With `exactOptionalPropertyTypes` enabled, validators with optional fields do not compile (Zod's `.optional()` allows `undefined`).
+- With `exactOptionalPropertyTypes` enabled, validators and handlers with optional fields do not compile (Zod's `.optional()` allows `undefined`, and handlers pass optional fields on as they are).
+- Members of `typePayload` that are not a plain `name: type` field (quoted keys, index signatures, methods) are left out of the generated code, with a warning.
+- Plurals follow the regular rules (`posts`, `categories`, `addresses`); irregular nouns are not known.
 
 ## License
 

@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "files": {
+    "handlers/archive.post.ts": "cb8ec7ea07df6091",
+    "handlers/create.post.ts": "321edcd2274bce48",
+    "handlers/delete.post.ts": "0061aa37f44b57f0",
+    "handlers/get.post.ts": "1ade490df07e013b",
+    "handlers/list.post.ts": "21721b47e16b29f1",
+    "handlers/publish.post.ts": "f76cdc2471507c7e",
+    "handlers/update.post.ts": "7ab15f26d0464bcb",
+    "repository/archive.post.ts": "da5794c5a5e6256c",
+    "repository/create.post.ts": "8664f9504185bdd1",
+    "repository/delete.post.ts": "fce5d2c87a6f46ef",
+    "repository/get.post.ts": "73d6b0a1a766dedf",
+    "repository/list.post.ts": "e787f93af870b200",
+    "repository/publish.post.ts": "c8f109022284e119",
+    "repository/update.post.ts": "e0999798127e1397",
+    "validators/archive.post.ts": "380f8f6d05c4a7b0",
+    "validators/create.post.ts": "5df443f1f9d2a9df",
+    "validators/delete.post.ts": "6b7c971e349d7709",
+    "validators/get.post.ts": "e9cb541e30799f07",
+    "validators/list.post.ts": "a15dc9ccf8a06a1c",
+    "validators/publish.post.ts": "e563e1cbb9babbcd",
+    "validators/update.post.ts": "ba68cf0d9241db10"
+  }
+}

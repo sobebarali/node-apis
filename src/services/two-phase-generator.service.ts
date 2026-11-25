@@ -234,6 +234,17 @@ export const generateCodeWithParsedTypes = async ({
   const operations = getOperations(apiType);
   const parsedTypes = await parseModuleTypes(modulePath);
 
+  // A member the parser cannot read is left out of the generated code, so say so
+  for (const operation of operations) {
+    const unread = parsedTypes[operation]?.unreadMembers ?? [];
+
+    if (unread.length > 0) {
+      console.warn(
+        `⚠️  types/${operation}.${fileModuleName}.ts: left out of the generated code, add by hand: ${unread.join('; ')}`
+      );
+    }
+  }
+
   // An empty `typePayload = {}` accepts anything, so make it explicit
   await Promise.all(
     operations

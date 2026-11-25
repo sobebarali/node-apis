@@ -4,7 +4,7 @@
 
 import { ParsedTypePayload } from '../services/type-parser.service';
 import { getModuleNaming } from '../shared/utils/naming.utils';
-import { buildFieldTypes, buildNotImplemented } from './typed-crud.handlers';
+import { buildNotImplemented, buildSignature } from './typed-crud.handlers';
 
 /**
  * Gets the list of service operation file names for a module
@@ -43,16 +43,15 @@ export type typeResultData = {
 };
 
 export type typeResultError = {
-  code: string;
+  code: 'INTERNAL_ERROR';
   message: string;
-  statusCode: number;
+  statusCode: 500;
   requestId: string;
-  details?: unknown;
 };
 
 export type typeResult = {
-  data: typeResultData | null;
-  error: typeResultError | null;
+  data: null | typeResultData;
+  error: null | typeResultError;
 };
 `;
 };
@@ -74,16 +73,19 @@ export const generateServiceContent = ({
   const functionName = `${serviceName}${naming.class}`;
   const logLabel = `${serviceName.toUpperCase()} ${naming.constant}`;
 
-  const parameterNames = [...fields.map(field => field.name), 'requestId'];
-  const fieldTypes = [buildFieldTypes(fields), '  requestId: string;'].filter(Boolean).join('\n');
+  const payloadNames = fields.map(field => field.name).filter(name => name !== 'requestId');
+  const hasPayload = fields.length > 0;
+  const signature = buildSignature({
+    start: `export const ${functionName} = async (`,
+    names: [...payloadNames, 'requestId'],
+    parameterType: hasPayload ? 'typePayload & { requestId: string }' : '{ requestId: string }',
+    end: '): Promise<typeResult> => {',
+  });
+  const typeImports = hasPayload ? 'typePayload, typeResult' : 'typeResult';
 
-  return `import type { typeResult } from '../types/${serviceName}.${naming.file}';
+  return `import type { ${typeImports} } from '../types/${serviceName}.${naming.file}';
 
-export const ${functionName} = async ({
-${parameterNames.map(name => `  ${name},`).join('\n')}
-}: {
-${fieldTypes}
-}): Promise<typeResult> => {
+${signature}
   try {
     // TODO: Call the third-party API here and return { data, error: null }
 ${buildNotImplemented({ label: `${logLabel} service`, fields, indent: '    ' })}

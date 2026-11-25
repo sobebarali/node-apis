@@ -54,6 +54,28 @@ export const toConstantCase = (str: string): string => {
   return toSnakeCase(str).toUpperCase();
 };
 
+const CONSONANT_Y_REGEX = /[^aeiou]y$/i;
+const SIBILANT_ENDING_REGEX = /(ss|x|z|ch|sh)$/i;
+const SINGLE_S_ENDING_REGEX = /[^s]s$/i;
+
+/**
+ * Makes a name plural with the regular English rules. A name that already
+ * ends in a single 's' is taken as plural and left alone.
+ * Examples: 'post' -> 'posts', 'category' -> 'categories', 'address' -> 'addresses',
+ * 'settings' -> 'settings'
+ */
+export const pluralize = (name: string): string => {
+  if (SINGLE_S_ENDING_REGEX.test(name)) {
+    return name;
+  }
+
+  if (CONSONANT_Y_REGEX.test(name)) {
+    return `${name.slice(0, -1)}ies`;
+  }
+
+  return SIBILANT_ENDING_REGEX.test(name) ? `${name}es` : `${name}s`;
+};
+
 /**
  * Comprehensive naming transformations for a module name
  */

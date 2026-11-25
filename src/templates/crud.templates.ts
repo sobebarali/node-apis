@@ -57,20 +57,12 @@ const generateCreateContent = (
   moduleName: string
 ): string => {
   return `export type typePayload = {
-  name: string;
-  description?: string;
-  status?: string;
-  // Add more ${moduleName} creation fields here
+  // Add the fields needed to create a ${moduleName}
 };
 
 export type typeResultData = {
   ${moduleName}Id: string;
-  name: string;
-  description?: string;
-  status?: string;
-  createdAt: string;
-  updatedAt: string;
-  // Add more ${moduleName} specific fields here
+  // Add the ${moduleName} fields you return
 };
 
 export type typeResultError = {
@@ -102,12 +94,7 @@ const generateGetContent = (
 
 export type typeResultData = {
   ${moduleName}Id: string;
-  name: string;
-  description?: string;
-  status?: string;
-  createdAt: string;
-  updatedAt: string;
-  // Add more ${moduleName} specific fields here
+  // Add the ${moduleName} fields you return
 };
 
 export type typeResultError = {
@@ -135,22 +122,13 @@ const generateListContent = (
   return `export type typePayload = {
   page?: number;
   limit?: number;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-  search?: string;
-  status?: string;
-  // Add more ${moduleName} specific filters here
+  // Add the ${moduleName} filters and sorting here
 };
 
 export type typeResultData = {
   items: {
     ${moduleName}Id: string;
-    name: string;
-    description?: string;
-    status?: string;
-    createdAt: string;
-    updatedAt: string;
-    // Add more ${moduleName} specific fields here
+    // Add the ${moduleName} fields you return
   }[];
   pagination: {
     page: number;
@@ -187,20 +165,12 @@ const generateUpdateContent = (
 ): string => {
   return `export type typePayload = {
   ${moduleName}Id: string;
-  name?: string;
-  description?: string;
-  status?: string;
-  // Add more ${moduleName} update fields here
+  // Add the ${moduleName} fields that can be updated, each optional
 };
 
 export type typeResultData = {
   ${moduleName}Id: string;
-  name: string;
-  description?: string;
-  status?: string;
-  createdAt: string;
-  updatedAt: string;
-  // Add more ${moduleName} specific fields here
+  // Add the ${moduleName} fields you return
 };
 
 export type typeResultError = {

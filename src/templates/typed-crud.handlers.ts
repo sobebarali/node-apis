@@ -1,6 +1,6 @@
 import { ParsedField, ParsedTypePayload } from '../services/type-parser.service';
 
-import { getModuleNaming } from '../shared/utils/naming.utils';
+import { getModuleNaming, pluralize } from '../shared/utils/naming.utils';
 
 /**
  * Finds the ID field in the parsed type: '${moduleName}Id', then 'id'.
@@ -31,22 +31,6 @@ export const getCrudHandlerFileNames = ({ moduleName }: { moduleName: string }):
   ];
 };
 
-/**
- * Builds a multi-line object literal that only includes optional fields when
- * they are defined. `indent` is the indentation of the line the literal starts on.
- */
-export const buildPayloadObject = (fields: ParsedField[], indent = '    '): string => {
-  if (fields.length === 0) {
-    return '{}';
-  }
-
-  const entries = fields.map(field =>
-    field.optional ? `...(${field.name} !== undefined && { ${field.name} })` : field.name
-  );
-
-  return `{\n${entries.map(entry => `${indent}  ${entry},`).join('\n')}\n${indent}}`;
-};
-
 const MAX_LINE_LENGTH = 100;
 
 /** Picks the first candidate that no payload field is already named */
@@ -55,9 +39,36 @@ const pickLocalName = (fields: ParsedField[], candidates: string[]): string =>
   `${candidates[0]}Value`;
 
 /**
+ * Builds a function signature with one destructured object parameter. It stays
+ * on one line when it fits, the way a formatter would write it.
+ */
+export const buildSignature = ({
+  start,
+  names,
+  parameterType,
+  end,
+}: {
+  /** Everything before the parameter: `export default async function create(` */
+  start: string;
+  names: string[];
+  parameterType: string;
+  /** Everything after the parameter type: `): Promise<typeResult> {` */
+  end: string;
+}): string => {
+  if (names.length === 0) {
+    return `${start}${end}`;
+  }
+
+  const oneLine = `${start}{ ${names.join(', ')} }: ${parameterType}${end}`;
+
+  return oneLine.length <= MAX_LINE_LENGTH
+    ? oneLine
+    : `${start}{\n${names.map(name => `  ${name},`).join('\n')}\n}: ${parameterType}${end}`;
+};
+
+/**
  * Builds the repository call and the success return. The call stays on one line
- * when it fits, the way a formatter would write it. A payload without fields
- * calls the function without arguments.
+ * when it fits. A payload without fields calls the function without arguments.
  */
 export const buildInvocation = (functionName: string, fields: ParsedField[]): string => {
   if (fields.length === 0) {
@@ -68,25 +79,20 @@ export const buildInvocation = (functionName: string, fields: ParsedField[]): st
 
   const local = pickLocalName(fields, ['data', 'result', 'output']);
   const returned = local === 'data' ? 'data' : `data: ${local}`;
-
-  const entries = fields.map(field =>
-    field.optional ? `...(${field.name} !== undefined && { ${field.name} })` : field.name
-  );
-  const oneLine = `    const ${local} = await ${functionName}({ ${entries.join(', ')} });`;
+  const names = fields.map(field => field.name);
+  const oneLine = `    const ${local} = await ${functionName}({ ${names.join(', ')} });`;
 
   const call =
     oneLine.length <= MAX_LINE_LENGTH
       ? oneLine
-      : `    const ${local} = await ${functionName}(${buildPayloadObject(fields)});`;
+      : `    const ${local} = await ${functionName}({
+${names.map(name => `      ${name},`).join('\n')}
+    });`;
 
   return `${call}
 
     return { ${returned}, error: null };`;
 };
-
-/** Lines of a parameter type: `  name?: type;` */
-export const buildFieldTypes = (fields: ParsedField[]): string =>
-  fields.map(field => `  ${field.name}${field.optional ? '?' : ''}: ${field.type};`).join('\n');
 
 /**
  * Builds the body of code that is not implemented yet. It fails loudly instead
@@ -161,8 +167,17 @@ export const buildHandlerContent = ({
 }): string => {
   const usesRepository = repositoryImportName !== undefined;
   const destructured = usesRepository ? usedFields : fields;
-  const parameterNames = [...destructured.map(field => field.name), 'requestId'];
-  const fieldTypes = [buildFieldTypes(fields), '  requestId: string;'].filter(Boolean).join('\n');
+  const payloadNames = destructured.map(field => field.name).filter(name => name !== 'requestId');
+  const hasPayload = fields.length > 0;
+
+  // The parameter type comes from the type file, so a handler cannot drift from it
+  const signature = buildSignature({
+    start: `export default async function ${functionName}(`,
+    names: [...payloadNames, 'requestId'],
+    parameterType: hasPayload ? 'typePayload & { requestId: string }' : '{ requestId: string }',
+    end: '): Promise<typeResult> {',
+  });
+  const typeImports = hasPayload ? 'typePayload, typeResult' : 'typeResult';
 
   const repositoryImport = usesRepository
     ? `import ${repositoryImportName} from '../repository/${typesFile}';\n`
@@ -193,13 +208,9 @@ ${buildNotImplemented({ label: `${logLabel} handler`, fields, indent: '    ' })}
         .join('')
     : '';
 
-  return `${repositoryImport}import type { typeResult } from '../types/${typesFile}';
+  return `${repositoryImport}import type { ${typeImports} } from '../types/${typesFile}';
 
-export default async function ${functionName}({
-${parameterNames.map(name => `  ${name},`).join('\n')}
-}: {
-${fieldTypes}
-}): Promise<typeResult> {
+${signature}
   try {
 ${businessLogic}
   } catch (error) {
@@ -244,9 +255,9 @@ export const generateCrudHandlerContent = ({
 
   return buildHandlerContent({
     typesFile: `${operation}.${naming.file}`,
-    functionName: isList ? `list${naming.class}sHandler` : `${operation}${naming.class}Handler`,
+    functionName: `${operation}${isList ? pluralize(naming.class) : naming.class}Handler`,
     logLabel: `${operation.toUpperCase()} ${naming.constant}`,
-    failureMessage: `Failed to ${operation} ${naming.variable}${isList ? 's' : ''}`,
+    failureMessage: `Failed to ${operation} ${isList ? pluralize(naming.variable) : naming.variable}`,
     subject: naming.class,
     fields,
     ...(readsOnlyId && { usedFields: fields.filter(f => f.name === idField) }),

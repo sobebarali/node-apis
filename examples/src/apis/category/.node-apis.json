@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "files": {
+    "handlers/create.category.ts": "abe4123e9775c6cb",
+    "handlers/delete.category.ts": "da669ee1990dd3aa",
+    "handlers/get.category.ts": "b13104f8c634a346",
+    "handlers/list.category.ts": "14c2d79966537360",
+    "handlers/reorder.category.ts": "245486a3e853a0bb",
+    "handlers/update.category.ts": "37e36e376a275729",
+    "repository/create.category.ts": "6ee5aff4d0147e29",
+    "repository/delete.category.ts": "4217ccfe29f66d45",
+    "repository/get.category.ts": "69754687e0fc08ed",
+    "repository/list.category.ts": "8c1b49457ffd6952",
+    "repository/reorder.category.ts": "87a3f316fbfbdd77",
+    "repository/update.category.ts": "8a22899cfc905eba",
+    "validators/create.category.ts": "b806fb01997d4842",
+    "validators/delete.category.ts": "0caf2cbb29bcf1d0",
+    "validators/get.category.ts": "3ab2a1077b178d63",
+    "validators/list.category.ts": "2118392fb8dd4e50",
+    "validators/reorder.category.ts": "e429a4fe886fa3a7",
+    "validators/update.category.ts": "f997a31895d384ef"
+  }
+}

@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.2.0] - 2026-11-25
+
+### Changed
+
+- Handlers, services and repositories take their parameter type from the type file (`typePayload & { requestId: string }`, `typePayload`, `Pick<typePayload, 'id'>`) instead of repeating every field, so generated code cannot drift from its type
+- Handlers pass optional fields to the repository as they are (`create({ title, tags })`) instead of `...(tags !== undefined && { tags })`
+- Validators no longer guess limits from field names. A string is `z.string().min(1)`, a number is `z.number()`, an array has no maximum. Only fields named `email` / `...Email` and `url` / `...Url` add a format check. Add your own limits by hand
+- Nested object types, arrays of objects, `Array<T>` and `Record<string, T>` in `typePayload` become real Zod schemas instead of `z.any()`
+- New CRUD and custom type files start without placeholder fields (`name`, `description`, `status`): only the ID and pagination fields the operation needs
+- Service type files use the handler envelope: a code union and `null | typeResultData`
+- The list handler is named with a real plural (`listCategoriesHandler`, `listAddressesHandler`). A name that already ends in a single `s` is left alone (`listSettingsHandler`). Regenerating an existing module can rename its list handler, so update the import in your router
+- A `typePayload` member the generator cannot read (a quoted key, an index signature, a method) is now reported with a warning instead of being left out silently
+
+### Fixed
+
+- A one-line nested object (`meta: { key: string };`) no longer hides the fields declared after it
+- A union inside an object or array type is no longer split as if it were the field's own union
+- `//` or a brace inside a string literal type no longer breaks the parsing of `typePayload`
+- An empty payload (`Record<string, never>`) no longer drops the `NOT_FOUND` / `DUPLICATE_ENTRY` mapping on `--force`
+
 ## [4.1.0] - 2026-11-25
 
 ### Changed

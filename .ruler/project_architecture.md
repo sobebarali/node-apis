@@ -83,5 +83,8 @@ Handlers do not throw. A repository error named `NotFoundError` maps to `NOT_FOU
 - Repositories, services and `--no-repository` handlers are stubs that throw "not implemented"; they never return made-up data
 - Every repository takes one object, never positional parameters
 - Field names are camelCase (`createdAt`, `sortBy`, `pagination.totalCount`)
+- Parameter types come from the type file (`typePayload & { requestId: string }`, `typePayload`, `Pick<typePayload, 'id'>`); fields are never re-declared
 - Validators end with `satisfies z.ZodType<typePayload>` and are never cast
+- Validators check shape only: no limits guessed from field names, except the format of `email` and `url` fields
+- New type files hold no placeholder fields, only the ID and pagination fields the operation needs
 - Templates emit formatted code (single quotes, 2 spaces, 100 columns) without relying on Prettier
