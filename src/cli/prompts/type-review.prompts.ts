@@ -21,6 +21,9 @@ export const promptTypeReview = async (
     console.log(
       '   Add your specific fields (name, description, etc.) to each typePayload interface.'
     );
+    console.log(
+      '   In a CRUD module, also describe the entity once in the file named after the module.'
+    );
     console.log('\n💡 Example:');
     console.log('   export type typePayload = {');
     console.log('     name: string;');

@@ -75,10 +75,11 @@ src/
 ```
 <apisDir>/                         # default: src/apis
 └── {module-name}/
-    ├── types/                     # operation.moduleName.ts
+    ├── types/                     # operation.moduleName.ts, plus moduleName.ts (the entity, CRUD only)
     ├── validators/                # operation.moduleName.ts
     ├── handlers/                  # operation.moduleName.ts
-    └── repository/                # operation.moduleName.ts (skipped with --no-repository)
+    └── repository/                # operation.moduleName.ts (skipped with --no-repository);
+                                   # moduleName.ts is hand-written shared data access
 ```
 
 A services module contains `types/` and `services/` only.

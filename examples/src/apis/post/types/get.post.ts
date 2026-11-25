@@ -1,17 +1,10 @@
+import type { typePost } from './post';
+
 export type typePayload = {
   postId: string;
 };
 
-export type typeResultData = {
-  postId: string;
-  title: string;
-  content: string;
-  authorId: string;
-  tags?: string[];
-  status: 'draft' | 'published' | 'archived';
-  createdAt: string;
-  updatedAt: string;
-};
+export type typeResultData = typePost;
 
 export type typeResultError = {
   code: 'NOT_FOUND' | 'INTERNAL_ERROR';

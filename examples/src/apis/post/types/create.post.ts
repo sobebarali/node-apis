@@ -1,3 +1,5 @@
+import type { typePost } from './post';
+
 export type typePayload = {
   title: string;
   content: string;
@@ -5,16 +7,7 @@ export type typePayload = {
   tags?: string[];
 };
 
-export type typeResultData = {
-  postId: string;
-  title: string;
-  content: string;
-  authorId: string;
-  tags?: string[];
-  status: 'draft' | 'published' | 'archived';
-  createdAt: string;
-  updatedAt: string;
-};
+export type typeResultData = typePost;
 
 export type typeResultError = {
   code: 'VALIDATION_ERROR' | 'DUPLICATE_ENTRY' | 'INTERNAL_ERROR';

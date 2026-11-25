@@ -23,7 +23,7 @@ The following template structures are PROTECTED and must NEVER be changed unless
 - `src/templates/typed-*.ts` - Handler, validator and repository templates
 
 ### 🔒 Protected Template Patterns:
-- **File naming conventions**: `operation.moduleName.ts` format
+- **File naming conventions**: `operation.moduleName.ts` per operation; `moduleName.ts` for what the operations share
 - **Directory structures**: Current folder organization in generated APIs
 - **Result envelope**: handlers and services return `{ data, error }` and take `requestId`
 - **Framework agnostic output**: generated code never imports a web framework or router
@@ -75,20 +75,24 @@ The following template structures are PROTECTED and must NEVER be changed unless
 Generated files follow specific patterns that must be preserved:
 
 - **Type files**: `operation.moduleName.ts` in `types/` (e.g., `create.user.ts`, `get.product.ts`)
+- **Entity file**: `moduleName.ts` in `types/` (e.g., `user.ts` exporting `typeUser`), CRUD modules only
 - **Validator files**: `operation.moduleName.ts` in `validators/`
 - **Handler files**: `operation.moduleName.ts` in `handlers/`
 - **Repository files**: `operation.moduleName.ts` in `repository/`
 - **Service files**: `operation.moduleName.ts` in `services/`
+- **Shared repository file**: `moduleName.ts` in `repository/`, written by hand, never generated
+
+A file named after the module alone holds what the operations share.
 
 ### Generated Directory Structure
 
 ```
 <apisDir>/                # default: src/apis
 └── {module-name}/
-    ├── types/
+    ├── types/            # operation files, plus moduleName.ts (the entity, CRUD only)
     ├── validators/
     ├── handlers/
-    └── repository/       # skipped with --no-repository
+    └── repository/       # skipped with --no-repository; moduleName.ts is hand-written
 ```
 
 A services module contains `types/` and `services/` only.

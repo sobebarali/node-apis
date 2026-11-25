@@ -3,6 +3,10 @@ import type { typePayload } from '../types/update.category';
 
 export const payloadSchema = z.object({
   categoryId: z.string().min(1),
+  name: z.string().min(1).optional(),
+  slug: z.string().min(1).optional(),
+  parentId: z.string().min(1).nullable().optional(),
+  iconUrl: z.string().url().nullable().optional(),
 }) satisfies z.ZodType<typePayload>;
 
 export const validatePayload = (

@@ -4,7 +4,11 @@ import fs from 'fs-extra';
 import { ApiType, GeneratedFile } from '../types/common.types';
 import { fileExists, writeFile } from '../filesystem/file.operations';
 import { ensureDirectory } from '../filesystem/directory.operations';
-import { generateCrudFileContent } from '../templates/crud.templates';
+import {
+  generateCrudFileContent,
+  generateEntityFileContent,
+  getEntityFileName,
+} from '../templates/crud.templates';
 import { generateCustomFileContent } from '../templates/custom.templates';
 import {
   generateServiceTypeContent,
@@ -108,18 +112,32 @@ export const generateTypeFilesOnly = async ({
     return generateServiceTypeContent({ serviceName: operation, moduleName });
   };
 
-  const files = await Promise.all(
-    getOperations(apiType).map(operation =>
-      writeGeneratedFile({
-        dirPath: typesDir,
-        fileName: `${operation}.${fileModuleName}.ts`,
-        content: buildContent(operation),
-        appendMode: true,
-      })
-    )
+  const operationFiles = getOperations(apiType).map(operation => ({
+    fileName: `${operation}.${fileModuleName}.ts`,
+    content: buildContent(operation),
+  }));
+
+  const existing = await Promise.all(
+    operationFiles.map(file => fileExists({ filePath: path.join(typesDir, file.fileName) }))
   );
 
-  return files.filter(isGeneratedFile);
+  // New CRUD type files import the entity file, so it is written before them.
+  // A module whose type files all exist already is left as it is.
+  const needsEntityFile = apiType.type === 'crud' && existing.includes(false);
+  const entityFile = needsEntityFile
+    ? await writeGeneratedFile({
+        dirPath: typesDir,
+        fileName: getEntityFileName({ moduleName }),
+        content: generateEntityFileContent({ moduleName }),
+        appendMode: true,
+      })
+    : null;
+
+  const files = await Promise.all(
+    operationFiles.map(file => writeGeneratedFile({ dirPath: typesDir, ...file, appendMode: true }))
+  );
+
+  return [entityFile, ...files].filter(isGeneratedFile);
 };
 
 const MANIFEST_FILE = '.node-apis.json';

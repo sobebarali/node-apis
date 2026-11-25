@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.3.0] - 2026-11-25
+
+### Added
+
+- A new CRUD module gets an entity file, `types/<module>.ts`, exporting one type (`types/post.ts` exports `typePost`). The create, get and update results are that type and the list items are an array of it, so the entity is described once instead of four times
+- A convention for shared files, documented in the README: a file named after the module alone holds what the operations share. `types/<module>.ts` is the entity; `repository/<module>.ts` is hand-written shared data access such as a row mapper. Neither is ever overwritten
+
+### Changed
+
+- Only `operation.moduleName.ts` files in `types/` are read as operations. Other files you keep there are ignored
+
+Existing modules are not changed: their type files stay as they are, and a module that already has all five CRUD type files gets no entity file. Adding the missing CRUD operations to an older module writes the entity file for the new type files to import.
+
 ## [4.2.0] - 2026-11-25
 
 ### Changed

@@ -1,3 +1,5 @@
+import type { typeCategory } from './category';
+
 export type typePayload = {
   name: string;
   slug: string;
@@ -14,12 +16,7 @@ export type typePayload = {
   attributes?: Record<string, string | number>;
 };
 
-export type typeResultData = {
-  categoryId: string;
-  name: string;
-  slug: string;
-  createdAt: string;
-};
+export type typeResultData = typeCategory;
 
 export type typeResultError = {
   code: 'VALIDATION_ERROR' | 'DUPLICATE_ENTRY' | 'INTERNAL_ERROR';

@@ -26,7 +26,7 @@ The following template structures are PROTECTED and must NEVER be changed unless
 - `src/templates/typed-*.ts` - Handler, validator and repository templates
 
 ### 🔒 Protected Template Patterns:
-- **File naming conventions**: `operation.moduleName.ts` format
+- **File naming conventions**: `operation.moduleName.ts` per operation; `moduleName.ts` for what the operations share
 - **Directory structures**: Current folder organization in generated APIs
 - **Result envelope**: handlers and services return `{ data, error }` and take `requestId`
 - **Framework agnostic output**: generated code never imports a web framework or router
@@ -78,20 +78,24 @@ The following template structures are PROTECTED and must NEVER be changed unless
 Generated files follow specific patterns that must be preserved:
 
 - **Type files**: `operation.moduleName.ts` in `types/` (e.g., `create.user.ts`, `get.product.ts`)
+- **Entity file**: `moduleName.ts` in `types/` (e.g., `user.ts` exporting `typeUser`), CRUD modules only
 - **Validator files**: `operation.moduleName.ts` in `validators/`
 - **Handler files**: `operation.moduleName.ts` in `handlers/`
 - **Repository files**: `operation.moduleName.ts` in `repository/`
 - **Service files**: `operation.moduleName.ts` in `services/`
+- **Shared repository file**: `moduleName.ts` in `repository/`, written by hand, never generated
+
+A file named after the module alone holds what the operations share.
 
 ### Generated Directory Structure
 
 ```
 <apisDir>/                # default: src/apis
 └── {module-name}/
-    ├── types/
+    ├── types/            # operation files, plus moduleName.ts (the entity, CRUD only)
     ├── validators/
     ├── handlers/
-    └── repository/       # skipped with --no-repository
+    └── repository/       # skipped with --no-repository; moduleName.ts is hand-written
 ```
 
 A services module contains `types/` and `services/` only.
@@ -495,10 +499,11 @@ src/
 ```
 <apisDir>/                         # default: src/apis
 └── {module-name}/
-    ├── types/                     # operation.moduleName.ts
+    ├── types/                     # operation.moduleName.ts, plus moduleName.ts (the entity, CRUD only)
     ├── validators/                # operation.moduleName.ts
     ├── handlers/                  # operation.moduleName.ts
-    └── repository/                # operation.moduleName.ts (skipped with --no-repository)
+    └── repository/                # operation.moduleName.ts (skipped with --no-repository);
+                                   # moduleName.ts is hand-written shared data access
 ```
 
 A services module contains `types/` and `services/` only.
@@ -570,7 +575,7 @@ npm run start -- --name user --crud --force
 
 ### Two-Phase Process
 
-1. **Types**: write `types/operation.moduleName.ts` for each operation. Existing type files are never overwritten; they are hand-edited and are the source of truth.
+1. **Types**: write `types/operation.moduleName.ts` for each operation. A run that writes a new CRUD type file also writes the entity file `types/moduleName.ts`. Existing type files are never overwritten; they are hand-edited and are the source of truth.
 2. **Code**: parse each `typePayload` and generate validators, handlers and repositories (or services) from it. `--force` regenerates only the files that were not edited by hand; fingerprints of generated files live in `<module>/.node-apis.json`.
 
 ### The Envelope
@@ -585,6 +590,14 @@ export type typeResult = {
 ```
 
 Handlers do not throw. A repository error named `NotFoundError` maps to `NOT_FOUND` (404) and `DuplicateError` maps to `DUPLICATE_ENTRY` (409), each only when the type file declares that code; any other error is logged once and maps to `INTERNAL_ERROR` (500) with a fixed message.
+
+### Shared Files
+
+A file named after the module alone, with no operation, holds what the operations share.
+
+- `types/moduleName.ts` is the entity file. It exports `type<Module>` (`types/post.ts` → `typePost`); the create, get and update results are that type and the list items are an array of it. It holds no `typePayload`, so the type parser skips it.
+- `repository/moduleName.ts` is hand-written shared data access (a row mapper, a shared query). The generator never writes it.
+- A module whose CRUD type files all exist is left without an entity file; the generator never rewrites type files to add the import.
 
 ### Generated Code Rules
 

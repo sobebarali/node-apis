@@ -3,10 +3,14 @@ import type { typePayload, typeResult } from '../types/update.category';
 
 export default async function updateCategoryHandler({
   categoryId,
+  name,
+  slug,
+  parentId,
+  iconUrl,
   requestId,
 }: typePayload & { requestId: string }): Promise<typeResult> {
   try {
-    const data = await update({ categoryId });
+    const data = await update({ categoryId, name, slug, parentId, iconUrl });
 
     return { data, error: null };
   } catch (error) {

@@ -1,3 +1,5 @@
+import type { typePost } from './post';
+
 export type typePayload = {
   page?: number;
   limit?: number;
@@ -9,15 +11,7 @@ export type typePayload = {
 };
 
 export type typeResultData = {
-  items: {
-    postId: string;
-    title: string;
-    authorId: string;
-    status: 'draft' | 'published' | 'archived';
-    createdAt: string;
-    updatedAt: string;
-    // Add more post specific fields here
-  }[];
+  items: typePost[];
   pagination: {
     page: number;
     limit: number;

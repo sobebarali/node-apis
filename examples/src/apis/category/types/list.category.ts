@@ -1,3 +1,5 @@
+import type { typeCategory } from './category';
+
 export type typePayload = {
   page?: number;
   limit?: number;
@@ -7,11 +9,7 @@ export type typePayload = {
 };
 
 export type typeResultData = {
-  items: {
-    categoryId: string;
-    name: string;
-    slug: string;
-  }[];
+  items: typeCategory[];
   pagination: {
     page: number;
     limit: number;

@@ -19,6 +19,33 @@ export const getCrudFileNames = ({ moduleName }: { moduleName: string }): string
 };
 
 /**
+ * Name of the entity file: the one type file named after the module alone
+ */
+export const getEntityFileName = ({ moduleName }: { moduleName: string }): string =>
+  `${getModuleNaming(moduleName).file}.ts`;
+
+/**
+ * Generates the entity file. It holds the module's main type once, so the
+ * operation type files do not each repeat it.
+ */
+export const generateEntityFileContent = ({ moduleName }: { moduleName: string }): string => {
+  const naming = getModuleNaming(moduleName);
+
+  return `/**
+ * The ${naming.variable} as the API returns it. create, get, update and list
+ * build on this type, so a field added here reaches all of them.
+ */
+export type type${naming.class} = {
+  ${naming.file}Id: string;
+  // Add the ${naming.variable} fields you return
+};
+`;
+};
+
+const entityImport = (capitalizedModule: string, moduleName: string): string =>
+  `import type { type${capitalizedModule} } from './${moduleName}';\n\n`;
+
+/**
  * Generates TypeScript file content for CRUD operations
  */
 export const generateCrudFileContent = ({
@@ -52,18 +79,15 @@ export const generateCrudFileContent = ({
  * Generates CREATE operation content
  */
 const generateCreateContent = (
-  _capitalizedModule: string,
+  capitalizedModule: string,
   _capitalizedOperation: string,
   moduleName: string
 ): string => {
-  return `export type typePayload = {
+  return `${entityImport(capitalizedModule, moduleName)}export type typePayload = {
   // Add the fields needed to create a ${moduleName}
 };
 
-export type typeResultData = {
-  ${moduleName}Id: string;
-  // Add the ${moduleName} fields you return
-};
+export type typeResultData = type${capitalizedModule};
 
 export type typeResultError = {
   code: 'VALIDATION_ERROR' | 'DUPLICATE_ENTRY' | 'INTERNAL_ERROR';
@@ -88,14 +112,11 @@ const generateGetContent = (
   _capitalizedOperation: string,
   moduleName: string
 ): string => {
-  return `export type typePayload = {
+  return `${entityImport(capitalizedModule, moduleName)}export type typePayload = {
   ${moduleName}Id: string; // ${capitalizedModule} ID to retrieve
 };
 
-export type typeResultData = {
-  ${moduleName}Id: string;
-  // Add the ${moduleName} fields you return
-};
+export type typeResultData = type${capitalizedModule};
 
 export type typeResultError = {
   code: 'NOT_FOUND' | 'INTERNAL_ERROR';
@@ -115,21 +136,18 @@ export type typeResult = {
  * Generates LIST operation content
  */
 const generateListContent = (
-  _capitalizedModule: string,
+  capitalizedModule: string,
   _capitalizedOperation: string,
   moduleName: string
 ): string => {
-  return `export type typePayload = {
+  return `${entityImport(capitalizedModule, moduleName)}export type typePayload = {
   page?: number;
   limit?: number;
   // Add the ${moduleName} filters and sorting here
 };
 
 export type typeResultData = {
-  items: {
-    ${moduleName}Id: string;
-    // Add the ${moduleName} fields you return
-  }[];
+  items: type${capitalizedModule}[];
   pagination: {
     page: number;
     limit: number;
@@ -159,19 +177,16 @@ export type typeResult = {
  * Generates UPDATE operation content
  */
 const generateUpdateContent = (
-  _capitalizedModule: string,
+  capitalizedModule: string,
   _capitalizedOperation: string,
   moduleName: string
 ): string => {
-  return `export type typePayload = {
+  return `${entityImport(capitalizedModule, moduleName)}export type typePayload = {
   ${moduleName}Id: string;
   // Add the ${moduleName} fields that can be updated, each optional
 };
 
-export type typeResultData = {
-  ${moduleName}Id: string;
-  // Add the ${moduleName} fields you return
-};
+export type typeResultData = type${capitalizedModule};
 
 export type typeResultError = {
   code: 'VALIDATION_ERROR' | 'NOT_FOUND' | 'DUPLICATE_ENTRY' | 'INTERNAL_ERROR';

@@ -1,11 +1,10 @@
+import type { typeCategory } from './category';
+
 export type typePayload = {
   categoryId: string; // Category ID to retrieve
 };
 
-export type typeResultData = {
-  categoryId: string;
-  // Add the category fields you return
-};
+export type typeResultData = typeCategory;
 
 export type typeResultError = {
   code: 'NOT_FOUND' | 'INTERNAL_ERROR';

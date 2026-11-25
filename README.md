@@ -62,6 +62,8 @@ src/apis/user-profile/
 
 Each operation gets one file per folder, named `operation.moduleName.ts` (for example `create.userProfile.ts`).
 
+A CRUD module also gets `types/userProfile.ts`, the entity file. It holds the one type the operations share; see [Shared files](#shared-files).
+
 A services module has two folders instead: `types/` and `services/`.
 
 ## Workflow
@@ -77,11 +79,53 @@ A services module has two folders instead: `types/` and `services/`.
    };
    ```
 
+   In a CRUD module, describe the entity once in `types/user.ts`; the create, get, update and list results build on it.
+
 3. **Regenerate.** `node-apis --name user --crud --force` rebuilds validators, handlers and repositories from your types.
 
 The type files are the source of truth. Once they exist they are never overwritten, not even with `--force`.
 
 `--force` only regenerates files you have not touched. node-apis keeps a fingerprint of every file it writes in `<module>/.node-apis.json` (commit it). A file you edited by hand is kept as it is and listed as "kept"; reformatting a file with Prettier or Biome does not count as an edit. To regenerate a kept file, delete it and run the command again. Modules generated before 4.1.0 have no fingerprints, so their existing files are all kept.
+
+## Shared files
+
+A file named `operation.moduleName.ts` belongs to one operation. A file named after the module alone holds what the operations share.
+
+**`types/post.ts`, the entity file.** Generated once with a new CRUD module, then yours:
+
+```ts
+export type typePost = {
+  postId: string;
+  title: string;
+  status: 'draft' | 'published';
+  createdAt: string;
+};
+```
+
+The create, get, update and list type files import it, so a field added here reaches all four:
+
+```ts
+import type { typePost } from './post';
+
+export type typeResultData = typePost;
+```
+
+An operation that returns something else declares its own `typeResultData` (`Pick<typePost, 'postId' | 'title'>`, or a new shape).
+
+**`repository/post.ts`, shared data access.** Written by hand when two repositories need the same thing, usually the mapping from a database row to the entity:
+
+```ts
+import type { typePost } from '../types/post';
+
+export const toPost = (row: PostRow): typePost => ({
+  postId: row.id,
+  title: row.title,
+  status: row.status,
+  createdAt: row.created_at.toISOString(),
+});
+```
+
+node-apis never generates a `repository/post.ts`, and never overwrites either shared file. A module generated before 4.3.0 has no entity file and keeps working as it is; add one by hand whenever you like. Adding missing CRUD operations to such a module writes the entity file, because the new type files import it.
 
 ## The envelope
 

@@ -51,6 +51,8 @@ const LINE_BREAK_BEFORE_OPERATOR_REGEX = /\s*\n\s*([|&])/g;
 const WHITESPACE_RUN_REGEX = /\s+/g;
 const MEMBER_REGEX = /^(?:readonly\s+)?(\w+)(\?)?\s*:\s*([\s\S]+)$/;
 const TYPE_PAYLOAD_REGEX = /export\s+(?:type|interface)\s+typePayload\s*(?:=\s*)?{/;
+/** `operation.moduleName.ts`. Other files in types/ (the entity file) hold no operation. */
+const OPERATION_FILE_REGEX = /^[^.]+\.[^.]+\.ts$/;
 const PAGINATION_FIELDS = ['page', 'limit', 'sortBy', 'sortOrder'];
 
 /**
@@ -276,7 +278,7 @@ export const parseModuleTypes = async (
     const files = await fs.promises.readdir(typesDir);
 
     for (const file of files) {
-      if (file.endsWith('.ts')) {
+      if (OPERATION_FILE_REGEX.test(file)) {
         const filePath = path.join(typesDir, file);
         const operationName = file.replace(/\.[^.]+\.ts$/, ''); // Extract operation name (create, get, etc.)
         result[operationName] = await parseTypePayload(filePath);

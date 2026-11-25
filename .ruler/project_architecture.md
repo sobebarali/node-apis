@@ -62,7 +62,7 @@ npm run start -- --name user --crud --force
 
 ### Two-Phase Process
 
-1. **Types**: write `types/operation.moduleName.ts` for each operation. Existing type files are never overwritten; they are hand-edited and are the source of truth.
+1. **Types**: write `types/operation.moduleName.ts` for each operation. A run that writes a new CRUD type file also writes the entity file `types/moduleName.ts`. Existing type files are never overwritten; they are hand-edited and are the source of truth.
 2. **Code**: parse each `typePayload` and generate validators, handlers and repositories (or services) from it. `--force` regenerates only the files that were not edited by hand; fingerprints of generated files live in `<module>/.node-apis.json`.
 
 ### The Envelope
@@ -77,6 +77,14 @@ export type typeResult = {
 ```
 
 Handlers do not throw. A repository error named `NotFoundError` maps to `NOT_FOUND` (404) and `DuplicateError` maps to `DUPLICATE_ENTRY` (409), each only when the type file declares that code; any other error is logged once and maps to `INTERNAL_ERROR` (500) with a fixed message.
+
+### Shared Files
+
+A file named after the module alone, with no operation, holds what the operations share.
+
+- `types/moduleName.ts` is the entity file. It exports `type<Module>` (`types/post.ts` → `typePost`); the create, get and update results are that type and the list items are an array of it. It holds no `typePayload`, so the type parser skips it.
+- `repository/moduleName.ts` is hand-written shared data access (a row mapper, a shared query). The generator never writes it.
+- A module whose CRUD type files all exist is left without an entity file; the generator never rewrites type files to add the import.
 
 ### Generated Code Rules
 
