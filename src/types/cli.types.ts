@@ -7,8 +7,8 @@ export interface CommandOptions {
   force?: boolean;
   interactive?: boolean;
   crud?: boolean;
-  custom?: string;
-  services?: string;
+  custom?: string[];
+  services?: string[];
   /** Set to false by --no-repository */
   repository?: boolean;
   initConfig?: boolean;

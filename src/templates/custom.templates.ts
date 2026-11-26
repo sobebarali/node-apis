@@ -2,6 +2,8 @@
  * Custom API operation templates
  */
 import { getModuleNaming } from '../shared/utils/naming.utils';
+import { DEFAULT_GENERATION_SETTINGS, GenerationSettings } from '../types/config.types';
+import { buildResultTypes, buildTypeFileImports } from './crud.templates';
 
 /**
  * Gets custom API file names for a module
@@ -23,44 +25,15 @@ export const getCustomFileNames = ({
 export const generateCustomFileContent = ({
   customName,
   moduleName,
+  settings = DEFAULT_GENERATION_SETTINGS,
 }: {
   customName: string;
   moduleName: string;
+  settings?: GenerationSettings;
 }): string => {
-  const capitalizedModule = moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
-  const capitalizedCustom = customName.charAt(0).toUpperCase() + customName.slice(1);
+  const codes = ['VALIDATION_ERROR', 'NOT_FOUND', 'INTERNAL_ERROR'];
 
-  // Generate operation-specific content based on common patterns
-  return generateCustomOperationContent(
-    customName,
-    capitalizedModule,
-    capitalizedCustom,
-    moduleName
-  );
-};
-
-/**
- * Generates custom operation content - completely generic
- */
-const generateCustomOperationContent = (
-  customName: string,
-  capitalizedModule: string,
-  capitalizedCustom: string,
-  moduleName: string
-): string => {
-  return generateGenericCustomContent(customName, capitalizedModule, capitalizedCustom, moduleName);
-};
-
-/**
- * Generates generic custom operation content
- */
-const generateGenericCustomContent = (
-  customName: string,
-  _capitalizedModule: string,
-  _capitalizedCustom: string,
-  moduleName: string
-): string => {
-  return `export type typePayload = {
+  return `${buildTypeFileImports({ codes, settings })}export type typePayload = {
   // Define payload for ${customName} ${moduleName}
 };
 
@@ -68,17 +41,5 @@ export type typeResultData = {
   // Define result data for ${customName} ${moduleName}
 };
 
-export type typeResultError = {
-  code: 'VALIDATION_ERROR' | 'NOT_FOUND' | 'INTERNAL_ERROR';
-  message: string;
-  statusCode: 400 | 404 | 500;
-  requestId: string;
-  field?: string;
-};
-
-export type typeResult = {
-  data: null | typeResultData;
-  error: null | typeResultError;
-};
-`;
+${buildResultTypes({ codes, settings })}`;
 };

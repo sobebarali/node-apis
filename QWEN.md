@@ -28,7 +28,7 @@ The following template structures are PROTECTED and must NEVER be changed unless
 ### 🔒 Protected Template Patterns:
 - **File naming conventions**: `operation.moduleName.ts` per operation; `moduleName.ts` for what the operations share
 - **Directory structures**: Current folder organization in generated APIs
-- **Result envelope**: handlers and services return `{ data, error }` and take `requestId`
+- **Result envelope**: handlers and services return `{ data, error }` and take `requestId` (or `context`, when configured)
 - **Framework agnostic output**: generated code never imports a web framework or router
 - **Function parameter patterns**: Object destructuring `async({ params }: Type)`
 - **Type definitions**: `typePayload`, `typeResult`, `typeResultData`, `typeResultError`
@@ -466,7 +466,7 @@ src/
 │   └── path.utils.ts              # Module path resolution
 ├── services/                      # Generation logic
 │   ├── config.service.ts          # node-apis.config.json handling
-│   ├── formatter.service.ts       # Optional Prettier formatting
+│   ├── formatter.service.ts       # Optional Prettier or Biome formatting
 │   ├── module-detection.service.ts # Existing module detection
 │   ├── module-generator.service.ts # Module directory creation
 │   ├── two-phase-generator.service.ts # Types first, then code
@@ -477,6 +477,7 @@ src/
 ├── templates/                     # Code generation templates
 │   ├── crud.templates.ts          # CRUD type files
 │   ├── custom.templates.ts        # Custom operation type files
+│   ├── errors.templates.ts        # Shared errors file (handlers.errorsFile)
 │   ├── services.templates.ts      # Service type files and services
 │   ├── typed-crud.handlers.ts     # CRUD handlers
 │   ├── typed-crud.validators.ts   # CRUD validators
@@ -490,7 +491,8 @@ src/
 │   └── generation.types.ts
 ├── validators/                    # Input validation
 │   ├── location.validator.ts      # Path validation
-│   └── module-name.validator.ts   # Module name validation
+│   ├── module-name.validator.ts   # Module name validation
+│   └── operation-name.validator.ts # Operation name format and keyword checks
 └── index.ts                       # CLI entry point
 ```
 
@@ -500,7 +502,7 @@ src/
 <apisDir>/                         # default: src/apis
 └── {module-name}/
     ├── types/                     # operation.moduleName.ts, plus moduleName.ts (the entity, CRUD only)
-    ├── validators/                # operation.moduleName.ts
+    ├── validators/                # operation.moduleName.ts (none for a payload with no fields)
     ├── handlers/                  # operation.moduleName.ts
     └── repository/                # operation.moduleName.ts (skipped with --no-repository);
                                    # moduleName.ts is hand-written shared data access
@@ -532,7 +534,7 @@ This is a Node.js/TypeScript CLI tool that generates framework-agnostic modules:
 - **Commander.js**: CLI framework
 - **Inquirer.js**: Interactive prompts
 - **Zod**: Imported by the generated validators (provided by the target project)
-- **Prettier**: Used to format generated files only when the target project has it installed
+- **Prettier / Biome**: Generated files are formatted with the target project's Prettier, or its Biome when it has no Prettier
 
 ## Available Scripts
 
@@ -580,16 +582,26 @@ npm run start -- --name user --crud --force
 
 ### The Envelope
 
-Every handler and service takes one object (payload fields plus `requestId`) and returns:
+Every handler and service takes one object (payload fields plus `requestId`, or plus `context` when `handlers.context` is configured) and returns:
 
 ```typescript
-export type typeResult = {
-  data: null | typeResultData;
-  error: null | typeResultError;
-};
+export type typeResult =
+  | { data: typeResultData; error: null }
+  | { data: null; error: typeResultError };
 ```
 
-Handlers do not throw. A repository error named `NotFoundError` maps to `NOT_FOUND` (404) and `DuplicateError` maps to `DUPLICATE_ENTRY` (409), each only when the type file declares that code; any other error is logged once and maps to `INTERNAL_ERROR` (500) with a fixed message.
+A repository error with a known name maps to a returned error, only when the type file declares its code: `NotFoundError` → `NOT_FOUND` (404), `DuplicateError` → `DUPLICATE_ENTRY` (409), `ConflictError` → `CONFLICT` (409), `ForbiddenError` → `FORBIDDEN` (403), `BadRequestError` → `BAD_REQUEST` (400). Any other error is logged once and maps to `INTERNAL_ERROR` (500) with a fixed message, so handlers do not throw by default.
+
+`statusCode` and `requestId` are written into an error only when `typeResultError` declares them.
+
+### Generation Settings
+
+Optional keys of `node-apis.config.json`, read by `getGenerationSettings` and passed to every template as `settings`. A template called without them produces the default output, which stays byte-identical between releases.
+
+- `handlers.context: { type, from }`: handlers and services take `typePayload & { context: Type }` and have no `requestId`. `from` starting with `./` or `../` is a file path from the project root; anything else is the import path as written. Generated code never reads `context`, and repositories do not receive it
+- `handlers.errors: 'throw'`: undeclared errors are thrown instead of mapped to `INTERNAL_ERROR`; new type files hold no `INTERNAL_ERROR`
+- `handlers.errorsFile`: import path of the shared errors file (same path rule as `context.from`). A project path is written once from `errors.templates.ts` and never overwritten. New type files import their errors from it (`typeResultError = typeNotFound | typeInternalError`); handlers and services catch `Refusal` first and return its `error`; repository hints show `throw new Refusal(...)`. Existing inline type files keep the name mapping above
+- `validators.validatePayload: false`: validators export only `payloadSchema`
 
 ### Shared Files
 
@@ -605,7 +617,11 @@ A file named after the module alone, with no operation, holds what the operation
 - Every repository takes one object, never positional parameters
 - Field names are camelCase (`createdAt`, `sortBy`, `pagination.totalCount`)
 - Parameter types come from the type file (`typePayload & { requestId: string }`, `typePayload`, `Pick<typePayload, 'id'>`); fields are never re-declared
+- An operation whose `typePayload` has no fields gets no validator; one is generated once the payload has fields
 - Validators end with `satisfies z.ZodType<typePayload>` and are never cast
-- Validators check shape only: no limits guessed from field names, except the format of `email` and `url` fields
+- A `typePayload` written as `{ ... } | undefined` is optional: the validator ends with `.optional()`, and handlers and repositories take `NonNullable<typePayload>`
+- A dotted operation name is flattened before it is checked (`file.list` → `fileList`); keywords stay refused
+- Validators check shape only: a string is `z.string()`, and no limits are guessed from field names, except the format of `email` and `url` fields
 - New type files hold no placeholder fields, only the ID and pagination fields the operation needs
-- Templates emit formatted code (single quotes, 2 spaces, 100 columns) without relying on Prettier
+- Templates emit formatted code (single quotes, 2 spaces, 100 columns) without relying on a formatter
+- A folder is an existing module only when it has `types/` or `.node-apis.json`; hand-written folders are generated into without `--force`

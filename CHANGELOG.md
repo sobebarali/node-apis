@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.4.0] - 2026-11-25
+
+### Added
+
+- `handlers.context` in `node-apis.config.json`: handlers and services take `typePayload & { context: YourType }` instead of `requestId`. `from` is a file path from the project root (`./src/context`) or a package import path. Errors then carry no `requestId`
+- `handlers.errors: "throw"`: errors the type file does not declare are thrown instead of being returned as `INTERNAL_ERROR`, for routers that already handle them
+- `validators.validatePayload: false`: validators export only `payloadSchema`
+- `handlers.errorsFile`: one shared errors file, written once and never overwritten. It holds `typeError<Code, StatusCode, Data>` (with an optional `data` field), one type per status (400, 403, 404, 409, 422, 500), and `Refusal` with `refusable`. New type files import their errors from it instead of spelling them out. A repository throws `new Refusal({ code, message, statusCode })` and the handler returns it as the result error, also from inside a transaction
+- An optional payload: write `typePayload` as `{ ... } | undefined` and the validator ends with `.optional()`; the handler and repository take `NonNullable<typePayload>`
+- Dotted operation names for nested routers: `--custom file.list` generates `fileList`
+- Three more repository error names are mapped when the type file declares their code: `ConflictError` → `CONFLICT` (409), `ForbiddenError` → `FORBIDDEN` (403), `BadRequestError` → `BAD_REQUEST` (400)
+- Generated files are formatted with Biome when the project has Biome and no Prettier. New type files are formatted too
+
+### Changed
+
+- New type files declare `typeResult` as a union (`{ data; error: null } | { data: null; error }`), so checking `error` narrows `data`. Existing type files are not touched and keep working
+- A string field is validated as `z.string()` instead of `z.string().min(1)`: the type says `string`, and the empty string is one. Regenerating with `--force` applies this to validators you have not edited; add `.min(1)` by hand where a field must not be empty
+- A handler writes `statusCode` and `requestId` into an error only when `typeResultError` declares them, so either can be removed from the type
+- An operation whose `typePayload` has no fields gets no validator: there is nothing to validate. The validator is generated once the payload has fields (run with `--force`). Validators that already exist are left alone
+- `--custom` and `--services` take names separated by commas or spaces: `--custom "send receive"` and `--custom send receive` now mean two operations
+- A folder that holds no node-apis files (no `types/`, no `.node-apis.json`) is no longer refused: node-apis generates into it without `--force` and leaves the existing files alone
+
+### Fixed
+
+- A custom operation named after a JavaScript keyword (`delete`, `void`, `new`) is refused with a message instead of generating code that does not compile
+- An operation name that is not letters and digits (`send-mail`, `send mail`) is refused before anything is written, instead of producing broken files or leaving empty folders behind
+- A validator deleted from a no-payload operation no longer comes back on `--force`
+
+Without the new settings, handlers, services and repositories are generated exactly as in 4.3.0.
+
 ## [4.3.0] - 2026-11-25
 
 ### Added

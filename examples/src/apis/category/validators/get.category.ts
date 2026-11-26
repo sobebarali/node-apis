@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { typePayload } from '../types/get.category';
 
 export const payloadSchema = z.object({
-  categoryId: z.string().min(1),
+  categoryId: z.string(),
 }) satisfies z.ZodType<typePayload>;
 
 export const validatePayload = (

@@ -5,6 +5,7 @@
 import { getModuleNaming } from '../shared/utils/naming.utils';
 import { ParsedTypePayload } from '../services/type-parser.service';
 import { buildHandlerContent } from './typed-crud.handlers';
+import { DEFAULT_GENERATION_SETTINGS, GenerationSettings } from '../types/config.types';
 
 export const getCustomHandlerFileNames = ({
   moduleName,
@@ -22,11 +23,13 @@ export const generateTypedCustomHandlerContent = ({
   moduleName,
   parsedType,
   useRepositoryLayer = true,
+  settings = DEFAULT_GENERATION_SETTINGS,
 }: {
   customName: string;
   moduleName: string;
   parsedType: ParsedTypePayload;
   useRepositoryLayer?: boolean;
+  settings?: GenerationSettings;
 }): string => {
   const naming = getModuleNaming(moduleName);
 
@@ -36,8 +39,8 @@ export const generateTypedCustomHandlerContent = ({
     logLabel: `${customName.toUpperCase()} ${naming.constant}`,
     failureMessage: `Failed to execute ${customName} operation for ${naming.variable}`,
     subject: naming.class,
-    fields: parsedType.fields,
+    parsedType,
     ...(useRepositoryLayer && { repositoryImportName: customName }),
-    ...(parsedType.errorCodes && { errorCodes: parsedType.errorCodes }),
+    settings,
   });
 };

@@ -42,7 +42,7 @@ src/
 │   └── path.utils.ts              # Module path resolution
 ├── services/                      # Generation logic
 │   ├── config.service.ts          # node-apis.config.json handling
-│   ├── formatter.service.ts       # Optional Prettier formatting
+│   ├── formatter.service.ts       # Optional Prettier or Biome formatting
 │   ├── module-detection.service.ts # Existing module detection
 │   ├── module-generator.service.ts # Module directory creation
 │   ├── two-phase-generator.service.ts # Types first, then code
@@ -53,6 +53,7 @@ src/
 ├── templates/                     # Code generation templates
 │   ├── crud.templates.ts          # CRUD type files
 │   ├── custom.templates.ts        # Custom operation type files
+│   ├── errors.templates.ts        # Shared errors file (handlers.errorsFile)
 │   ├── services.templates.ts      # Service type files and services
 │   ├── typed-crud.handlers.ts     # CRUD handlers
 │   ├── typed-crud.validators.ts   # CRUD validators
@@ -66,7 +67,8 @@ src/
 │   └── generation.types.ts
 ├── validators/                    # Input validation
 │   ├── location.validator.ts      # Path validation
-│   └── module-name.validator.ts   # Module name validation
+│   ├── module-name.validator.ts   # Module name validation
+│   └── operation-name.validator.ts # Operation name format and keyword checks
 └── index.ts                       # CLI entry point
 ```
 
@@ -76,7 +78,7 @@ src/
 <apisDir>/                         # default: src/apis
 └── {module-name}/
     ├── types/                     # operation.moduleName.ts, plus moduleName.ts (the entity, CRUD only)
-    ├── validators/                # operation.moduleName.ts
+    ├── validators/                # operation.moduleName.ts (none for a payload with no fields)
     ├── handlers/                  # operation.moduleName.ts
     └── repository/                # operation.moduleName.ts (skipped with --no-repository);
                                    # moduleName.ts is hand-written shared data access

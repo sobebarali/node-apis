@@ -20,8 +20,14 @@ export const main = async (): Promise<void> => {
     )
     .option('--no-interactive', 'disable interactive mode')
     .option('--crud', 'generate CRUD operations (create, get, list, delete, update)')
-    .option('--custom <names>', 'generate custom operations (comma-separated names)')
-    .option('--services <names>', 'generate service operations (comma-separated names)')
+    .option(
+      '--custom <names...>',
+      'generate custom operations (names separated by commas or spaces)'
+    )
+    .option(
+      '--services <names...>',
+      'generate service operations (names separated by commas or spaces)'
+    )
     .option('--no-repository', 'skip the repository layer (handlers hold the logic)')
     .option('--init-config', 'initialize configuration file')
     .option('--set-apis-dir <path>', 'set the modules directory in config (e.g., src/apis)')

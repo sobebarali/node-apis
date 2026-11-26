@@ -2,21 +2,21 @@ import { z } from 'zod';
 import type { typePayload } from '../types/create.category';
 
 export const payloadSchema = z.object({
-  name: z.string().min(1),
-  slug: z.string().min(1),
-  parentId: z.string().min(1).optional(),
+  name: z.string(),
+  slug: z.string(),
+  parentId: z.string().optional(),
   iconUrl: z.string().url().optional(),
   seo: z.object({
-    title: z.string().min(1),
-    description: z.string().min(1).optional(),
+    title: z.string(),
+    description: z.string().optional(),
   }),
   translations: z.array(
     z.object({
       locale: z.enum(['en', 'ar', 'fr']),
-      name: z.string().min(1),
+      name: z.string(),
     })
   ),
-  attributes: z.record(z.string(), z.union([z.string().min(1), z.number()])).optional(),
+  attributes: z.record(z.string(), z.union([z.string(), z.number()])).optional(),
 }) satisfies z.ZodType<typePayload>;
 
 export const validatePayload = (

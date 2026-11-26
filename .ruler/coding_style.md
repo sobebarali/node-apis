@@ -25,7 +25,7 @@ The following template structures are PROTECTED and must NEVER be changed unless
 ### 🔒 Protected Template Patterns:
 - **File naming conventions**: `operation.moduleName.ts` per operation; `moduleName.ts` for what the operations share
 - **Directory structures**: Current folder organization in generated APIs
-- **Result envelope**: handlers and services return `{ data, error }` and take `requestId`
+- **Result envelope**: handlers and services return `{ data, error }` and take `requestId` (or `context`, when configured)
 - **Framework agnostic output**: generated code never imports a web framework or router
 - **Function parameter patterns**: Object destructuring `async({ params }: Type)`
 - **Type definitions**: `typePayload`, `typeResult`, `typeResultData`, `typeResultError`

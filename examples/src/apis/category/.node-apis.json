@@ -13,11 +13,11 @@
     "repository/list.category.ts": "8c1b49457ffd6952",
     "repository/reorder.category.ts": "87a3f316fbfbdd77",
     "repository/update.category.ts": "c2b0c96bf6d05f78",
-    "validators/create.category.ts": "b806fb01997d4842",
-    "validators/delete.category.ts": "0caf2cbb29bcf1d0",
-    "validators/get.category.ts": "3ab2a1077b178d63",
-    "validators/list.category.ts": "2118392fb8dd4e50",
-    "validators/reorder.category.ts": "e429a4fe886fa3a7",
-    "validators/update.category.ts": "4b1fcdd500cea9e3"
+    "validators/create.category.ts": "098a19b15b60e1b1",
+    "validators/delete.category.ts": "4f22ec194c60555b",
+    "validators/get.category.ts": "626bcb122d1a0a79",
+    "validators/list.category.ts": "bde15c677a4c926a",
+    "validators/reorder.category.ts": "d7a10372e30f256e",
+    "validators/update.category.ts": "1464f8c7722eb011"
   }
 }

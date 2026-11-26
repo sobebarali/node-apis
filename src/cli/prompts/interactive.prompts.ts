@@ -5,6 +5,7 @@
 import inquirer from 'inquirer';
 import { InquirerAnswers, PromptResult } from '../../types/cli.types';
 import { validateModuleName } from '../../validators/module-name.validator';
+import { parseOperationNames } from '../../validators/operation-name.validator';
 
 /**
  * Prompts user to choose between creating new or adding to existing module
@@ -181,10 +182,7 @@ export const promptCustomOperations = async (): Promise<PromptResult<string[]>> 
       },
     ])) as InquirerAnswers;
 
-    const customNames = answer.customNames
-      .split(',')
-      .map(name => name.trim())
-      .filter(name => name.length > 0);
+    const customNames = parseOperationNames({ values: [answer.customNames] });
 
     return { success: true, data: customNames };
   } catch (error) {
@@ -211,10 +209,7 @@ export const promptServiceOperations = async (): Promise<PromptResult<string[]>>
       },
     ])) as InquirerAnswers;
 
-    const serviceNames = answer.serviceNames
-      .split(',')
-      .map(name => name.trim())
-      .filter(name => name.length > 0);
+    const serviceNames = parseOperationNames({ values: [answer.serviceNames] });
 
     return { success: true, data: serviceNames };
   } catch (error) {

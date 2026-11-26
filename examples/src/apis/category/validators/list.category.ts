@@ -4,7 +4,7 @@ import type { typePayload } from '../types/list.category';
 export const payloadSchema = z.object({
   page: z.number().optional(),
   limit: z.number().optional(),
-  parentId: z.string().min(1).optional(),
+  parentId: z.string().optional(),
   sortBy: z.enum(['name', 'createdAt']).optional(),
   sortOrder: z.enum(['asc', 'desc']).optional(),
 }) satisfies z.ZodType<typePayload>;

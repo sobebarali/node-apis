@@ -7,6 +7,18 @@ import { GenerationInput, GenerationResult } from '../types/generation.types';
 import { validateModuleName } from '../validators/module-name.validator';
 import { getModulePath } from '../filesystem/path.utils';
 import { directoryExists, ensureDirectory } from '../filesystem/directory.operations';
+import { fileExists } from '../filesystem/file.operations';
+
+/** Kept in step with MANIFEST_FILE of the two-phase generator */
+const MANIFEST_FILE = '.node-apis.json';
+
+/**
+ * Tells whether node-apis generated into a folder before. A folder that only
+ * holds other code (a module written by hand) is not a node-apis module yet.
+ */
+const isGeneratedModule = async (modulePath: string): Promise<boolean> =>
+  (await directoryExists({ dirPath: path.join(modulePath, 'types') })) ||
+  (await fileExists({ filePath: path.join(modulePath, MANIFEST_FILE) }));
 
 const ERROR_MESSAGES: Record<string, string> = {
   EACCES: 'Permission denied. Cannot create the module directory',
@@ -47,10 +59,10 @@ export const createModuleDirectory = async ({
       ...(targetDir && { targetDir }),
     });
 
-    if ((await directoryExists({ dirPath: modulePath })) && !force && !appendMode) {
+    if (!force && !appendMode && (await isGeneratedModule(modulePath))) {
       return {
         success: false,
-        error: `Module directory already exists: ${modulePath}\nUse --force to regenerate its untouched code (type files and edited files are kept), or pick the module in interactive mode to add operations.`,
+        error: `Module already exists: ${modulePath}\nUse --force to regenerate its untouched code (type files and edited files are kept), or pick the module in interactive mode to add operations.`,
       };
     }
 

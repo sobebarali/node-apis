@@ -10,6 +10,7 @@ import {
   unwrapBrackets,
 } from '../services/type-parser.service';
 import { getModuleNaming } from '../shared/utils/naming.utils';
+import { DEFAULT_GENERATION_SETTINGS, GenerationSettings } from '../types/config.types';
 
 /**
  * Gets the list of CRUD validator file names for a module
@@ -50,8 +51,8 @@ const PRIMITIVE_SCHEMAS = new Map([
 
 /**
  * A string schema. The type file cannot say "this is an email", so the two
- * unambiguous field names are the only ones that add a format check. No length
- * limits are guessed: add those by hand.
+ * unambiguous field names are the only ones that add a format check. Nothing
+ * else is guessed (`string` allows ''): add trimming and length limits by hand.
  */
 const stringSchema = (name: string): string => {
   if (EMAIL_NAME_REGEX.test(name)) {
@@ -62,7 +63,7 @@ const stringSchema = (name: string): string => {
     return 'z.string().url()';
   }
 
-  return 'z.string().min(1)';
+  return 'z.string()';
 };
 
 /**
@@ -230,20 +231,31 @@ const fieldSchema = (field: ParsedField, indent: string): string => {
 export const buildValidatorContent = ({
   typesFile,
   fields,
+  isOptional = false,
+  settings = DEFAULT_GENERATION_SETTINGS,
 }: {
   typesFile: string;
   fields: ParsedField[];
+  /** True when typePayload is `{ ... } | undefined`: the caller may send nothing */
+  isOptional?: boolean;
+  settings?: GenerationSettings;
 }): string => {
+  // Prettier breaks the chain once `.optional()` follows a schema with fields
+  const chained = isOptional && fields.length > 0;
+  const indent = chained ? '    ' : '  ';
+  const closing = chained ? '  ' : '';
   const schemaBody =
     fields.length > 0
-      ? `{\n${fields.map(field => `  ${field.name}: ${fieldSchema(field, '  ')},`).join('\n')}\n}`
+      ? `{\n${fields.map(field => `${indent}${field.name}: ${fieldSchema(field, indent)},`).join('\n')}\n${closing}}`
       : '{}';
+  const optional = isOptional ? '.optional()' : '';
+  const schema = chained
+    ? `z\n  .object(${schemaBody})\n  .optional()`
+    : `z.object(${schemaBody})${optional}`;
 
-  return `import { z } from 'zod';
-import type { typePayload } from '../types/${typesFile}';
-
-export const payloadSchema = z.object(${schemaBody}) satisfies z.ZodType<typePayload>;
-
+  // A router that takes the schema itself (oRPC, tRPC) has no use for the wrapper
+  const validatePayload = settings.validatePayload
+    ? `
 export const validatePayload = (
   data: unknown
 ): { success: true; data: typePayload } | { success: false; error: z.ZodError } => {
@@ -255,7 +267,14 @@ export const validatePayload = (
 
   return { success: false, error: result.error };
 };
-`;
+`
+    : '';
+
+  return `import { z } from 'zod';
+import type { typePayload } from '../types/${typesFile}';
+
+export const payloadSchema = ${schema} satisfies z.ZodType<typePayload>;
+${validatePayload}`;
 };
 
 /**
@@ -265,12 +284,16 @@ export const generateCrudValidatorContent = ({
   operation,
   moduleName,
   parsedType,
+  settings = DEFAULT_GENERATION_SETTINGS,
 }: {
   operation: string;
   moduleName: string;
   parsedType: ParsedTypePayload;
+  settings?: GenerationSettings;
 }): string =>
   buildValidatorContent({
     typesFile: `${operation}.${getModuleNaming(moduleName).file}`,
     fields: parsedType.fields,
+    ...(parsedType.isOptional && { isOptional: true }),
+    settings,
   });

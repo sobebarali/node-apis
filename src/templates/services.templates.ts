@@ -4,7 +4,17 @@
 
 import { ParsedTypePayload } from '../services/type-parser.service';
 import { getModuleNaming } from '../shared/utils/naming.utils';
-import { buildNotImplemented, buildSignature } from './typed-crud.handlers';
+import { DEFAULT_GENERATION_SETTINGS, GenerationSettings } from '../types/config.types';
+import {
+  buildContextImport,
+  buildEntrySignature,
+  buildGuardedBody,
+  buildNotImplemented,
+  buildRefusalImport,
+  buildTypeImportNames,
+  payloadTypeName,
+} from './typed-crud.handlers';
+import { buildResultTypes, buildTypeFileImports } from './crud.templates';
 
 /**
  * Gets the list of service operation file names for a module
@@ -26,13 +36,17 @@ export const getServiceFileNames = ({
 export const generateServiceTypeContent = ({
   serviceName,
   moduleName,
+  settings = DEFAULT_GENERATION_SETTINGS,
 }: {
   serviceName: string;
   moduleName: string;
+  settings?: GenerationSettings;
 }): string => {
   const naming = getModuleNaming(moduleName);
 
-  return `export type typePayload = {
+  const errors = { codes: ['INTERNAL_ERROR'], settings, keepInternalError: true };
+
+  return `${buildTypeFileImports(errors)}export type typePayload = {
   // Define payload for ${serviceName} ${naming.variable}
   // Add your ${serviceName} specific fields here
 };
@@ -42,18 +56,7 @@ export type typeResultData = {
   // Add your ${serviceName} response fields here
 };
 
-export type typeResultError = {
-  code: 'INTERNAL_ERROR';
-  message: string;
-  statusCode: 500;
-  requestId: string;
-};
-
-export type typeResult = {
-  data: null | typeResultData;
-  error: null | typeResultError;
-};
-`;
+${buildResultTypes(errors)}`;
 };
 
 /**
@@ -63,45 +66,45 @@ export const generateServiceContent = ({
   serviceName,
   moduleName,
   parsedType,
+  settings = DEFAULT_GENERATION_SETTINGS,
 }: {
   serviceName: string;
   moduleName: string;
   parsedType: ParsedTypePayload;
+  settings?: GenerationSettings;
 }): string => {
   const naming = getModuleNaming(moduleName);
   const { fields } = parsedType;
-  const functionName = `${serviceName}${naming.class}`;
   const logLabel = `${serviceName.toUpperCase()} ${naming.constant}`;
-
-  const payloadNames = fields.map(field => field.name).filter(name => name !== 'requestId');
   const hasPayload = fields.length > 0;
-  const signature = buildSignature({
-    start: `export const ${functionName} = async (`,
-    names: [...payloadNames, 'requestId'],
-    parameterType: hasPayload ? 'typePayload & { requestId: string }' : '{ requestId: string }',
-    end: '): Promise<typeResult> => {',
-  });
-  const typeImports = hasPayload ? 'typePayload, typeResult' : 'typeResult';
 
-  return `import type { ${typeImports} } from '../types/${serviceName}.${naming.file}';
+  const { body, readsRequestId } = buildGuardedBody({
+    layer: 'SERVICE',
+    logLabel,
+    failureMessage: `Failed to execute ${serviceName} service for ${naming.variable}`,
+    subject: naming.class,
+    buildLogic: indent =>
+      `${indent}// TODO: Call the third-party API here and return { data, error: null }
+${buildNotImplemented({ label: `${logLabel} service`, fields, indent })}`,
+    parsedType,
+    settings,
+  });
+
+  const signature = buildEntrySignature({
+    start: `export const ${serviceName}${naming.class} = async (`,
+    end: '): Promise<typeResult> => {',
+    names: fields.map(field => field.name),
+    hasPayload,
+    payloadType: payloadTypeName(parsedType),
+    readsExtra: readsRequestId,
+    settings,
+  });
+  const typeImports = buildTypeImportNames({ hasPayload, settings });
+
+  return `${buildRefusalImport(settings)}${buildContextImport(settings)}import type { ${typeImports} } from '../types/${serviceName}.${naming.file}';
 
 ${signature}
-  try {
-    // TODO: Call the third-party API here and return { data, error: null }
-${buildNotImplemented({ label: `${logLabel} service`, fields, indent: '    ' })}
-  } catch (error) {
-    console.error(\`\${requestId} [SERVICE] - ${logLabel} error:\`, error);
-
-    return {
-      data: null,
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: 'Failed to execute ${serviceName} service for ${naming.variable}',
-        statusCode: 500,
-        requestId,
-      },
-    };
-  }
+${body}
 };
 `;
 };

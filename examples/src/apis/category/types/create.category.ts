@@ -26,7 +26,6 @@ export type typeResultError = {
   field?: string;
 };
 
-export type typeResult = {
-  data: null | typeResultData;
-  error: null | typeResultError;
-};
+export type typeResult =
+  | { data: typeResultData; error: null }
+  | { data: null; error: typeResultError };

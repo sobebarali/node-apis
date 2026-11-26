@@ -2,6 +2,11 @@ import * as path from 'path';
 import { CommandOptions } from '../../types/cli.types';
 import { ApiType } from '../../types/common.types';
 import { validateTargetLocation } from '../../validators/location.validator';
+import {
+  findInvalidOperationName,
+  findReservedOperationName,
+  parseOperationNames,
+} from '../../validators/operation-name.validator';
 import { createModuleDirectory } from '../../services/module-generator.service';
 import {
   generateTypeFilesOnly,
@@ -19,6 +24,7 @@ import { getModulePath, getProjectRoot } from '../../filesystem/path.utils';
 import { directoryExists } from '../../filesystem/directory.operations';
 import {
   getConfigPath,
+  getGenerationSettings,
   hasConfiguredApisDir,
   initializeConfig,
   setApisDir,
@@ -52,12 +58,6 @@ interface InteractiveSelection {
 const errorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : 'Unknown error';
 
-const parseNames = (names: string): string[] =>
-  names
-    .split(',')
-    .map(name => name.trim())
-    .filter(name => name.length > 0);
-
 /**
  * Parses command line API type options
  */
@@ -67,11 +67,11 @@ const parseCommandLineApiType = (options: CommandOptions): ApiType | undefined =
   }
 
   if (options.custom) {
-    return { type: 'custom', customNames: parseNames(options.custom) };
+    return { type: 'custom', customNames: parseOperationNames({ values: options.custom }) };
   }
 
   if (options.services) {
-    return { type: 'services', serviceNames: parseNames(options.services) };
+    return { type: 'services', serviceNames: parseOperationNames({ values: options.services }) };
   }
 
   return undefined;
@@ -252,7 +252,7 @@ const reviewTypes = async ({
 
   if (emptyOperations.length === operations.length) {
     console.log('\n⚠️  Warning: No fields were detected in any typePayload definitions.');
-    console.log('   The generated code will only receive requestId.');
+    console.log('   The generated code will receive no payload fields.');
     console.log('   You can edit the type files and run the command again with --force.');
   }
 
@@ -293,11 +293,16 @@ const handleTwoPhaseGeneration = async ({
   }
 
   const { moduleName: normalizedModuleName, modulePath } = structure;
+  const settings = await getGenerationSettings({
+    projectRoot: getProjectRoot({ ...(targetDir && { targetDir }) }),
+    modulePath,
+  });
 
   const typeFiles = await generateTypeFilesOnly({
     moduleName: normalizedModuleName,
     modulePath,
     apiType,
+    settings,
   });
 
   console.log(
@@ -333,6 +338,7 @@ const handleTwoPhaseGeneration = async ({
     apiType,
     appendMode,
     useRepository,
+    settings,
   });
 
   displayGenerationResult({
@@ -411,6 +417,25 @@ export const handleGenerateCommand = async (options: CommandOptions): Promise<vo
     const operations = getOperations(apiType);
     if (operations.length === 0) {
       displayError('At least one operation name is required.');
+      process.exit(1);
+    }
+
+    // Names are checked before anything is written, so a bad name leaves no folders behind
+    const invalidName =
+      apiType.type === 'crud' ? undefined : findInvalidOperationName({ names: operations });
+    if (invalidName) {
+      displayError(
+        `"${invalidName}" is not a valid operation name. Use letters and digits, starting with a letter (for example sendEmail).`
+      );
+      process.exit(1);
+    }
+
+    const reservedName =
+      apiType.type === 'custom' ? findReservedOperationName({ names: operations }) : undefined;
+    if (reservedName) {
+      displayError(
+        `"${reservedName}" is a JavaScript keyword and cannot be a custom operation name. Pick another name (for example ${reservedName}Item).`
+      );
       process.exit(1);
     }
 

@@ -2,10 +2,10 @@ import { z } from 'zod';
 import type { typePayload } from '../types/create.post';
 
 export const payloadSchema = z.object({
-  title: z.string().min(1),
-  content: z.string().min(1),
-  authorId: z.string().min(1),
-  tags: z.array(z.string().min(1)).optional(),
+  title: z.string(),
+  content: z.string(),
+  authorId: z.string(),
+  tags: z.array(z.string()).optional(),
 }) satisfies z.ZodType<typePayload>;
 
 export const validatePayload = (

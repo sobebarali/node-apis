@@ -15,12 +15,12 @@
     "repository/list.post.ts": "e787f93af870b200",
     "repository/publish.post.ts": "c8f109022284e119",
     "repository/update.post.ts": "e0999798127e1397",
-    "validators/archive.post.ts": "380f8f6d05c4a7b0",
-    "validators/create.post.ts": "5df443f1f9d2a9df",
-    "validators/delete.post.ts": "6b7c971e349d7709",
-    "validators/get.post.ts": "e9cb541e30799f07",
-    "validators/list.post.ts": "a15dc9ccf8a06a1c",
-    "validators/publish.post.ts": "e563e1cbb9babbcd",
-    "validators/update.post.ts": "ba68cf0d9241db10"
+    "validators/archive.post.ts": "c88c8f6b22acfb3f",
+    "validators/create.post.ts": "d64128013ac31464",
+    "validators/delete.post.ts": "11729af6a53bc5cc",
+    "validators/get.post.ts": "4a7a8bb794fd9856",
+    "validators/list.post.ts": "079dae12f118da54",
+    "validators/publish.post.ts": "2144782689ee42fb",
+    "validators/update.post.ts": "3599b89d21a679cf"
   }
 }

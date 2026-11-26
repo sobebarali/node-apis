@@ -20,11 +20,18 @@ export interface ParsedTypePayload {
   isEmpty?: boolean; // True if typePayload is empty (no fields)
   /** Literal codes declared in typeResultError, for example ['NOT_FOUND', 'INTERNAL_ERROR'] */
   errorCodes?: string[];
+  /** False when typeResultError declares no `statusCode`. Unknown counts as declared. */
+  errorHasStatusCode?: boolean;
+  /** False when typeResultError declares no `requestId`. Unknown counts as declared. */
+  errorHasRequestId?: boolean;
+  /** True when the whole payload may be left out: `typePayload = { ... } | undefined` */
+  isOptional?: boolean;
   /** Members of typePayload that are not a plain `name: type` field and were left out */
   unreadMembers?: string[];
 }
 
-const ERROR_TYPE_REGEX = /export\s+(?:type|interface)\s+typeResultError\s*(?:=\s*)?{([^}]*)}/;
+const ERROR_TYPE_REGEX = /export\s+(?:type|interface)\s+typeResultError\s*(?:=\s*)?{/;
+const UNION_FOLLOWS_REGEX = /^\s*\|/;
 const ERROR_CODE_LINE_REGEX = /\bcode\??:\s*([^;\n]+)/;
 const QUOTED_LITERAL_REGEX = /['"]([^'"]+)['"]/g;
 
@@ -32,7 +39,7 @@ const QUOTED_LITERAL_REGEX = /['"]([^'"]+)['"]/g;
  * Reads the literal error codes a type file declares in typeResultError
  */
 export const parseErrorCodes = (content: string): string[] => {
-  const body = ERROR_TYPE_REGEX.exec(content)?.[1];
+  const body = findErrorBody(content)?.body;
   const codeType = body ? ERROR_CODE_LINE_REGEX.exec(body)?.[1] : undefined;
 
   if (!codeType) {
@@ -53,6 +60,7 @@ const MEMBER_REGEX = /^(?:readonly\s+)?(\w+)(\?)?\s*:\s*([\s\S]+)$/;
 const TYPE_PAYLOAD_REGEX = /export\s+(?:type|interface)\s+typePayload\s*(?:=\s*)?{/;
 /** `operation.moduleName.ts`. Other files in types/ (the entity file) hold no operation. */
 const OPERATION_FILE_REGEX = /^[^.]+\.[^.]+\.ts$/;
+const OPTIONAL_PAYLOAD_REGEX = /^\s*\|\s*undefined\b/;
 const PAGINATION_FIELDS = ['page', 'limit', 'sortBy', 'sortOrder'];
 
 /**
@@ -85,6 +93,27 @@ export const stripComments = (source: string): string => {
   }
 
   return result;
+};
+
+/**
+ * Reads what a type file declares in typeResultError: its literal codes and
+ * whether it carries `statusCode` and `requestId`. A type that cannot be read
+ * (an alias, a nested object) is taken to carry both.
+ */
+export const parseErrorShape = (
+  content: string
+): Pick<ParsedTypePayload, 'errorCodes' | 'errorHasStatusCode' | 'errorHasRequestId'> => {
+  const error = findErrorBody(stripComments(content));
+  // Only the members of one object are read: a union of objects stays unknown
+  const members = error === null || error.isUnion ? null : parseObjectMembers(error.body).fields;
+
+  return {
+    errorCodes: parseErrorCodes(content),
+    ...(members !== null && {
+      errorHasStatusCode: members.some(field => field.name === 'statusCode'),
+      errorHasRequestId: members.some(field => field.name === 'requestId'),
+    }),
+  };
 };
 
 /**
@@ -197,21 +226,14 @@ export const parseObjectMembers = (
 };
 
 /**
- * Finds the body of `typePayload` (the text between its braces)
+ * Reads the text between an opening brace and its closing brace. `start` is the
+ * index after the opening brace. Braces inside string literals do not count.
  */
-const findTypePayloadBody = (content: string): string | null => {
-  const definition = TYPE_PAYLOAD_REGEX.exec(content);
-
-  if (!definition) {
-    return null;
-  }
-
-  const start = definition.index + definition[0].length;
+function readBalancedBody(content: string, start: number): { body: string; end: number } | null {
   let depth = 1;
   let quote = '';
   let end = start;
 
-  // Braces inside string literals do not count
   while (end < content.length && depth > 0) {
     const char = content[end] ?? '';
 
@@ -228,7 +250,34 @@ const findTypePayloadBody = (content: string): string | null => {
     end += 1;
   }
 
-  return depth === 0 ? content.slice(start, end - 1) : null;
+  return depth === 0 ? { body: content.slice(start, end - 1), end } : null;
+}
+
+/**
+ * Finds the body of an inline `typeResultError`, and whether more union members follow it
+ */
+function findErrorBody(content: string): { body: string; isUnion: boolean } | null {
+  const definition = ERROR_TYPE_REGEX.exec(content);
+  const read = definition
+    ? readBalancedBody(content, definition.index + definition[0].length)
+    : null;
+
+  return read && { body: read.body, isUnion: UNION_FOLLOWS_REGEX.test(content.slice(read.end)) };
+}
+
+/**
+ * Finds the body of `typePayload` (the text between its braces), and whether
+ * `| undefined` follows it
+ */
+const findTypePayloadBody = (content: string): { body: string; isOptional: boolean } | null => {
+  const definition = TYPE_PAYLOAD_REGEX.exec(content);
+  const read = definition
+    ? readBalancedBody(content, definition.index + definition[0].length)
+    : null;
+
+  return (
+    read && { body: read.body, isOptional: OPTIONAL_PAYLOAD_REGEX.test(content.slice(read.end)) }
+  );
 };
 
 /**
@@ -237,26 +286,27 @@ const findTypePayloadBody = (content: string): string | null => {
 export const parseTypePayload = async (filePath: string): Promise<ParsedTypePayload> => {
   try {
     const content = await fs.promises.readFile(filePath, 'utf-8');
-    const body = findTypePayloadBody(stripComments(content));
+    const payload = findTypePayloadBody(stripComments(content));
 
     // `typePayload = Record<string, never>` has no body, but its error codes still count
-    if (body === null) {
+    if (payload === null) {
       return {
         fields: [],
         hasId: false,
         hasPagination: false,
-        errorCodes: parseErrorCodes(content),
+        ...parseErrorShape(content),
       };
     }
 
-    const { fields, unread } = parseObjectMembers(body);
+    const { fields, unread } = parseObjectMembers(payload.body);
 
     return {
       fields,
       hasId: fields.some(field => field.name === 'id'),
       hasPagination: fields.some(field => PAGINATION_FIELDS.includes(field.name)),
       isEmpty: fields.length === 0,
-      errorCodes: parseErrorCodes(content),
+      ...parseErrorShape(content),
+      ...(payload.isOptional && { isOptional: true }),
       ...(unread.length > 0 && { unreadMembers: unread }),
     };
   } catch (error) {

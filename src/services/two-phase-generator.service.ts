@@ -2,6 +2,7 @@ import * as path from 'path';
 import { createHash } from 'crypto';
 import fs from 'fs-extra';
 import { ApiType, GeneratedFile } from '../types/common.types';
+import { DEFAULT_GENERATION_SETTINGS, GenerationSettings } from '../types/config.types';
 import { fileExists, writeFile } from '../filesystem/file.operations';
 import { ensureDirectory } from '../filesystem/directory.operations';
 import {
@@ -9,6 +10,7 @@ import {
   generateEntityFileContent,
   getEntityFileName,
 } from '../templates/crud.templates';
+import { generateErrorsFileContent } from '../templates/errors.templates';
 import { generateCustomFileContent } from '../templates/custom.templates';
 import {
   generateServiceTypeContent,
@@ -92,24 +94,26 @@ export const generateTypeFilesOnly = async ({
   moduleName,
   modulePath,
   apiType,
+  settings = DEFAULT_GENERATION_SETTINGS,
 }: {
   moduleName: string;
   modulePath: string;
   apiType: ApiType;
+  settings?: GenerationSettings;
 }): Promise<GeneratedFile[]> => {
   const typesDir = path.join(modulePath, 'types');
   const fileModuleName = getModuleNaming(moduleName).file;
 
   const buildContent = (operation: string): string => {
     if (apiType.type === 'crud') {
-      return generateCrudFileContent({ operation, moduleName });
+      return generateCrudFileContent({ operation, moduleName, settings });
     }
 
     if (apiType.type === 'custom') {
-      return generateCustomFileContent({ customName: operation, moduleName });
+      return generateCustomFileContent({ customName: operation, moduleName, settings });
     }
 
-    return generateServiceTypeContent({ serviceName: operation, moduleName });
+    return generateServiceTypeContent({ serviceName: operation, moduleName, settings });
   };
 
   const operationFiles = getOperations(apiType).map(operation => ({
@@ -133,11 +137,27 @@ export const generateTypeFilesOnly = async ({
       })
     : null;
 
+  // The shared errors file is written once, where the config points, and never again
+  const errorsFilePath = settings.errorsFile?.filePath;
+  const errorsFile = errorsFilePath
+    ? await writeGeneratedFile({
+        dirPath: path.dirname(errorsFilePath),
+        fileName: path.basename(errorsFilePath),
+        content: generateErrorsFileContent(),
+        appendMode: true,
+      })
+    : null;
+
   const files = await Promise.all(
     operationFiles.map(file => writeGeneratedFile({ dirPath: typesDir, ...file, appendMode: true }))
   );
 
-  return [entityFile, ...files].filter(isGeneratedFile);
+  const written = [errorsFile, entityFile, ...files].filter(isGeneratedFile);
+
+  // New type files are not hand-edited yet, so the project's formatter may run on them
+  await formatGeneratedFiles(written.map(file => file.filePath));
+
+  return written;
 };
 
 const MANIFEST_FILE = '.node-apis.json';
@@ -240,12 +260,14 @@ export const generateCodeWithParsedTypes = async ({
   apiType,
   appendMode = false,
   useRepository = true,
+  settings = DEFAULT_GENERATION_SETTINGS,
 }: {
   moduleName: string;
   modulePath: string;
   apiType: ApiType;
   appendMode?: boolean;
   useRepository?: boolean;
+  settings?: GenerationSettings;
 }): Promise<{ generatedFiles: GeneratedFile[]; keptFiles: string[] }> => {
   const typesDir = path.join(modulePath, 'types');
   const fileModuleName = getModuleNaming(moduleName).file;
@@ -260,6 +282,17 @@ export const generateCodeWithParsedTypes = async ({
       console.warn(
         `⚠️  types/${operation}.${fileModuleName}.ts: left out of the generated code, add by hand: ${unread.join('; ')}`
       );
+    }
+  }
+
+  // With a context there is no requestId to put in an error
+  if (settings.context) {
+    for (const operation of operations) {
+      if (parsedTypes[operation]?.errorHasRequestId) {
+        console.warn(
+          `⚠️  types/${operation}.${fileModuleName}.ts: typeResultError declares requestId, but handlers take a context and have none. Remove it from the type.`
+        );
+      }
     }
   }
 
@@ -279,19 +312,36 @@ export const generateCodeWithParsedTypes = async ({
       return [
         {
           directory: 'services',
-          content: generateServiceContent({ serviceName: operation, moduleName, parsedType }),
+          content: generateServiceContent({
+            serviceName: operation,
+            moduleName,
+            parsedType,
+            settings,
+          }),
         },
       ];
     }
 
     const isCrud = apiType.type === 'crud';
+    // A payload with no fields has nothing to validate, so it gets no validator
+    const hasPayload = parsedType.fields.length > 0 || (parsedType.unreadMembers ?? []).length > 0;
+    const validatorLayers = hasPayload
+      ? [
+          {
+            directory: 'validators',
+            content: isCrud
+              ? generateCrudValidatorContent({ operation, moduleName, parsedType, settings })
+              : generateTypedCustomValidatorContent({
+                  customName: operation,
+                  moduleName,
+                  parsedType,
+                  settings,
+                }),
+          },
+        ]
+      : [];
     const layers = [
-      {
-        directory: 'validators',
-        content: isCrud
-          ? generateCrudValidatorContent({ operation, moduleName, parsedType })
-          : generateTypedCustomValidatorContent({ customName: operation, moduleName, parsedType }),
-      },
+      ...validatorLayers,
       {
         directory: 'handlers',
         content: isCrud
@@ -300,12 +350,14 @@ export const generateCodeWithParsedTypes = async ({
               moduleName,
               parsedType,
               useRepositoryLayer: useRepository,
+              settings,
             })
           : generateTypedCustomHandlerContent({
               customName: operation,
               moduleName,
               parsedType,
               useRepositoryLayer: useRepository,
+              settings,
             }),
       },
     ];
@@ -314,8 +366,13 @@ export const generateCodeWithParsedTypes = async ({
       layers.push({
         directory: 'repository',
         content: isCrud
-          ? generateCrudRepositoryContent({ operation, moduleName, parsedType })
-          : generateCustomRepositoryContent({ customName: operation, moduleName, parsedType }),
+          ? generateCrudRepositoryContent({ operation, moduleName, parsedType, settings })
+          : generateCustomRepositoryContent({
+              customName: operation,
+              moduleName,
+              parsedType,
+              settings,
+            }),
       });
     }
 
